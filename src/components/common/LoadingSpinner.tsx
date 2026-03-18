@@ -17,27 +17,35 @@ const sizeClasses = {
   lg: 'h-12 w-12',
 };
 
+const dotSizeClasses = {
+  sm: 'h-1.5 w-1.5',
+  md: 'h-2 w-2',
+  lg: 'h-3 w-3',
+};
+
 export function LoadingSpinner({ size = 'md', className, variant = 'default' }: LoadingSpinnerProps) {
+  const containerClass = cn('flex items-center justify-center', className);
+
   if (variant === 'dots') {
     return (
-      <div className={cn('flex items-center justify-center gap-1', className)}>
-        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '0ms' }} />
-        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '150ms' }} />
-        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '300ms' }} />
+      <div className={cn(containerClass, 'gap-1')}>
+        <span className={cn('bg-primary rounded-full animate-bounce', dotSizeClasses[size])} style={{ animationDelay: '0ms' }} />
+        <span className={cn('bg-primary rounded-full animate-bounce', dotSizeClasses[size])} style={{ animationDelay: '150ms' }} />
+        <span className={cn('bg-primary rounded-full animate-bounce', dotSizeClasses[size])} style={{ animationDelay: '300ms' }} />
       </div>
     );
   }
 
   if (variant === 'pulse') {
     return (
-      <div className={cn('flex items-center justify-center', className)}>
+      <div className={containerClass}>
         <Loader2 className={cn('animate-pulse text-primary', sizeClasses[size])} />
       </div>
     );
   }
 
   return (
-    <div className={cn('flex items-center justify-center', className)}>
+    <div className={containerClass}>
       <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} />
     </div>
   );

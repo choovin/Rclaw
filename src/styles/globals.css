@@ -201,14 +201,17 @@
 }
 
 .animate-fade-in {
+  will-change: opacity, transform;
   animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animate-slide-in {
+  will-change: opacity, transform;
   animation: slideIn 0.3s ease-out forwards;
 }
 
 .animate-scale-in {
+  will-change: opacity, transform;
   animation: scaleIn 0.2s ease-out forwards;
 }
 

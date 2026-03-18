@@ -62,15 +62,6 @@ export function Marketplace() {
     );
   });
 
-  // Group employees by department for display
-  const groupedEmployees = filteredEmployees.reduce((acc, emp) => {
-    if (!acc[emp.department]) {
-      acc[emp.department] = [];
-    }
-    acc[emp.department].push(emp);
-    return acc;
-  }, {} as Record<string, EmployeeWithStatus[]>);
-
   const handleEmployeeClick = (employee: EmployeeWithStatus) => {
     setSelectedEmployee(employee);
   };

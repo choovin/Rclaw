@@ -153,22 +153,3 @@ export const DEPARTMENT_MAP: Record<Department, DepartmentInfo> = {
     description: 'Paid advertising and media buying',
   },
 };
-
-// Chinese names from popular TV dramas for each department
-export const CHINESE_NAMES: Record<Department, string[]> = {
-  engineering: ['韩商言', '于途', '肖奈', '何以琛', '封沉', '顾漫', '李现'],
-  design: ['唐晶', '安迪', '林无敌', '苏明哲', '陈美嘉'],
-  marketing: ['房似锦', '童薇', '樊书涛', '郡','宁','静'],
-  sales: ['贺涵', '许半夏', '程开', '苏','老','白'},
-  product: ['苏明玉', '安迪', '曲筱绡'],
-  'project-management': ['方思雨', '孟晓', '辛','鹿','鸣'],
-  academic: ['叶春梅', '霍','心','茹'],
-  'game-development': ['韩商言', '小米', 'grunt', '令','山','古'],
-  strategy: ['贺涵', '陈俊生', '魏','深','渊'],
-  support: ['小张', '王','漫','妮'],
-  testing: ['张伟', '李','贞','子'],
-  integrations: ['Tony', 'Micheal', '林','八','斗'],
-  specialized: [' specialists'],
-  'spatial-computing': ['未来', '科技', '星','际','凡'],
-  'paid-media': ['广', '告', '狂', '人', '明','远'],
-};
