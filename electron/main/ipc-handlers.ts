@@ -3,7 +3,7 @@
  * Registers all IPC handlers for main-renderer communication
  */
 import { ipcMain, BrowserWindow, shell, dialog, app, nativeImage } from 'electron';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname, basename } from 'node:path';
 import crypto from 'node:crypto';
@@ -2430,6 +2430,96 @@ function registerFileHandlers(): void {
  * The JSONL file lives at: ~/.openclaw/agents/<agentId>/sessions/<suffix>.jsonl
  * Renaming to <suffix>.deleted.jsonl hides it from sessions.list.
  */
+
+// Employee Agent Creation Handler
+ipcMain.handle('agents:create-employee', async (_, options: {
+  employeeId: string;
+  nameZh: string;
+  nameEn: string;
+  soulContent: string;
+  agentsContent: string;
+  identityContent: string;
+}) => {
+  try {
+    // Generate workspace path
+    const openclawDir = join(homedir(), '.openclaw');
+    const workspaceDir = join(openclawDir, 'workspaces', options.employeeId);
+
+    // Create workspace directory
+    mkdirSync(workspaceDir, { recursive: true });
+
+    // Write workspace files
+    if (options.soulContent) {
+      writeFileSync(join(workspaceDir, 'SOUL.md'), options.soulContent, 'utf-8');
+    }
+    if (options.agentsContent) {
+      writeFileSync(join(workspaceDir, 'AGENTS.md'), options.agentsContent, 'utf-8');
+    }
+    if (options.identityContent) {
+      writeFileSync(join(workspaceDir, 'IDENTITY.md'), options.identityContent, 'utf-8');
+    }
+
+    // Write user.md template
+    const userContent = `# 👤 我的资料
+
+## 基本信息
+- **名字**：${options.nameZh}
+- **英文名**：${options.nameEn}
+- **角色**：数字员工
+
+## 我擅长的
+<!-- 从员工技能中提取 -->
+
+## 我的工作风格
+<!-- 从员工人设中提取 -->
+
+## 当前项目
+<!-- 记录当前正在处理的项目 -->
+
+## 常用工具
+<!-- 记录常用的工具和命令 -->
+
+---
+*由 Rclaw 数字员工系统生成*
+`;
+    writeFileSync(join(workspaceDir, 'user.md'), userContent, 'utf-8');
+
+    // Write todo.md template
+    const todoContent = `# 📋 待办事项
+
+## 今日任务
+- [ ]
+
+## 本周目标
+- [ ]
+
+## 进行中的项目
+<!-- 记录正在进行的项目 -->
+
+## 已完成
+- [ ]
+
+---
+*由 Rclaw 数字员工系统生成*
+`;
+    writeFileSync(join(workspaceDir, 'todo.md'), todoContent, 'utf-8');
+
+    logger.info(`[agents:create-employee] Created workspace for ${options.nameZh} at ${workspaceDir}`);
+
+    return {
+      success: true,
+      agentId: options.employeeId,
+      workspacePath: workspaceDir,
+    };
+  } catch (error) {
+    logger.error('[agents:create-employee] Failed:', error);
+    return {
+      success: false,
+      error: String(error),
+    };
+  }
+});
+
 function registerSessionHandlers(): void {
   ipcMain.handle('session:delete', async (_, sessionKey: string) => {
     try {
