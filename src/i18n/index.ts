@@ -16,6 +16,7 @@ import enAgents from './locales/en/agents.json';
 import enSkills from './locales/en/skills.json';
 import enCron from './locales/en/cron.json';
 import enSetup from './locales/en/setup.json';
+import enEmployees from './locales/en/employees.json';
 
 // ZH
 import zhCommon from './locales/zh/common.json';
@@ -39,6 +40,7 @@ import jaAgents from './locales/ja/agents.json';
 import jaSkills from './locales/ja/skills.json';
 import jaCron from './locales/ja/cron.json';
 import jaSetup from './locales/ja/setup.json';
+import jaEmployees from './locales/ja/employees.json';
 
 export const SUPPORTED_LANGUAGES = [
     { code: 'en', label: 'English' },
@@ -57,6 +59,7 @@ const resources = {
         skills: enSkills,
         cron: enCron,
         setup: enSetup,
+        employees: enEmployees,
     },
     zh: {
         common: zhCommon,
@@ -80,6 +83,7 @@ const resources = {
         skills: jaSkills,
         cron: jaCron,
         setup: jaSetup,
+        employees: jaEmployees,
     },
 };
 

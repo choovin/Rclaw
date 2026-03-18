@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  variant?: 'default' | 'dots' | 'pulse';
 }
 
 const sizeClasses = {
@@ -16,7 +17,25 @@ const sizeClasses = {
   lg: 'h-12 w-12',
 };
 
-export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', className, variant = 'default' }: LoadingSpinnerProps) {
+  if (variant === 'dots') {
+    return (
+      <div className={cn('flex items-center justify-center gap-1', className)}>
+        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '0ms' }} />
+        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '150ms' }} />
+        <span className={cn('bg-primary rounded-full animate-bounce', size === 'sm' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-2 w-2' : 'h-3 w-3')} style={{ animationDelay: '300ms' }} />
+      </div>
+    );
+  }
+
+  if (variant === 'pulse') {
+    return (
+      <div className={cn('flex items-center justify-center', className)}>
+        <Loader2 className={cn('animate-pulse text-primary', sizeClasses[size])} />
+      </div>
+    );
+  }
+
   return (
     <div className={cn('flex items-center justify-center', className)}>
       <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} />

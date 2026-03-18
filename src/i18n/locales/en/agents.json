@@ -1,5 +1,5 @@
 {
-    "title": "Agents",
+    "title": "Digital Employees",
     "subtitle": "When adding a new Agent, Rclaw will copy the main Agent's workspace files and runtime auth setup. The configuration can be modified through a dialog.",
     "refresh": "Refresh",
     "addAgent": "Add Agent",

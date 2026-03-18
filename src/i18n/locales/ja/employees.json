@@ -1,0 +1,24 @@
+{
+    "title": "デジタル従業員",
+    "subtitle": "デジタル従業員チームを管理・追加",
+    "tabs": {
+        "marketplace": "マーケットプレイス",
+        "myEmployees": "マイ従業員"
+    },
+    "searchPlaceholder": "従業員を検索...",
+    "allDepartments": "全部門",
+    "noEmployees": "従業員が見つかりません",
+    "myEmployees": "マイ従業員",
+    "myEmployeesDesc": "{{count}}名の従業員を追加済み",
+    "noMyEmployees": "従業員がいません",
+    "noMyEmployeesDesc": "マーケットプレイスから従業員を追加してください",
+    "add": "追加",
+    "remove": "削除",
+    "added": "追加済み",
+    "department": "部門",
+    "description": "説明",
+    "vibe": "スタイル",
+    "employeeId": "従業員ID",
+    "skills": "スキル",
+    "channels": "チャンネル"
+}
