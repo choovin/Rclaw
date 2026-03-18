@@ -1,5 +1,5 @@
 {
-    "name": "clawx",
+    "name": "rclaw",
     "version": "0.2.5-beta.4",
     "pnpm": {
         "onlyBuiltDependencies": [
@@ -16,9 +16,9 @@
             "isbinaryfile": "^5.0.0"
         }
     },
-    "description": "ClawX - Graphical AI Assistant based on OpenClaw",
+    "description": "Rclaw - 基于 OpenClaw 的图形化 AI 助手",
     "main": "dist-electron/main/index.js",
-    "author": "ClawX Team",
+    "author": "Rclaw Team",
     "license": "MIT",
     "private": true,
     "scripts": {
