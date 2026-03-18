@@ -182,7 +182,7 @@ export function createMenu(): void {
         {
           label: 'Report Issue',
           click: async () => {
-            await shell.openExternal('https://github.com/ValueCell-ai/Rclaw/issues');
+            await shell.openExternal('https://github.com/choovin/Rclaw/issues');
           },
         },
         { type: 'separator' },
