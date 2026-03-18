@@ -9,7 +9,7 @@ import { EmployeeDetail } from './EmployeeDetail';
 import { useEmployeesStore, getAllDepartments } from '@/stores/employees';
 import type { EmployeeWithStatus, Department } from '@/types/employee';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export function Marketplace() {
   const { t } = useTranslation('employees');
@@ -81,23 +81,31 @@ export function Marketplace() {
         </div>
 
         {/* Department Filter */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Badge
-            variant={selectedDepartment === 'all' ? 'default' : 'outline'}
-            className="cursor-pointer hover:bg-primary/10"
+        <div className="mb-4 flex flex-wrap gap-2 overflow-x-auto pb-2">
+          <button
+            className={cn(
+              "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap",
+              selectedDepartment === 'all'
+                ? "bg-foreground text-background"
+                : "border border-border/40 bg-transparent text-foreground/70 hover:bg-secondary"
+            )}
             onClick={() => setSelectedDepartment('all')}
           >
             {t('allDepartments')}
-          </Badge>
+          </button>
           {departments.map((dept) => (
-            <Badge
+            <button
               key={dept.id}
-              variant={selectedDepartment === dept.id ? 'default' : 'outline'}
-              className="cursor-pointer hover:bg-primary/10"
+              className={cn(
+                "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap",
+                selectedDepartment === dept.id
+                  ? "bg-foreground text-background"
+                  : "border border-border/40 bg-transparent text-foreground/70 hover:bg-secondary"
+              )}
               onClick={() => setSelectedDepartment(dept.id as Department)}
             >
               {dept.emoji} {dept.nameZh}
-            </Badge>
+            </button>
           ))}
         </div>
 
