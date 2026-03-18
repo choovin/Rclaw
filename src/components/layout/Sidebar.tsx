@@ -55,14 +55,15 @@ function NavItem({ to, icon, label, badge, collapsed, onClick }: NavItemProps) {
       onClick={onClick}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[14px] font-medium transition-colors',
-          'hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80',
+          'flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-[14px] font-medium transition-all',
+          'hover:bg-secondary text-foreground/65 hover:text-foreground',
           isActive
-            ? 'bg-black/5 dark:bg-white/10 text-foreground'
+            ? 'bg-secondary text-foreground'
             : '',
           collapsed && 'justify-center px-0'
         )
       }
+      style={{ letterSpacing: '-0.005em' }}
     >
       {({ isActive }) => (
         <>
@@ -73,7 +74,7 @@ function NavItem({ to, icon, label, badge, collapsed, onClick }: NavItemProps) {
             <>
               <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
               {badge && (
-                <Badge variant="secondary" className="ml-auto shrink-0">
+                <Badge variant="secondary" className="ml-auto shrink-0 text-[11px]">
                   {badge}
                 </Badge>
               )}
@@ -206,26 +207,27 @@ export function Sidebar() {
   }
 
   const navItems = [
-    { to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.models') },
-    { to: '/agents', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.agents') },
-    { to: '/channels', icon: <Network className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.channels') },
-    { to: '/skills', icon: <Puzzle className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.skills') },
-    { to: '/cron', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.cronTasks') },
+    { to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.models') },
+    { to: '/agents', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.agents') },
+    { to: '/channels', icon: <Network className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.channels') },
+    { to: '/skills', icon: <Puzzle className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.skills') },
+    { to: '/cron', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.cronTasks') },
   ];
 
   return (
     <aside
       className={cn(
-        'flex shrink-0 flex-col border-r bg-[#eae8e1]/60 dark:bg-background transition-all duration-300',
-        sidebarCollapsed ? 'w-16' : 'w-64'
+        'flex shrink-0 flex-col border-r/0 dark:border-r/0 transition-all duration-300',
+        sidebarCollapsed ? 'w-[68px]' : 'w-[240px]'
       )}
+      style={{ backgroundColor: 'hsl(var(--card))' }}
     >
       {/* Top Header Toggle */}
-      <div className={cn("flex items-center p-2 h-12", sidebarCollapsed ? "justify-center" : "justify-between")}>
+      <div className={cn("flex items-center px-3 h-14", sidebarCollapsed ? "justify-center" : "justify-between")}>
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-2 px-2 overflow-hidden">
-            <img src={logoSvg} alt="Rclaw" className="h-5 w-auto shrink-0" />
-            <span className="text-sm font-semibold truncate whitespace-nowrap text-foreground/90">
+          <div className="flex items-center gap-2.5 px-1 overflow-hidden">
+            <img src={logoSvg} alt="Rclaw" className="h-6 w-auto shrink-0" />
+            <span className="text-[15px] font-semibold truncate whitespace-nowrap text-foreground/90" style={{ letterSpacing: '-0.01em' }}>
               Rclaw
             </span>
           </div>
@@ -233,7 +235,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"
+          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? (
@@ -245,7 +247,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col px-2 gap-0.5">
+      <nav className="flex flex-col px-2.5 gap-0.5">
         <button
           onClick={() => {
             const { messages } = useChatStore.getState();
@@ -253,10 +255,11 @@ export function Sidebar() {
             navigate('/');
           }}
           className={cn(
-            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all mb-3',
-            'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+            'flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-all mb-2',
+            'bg-foreground text-background hover:bg-foreground/90 shadow-sm',
             sidebarCollapsed && 'justify-center px-0',
           )}
+          style={{ letterSpacing: '-0.005em' }}
         >
           <div className="flex shrink-0 items-center justify-center">
             <Plus className="h-[18px] w-[18px]" strokeWidth={2} />
@@ -275,11 +278,11 @@ export function Sidebar() {
 
       {/* Session list — below Settings, only when expanded */}
       {!sidebarCollapsed && sessions.length > 0 && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 mt-4 space-y-0.5 pb-2">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 mt-3 space-y-0.5 pb-2">
           {sessionBuckets.map((bucket) => (
             bucket.sessions.length > 0 ? (
               <div key={bucket.key} className="pt-2">
-                <div className="px-2.5 pb-1 text-[11px] font-medium text-muted-foreground/60 tracking-tight">
+                <div className="px-3 pb-1.5 text-[11px] font-medium text-muted-foreground/80 tracking-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   {bucket.label}
                 </div>
                 {bucket.sessions.map((s) => {
@@ -290,15 +293,16 @@ export function Sidebar() {
                       <button
                         onClick={() => { switchSession(s.key); navigate('/'); }}
                         className={cn(
-                          'w-full text-left rounded-lg px-2.5 py-1.5 text-[13px] transition-colors pr-7',
-                          'hover:bg-black/5 dark:hover:bg-white/5',
+                          'w-full text-left rounded-lg px-3 py-1.5 text-[13px] transition-colors pr-7',
+                          'hover:bg-secondary',
                           isOnChat && currentSessionKey === s.key
-                            ? 'bg-black/5 dark:bg-white/10 text-foreground font-medium'
-                            : 'text-foreground/75',
+                            ? 'bg-secondary text-foreground font-medium'
+                            : 'text-foreground/65',
                         )}
+                        style={{ letterSpacing: '-0.005em' }}
                       >
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="shrink-0 rounded-full bg-black/[0.04] px-2 py-0.5 text-[10px] font-medium text-foreground/70 dark:bg-white/[0.08]">
+                          <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground/60">
                             {agentName}
                           </span>
                           <span className="truncate">{getSessionLabel(s.key, s.displayName, s.label)}</span>
@@ -314,7 +318,7 @@ export function Sidebar() {
                           });
                         }}
                         className={cn(
-                          'absolute right-1 flex items-center justify-center rounded p-0.5 transition-opacity',
+                          'absolute right-1.5 flex items-center justify-center rounded p-1 transition-opacity',
                           'opacity-0 group-hover:opacity-100',
                           'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
                         )}
@@ -331,22 +335,23 @@ export function Sidebar() {
       )}
 
       {/* Footer */}
-      <div className="p-2 mt-auto">
+      <div className="p-2.5 mt-auto">
         <NavLink
             to="/settings"
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[14px] font-medium transition-colors',
-                'hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80',
-                isActive && 'bg-black/5 dark:bg-white/10 text-foreground',
+                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors',
+                'hover:bg-secondary text-foreground/70',
+                isActive && 'bg-secondary text-foreground',
                 sidebarCollapsed ? 'justify-center px-0' : ''
               )
             }
+            style={{ letterSpacing: '-0.005em' }}
           >
           {({ isActive }) => (
             <>
               <div className={cn("flex shrink-0 items-center justify-center", isActive ? "text-foreground" : "text-muted-foreground")}>
-                <SettingsIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                <SettingsIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
               </div>
               {!sidebarCollapsed && <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{t('sidebar.settings')}</span>}
             </>
@@ -356,19 +361,20 @@ export function Sidebar() {
         <Button
           variant="ghost"
           className={cn(
-            'flex items-center gap-2.5 rounded-lg px-2.5 py-2 h-auto text-[14px] font-medium transition-colors w-full mt-1',
-            'hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80',
+            'flex items-center gap-2.5 rounded-xl px-3 py-2 h-auto text-[14px] font-medium transition-colors w-full mt-1',
+            'hover:bg-secondary text-foreground/70',
             sidebarCollapsed ? 'justify-center px-0' : 'justify-start'
           )}
+          style={{ letterSpacing: '-0.005em' }}
           onClick={openDevConsole}
         >
           <div className="flex shrink-0 items-center justify-center text-muted-foreground">
-            <Terminal className="h-[18px] w-[18px]" strokeWidth={2} />
+            <Terminal className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </div>
           {!sidebarCollapsed && (
             <>
               <span className="flex-1 text-left overflow-hidden text-ellipsis whitespace-nowrap">{t('common:sidebar.openClawPage')}</span>
-              <ExternalLink className="h-3 w-3 shrink-0 ml-auto opacity-50 text-muted-foreground" />
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-40 text-muted-foreground" />
             </>
           )}
         </Button>

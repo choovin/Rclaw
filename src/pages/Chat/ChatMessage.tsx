@@ -72,7 +72,7 @@ export const ChatMessage = memo(function ChatMessage({
     >
       {/* Avatar */}
       {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-1 bg-black/5 dark:bg-white/5 text-foreground">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full mt-0.5 bg-secondary text-foreground">
           <Sparkles className="h-4 w-4" />
         </div>
       )}
@@ -270,20 +270,20 @@ function ToolStatusBar({
           <div
             key={tool.toolCallId || tool.id || tool.name}
             className={cn(
-              'flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors',
-              isRunning && 'border-primary/30 bg-primary/5 text-foreground',
-              !isRunning && !isError && 'border-border/50 bg-muted/20 text-muted-foreground',
-              isError && 'border-destructive/30 bg-destructive/5 text-destructive',
+              'flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs transition-all',
+              isRunning && 'border-foreground/10 bg-foreground/5 text-foreground',
+              !isRunning && !isError && 'border-border/30 bg-secondary/30 text-muted-foreground',
+              isError && 'border-destructive/20 bg-destructive/5 text-destructive',
             )}
           >
-            {isRunning && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+            {isRunning && <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground/70 shrink-0" />}
             {!isRunning && !isError && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />}
             {isError && <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
-            <Wrench className="h-3 w-3 shrink-0 opacity-60" />
+            <Wrench className="h-3 w-3 shrink-0 opacity-50" />
             <span className="font-mono text-[12px] font-medium">{tool.name}</span>
-            {duration && <span className="text-[11px] opacity-60">{tool.summary ? `(${duration})` : duration}</span>}
+            {duration && <span className="text-[11px] opacity-50">{tool.summary ? `(${duration})` : duration}</span>}
             {tool.summary && (
-              <span className="truncate text-[11px] opacity-70">{tool.summary}</span>
+              <span className="truncate text-[11px] opacity-60">{tool.summary}</span>
             )}
           </div>
         );
@@ -334,15 +334,15 @@ function MessageBubble({
   return (
     <div
       className={cn(
-        'relative rounded-2xl px-4 py-3',
+        'relative rounded-2xl px-5 py-3',
         !isUser && 'w-full',
         isUser
-          ? 'bg-[#0a84ff] text-white shadow-sm'
-          : 'bg-black/5 dark:bg-white/5 text-foreground',
+          ? 'bg-foreground text-background'
+          : 'bg-secondary text-foreground',
       )}
     >
       {isUser ? (
-        <p className="whitespace-pre-wrap break-words break-all text-sm">{text}</p>
+        <p className="whitespace-pre-wrap break-words break-all text-[15px] leading-relaxed">{text}</p>
       ) : (
         <div className="prose prose-sm dark:prose-invert max-w-none break-words break-all">
           <ReactMarkdown
@@ -368,7 +368,7 @@ function MessageBubble({
               },
               a({ href, children }) {
                 return (
-                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-words break-all">
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-2 opacity-80 hover:opacity-100 break-words break-all">
                     {children}
                   </a>
                 );
@@ -393,17 +393,17 @@ function ThinkingBlock({ content }: { content: string }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[14px]">
+    <div className="w-full rounded-xl border border-border/40 bg-secondary/50 text-[14px]">
       <button
-        className="flex items-center gap-2 w-full px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-2 w-full px-3.5 py-2.5 text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-        <span className="font-medium">Thinking</span>
+        <span className="font-medium text-[13px]">Thinking</span>
       </button>
       {expanded && (
-        <div className="px-3 pb-3 text-muted-foreground">
-          <div className="prose prose-sm dark:prose-invert max-w-none opacity-75">
+        <div className="px-3.5 pb-3.5 text-muted-foreground">
+          <div className="prose prose-sm dark:prose-invert max-w-none opacity-80">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
         </div>
@@ -438,10 +438,10 @@ function FileCard({ file }: { file: AttachedFileMeta }) {
   }, [file.filePath]);
 
   return (
-    <div 
+    <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border border-black/10 dark:border-white/10 px-3 py-2.5 bg-black/5 dark:bg-white/5 max-w-[220px]",
-        file.filePath && "cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+        "flex items-center gap-3 rounded-xl border border-border/40 px-3.5 py-3 bg-secondary/30 max-w-[220px]",
+        file.filePath && "cursor-pointer hover:bg-secondary/50 transition-colors"
       )}
       onClick={handleOpen}
       title={file.filePath ? "Open file" : undefined}
