@@ -1,5 +1,5 @@
 {
-    "title": "Agents",
+    "title": "数字员工",
     "subtitle": "添加新的 Agent 时，Rclaw 会复制主 Agent 的工作区引导文件和运行时认证配置， 配置可以通过以对话的形式进行修改",
     "refresh": "刷新",
     "addAgent": "添加 Agent",
