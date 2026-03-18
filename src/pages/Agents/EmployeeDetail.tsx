@@ -4,33 +4,19 @@
  */
 import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
-import { useEmployeesStore, getDepartmentInfo } from '@/stores/employees';
+import { useEmployeesStore } from '@/stores/employees';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 interface EmployeeDetailProps {
   employee: Employee;
   onClose: () => void;
 }
 
-const colorVariants = {
-  green: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  yellow: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
-  red: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  pink: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
-  orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
-};
-
 export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const { t } = useTranslation('employees');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const isAdded = isEmployeeAdded(employee.id);
-
-  const departmentInfo = getDepartmentInfo(employee.department);
 
   const handleAddRemove = () => {
     if (isAdded) {
@@ -43,64 +29,69 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   return (
     <div className="w-80 shrink-0 border-l bg-card flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b flex items-start justify-between">
+      <div className="p-5 border-b flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{employee.emoji}</span>
+          <span className="text-4xl">{employee.emoji}</span>
           <div>
-            <h3 className="font-semibold text-lg text-foreground">{employee.nameZh}</h3>
-            <p className="text-sm text-muted-foreground">{employee.name}</p>
+            <h3 className="text-[17px] font-semibold text-foreground">{employee.nameZh}</h3>
+            <p className="text-[13px] text-muted-foreground">{employee.name}</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-6">
+      <div className="flex-1 overflow-auto p-5 space-y-5">
         {/* Department */}
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             {t('department')}
           </h4>
-          <Badge variant="outline" className={colorVariants[employee.color as keyof typeof colorVariants] || colorVariants.blue}>
-            {departmentInfo?.emoji} {departmentInfo?.nameZh}
-          </Badge>
-        </div>
-
-        {/* Description */}
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">
-            {t('description')}
-          </h4>
-          <p className="text-sm text-foreground">{employee.description}</p>
+          <div className="flex items-center gap-1.5 text-[14px] text-foreground">
+            <span>{employee.emoji}</span>
+            <span>{t(`departments.${employee.department}`)}</span>
+          </div>
         </div>
 
         {/* Vibe */}
+        {employee.vibe && (
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+              {t('vibe')}
+            </h4>
+            <p className="text-[14px] text-foreground/80 italic">{employee.vibe}</p>
+          </div>
+        )}
+
+        {/* Description */}
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">
-            {t('vibe')}
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+            {t('description')}
           </h4>
-          <p className="text-sm text-muted-foreground italic">{employee.vibe}</p>
+          <p className="text-[14px] text-foreground leading-relaxed">{employee.description}</p>
         </div>
 
         {/* ID */}
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             {t('employeeId')}
           </h4>
-          <code className="text-xs bg-muted px-2 py-1 rounded">{employee.id}</code>
+          <code className="text-xs bg-secondary px-2 py-1.5 rounded-md block text-muted-foreground truncate">
+            {employee.id}
+          </code>
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t">
+      <div className="p-5 border-t">
         <Button
           variant={isAdded ? 'outline' : 'default'}
-          className="w-full"
+          className="w-full rounded-full"
           onClick={handleAddRemove}
         >
-          {isAdded ? t('remove') : t('add')}
+          {isAdded ? t('remove') : t('addToMyEmployees')}
         </Button>
       </div>
     </div>
