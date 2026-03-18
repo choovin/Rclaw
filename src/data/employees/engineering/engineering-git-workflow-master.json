@@ -1,0 +1,10 @@
+{
+  "id": "engineering-git-workflow-master",
+  "name": "Git Workflow Master",
+  "nameZh": "封沉",
+  "description": "Expert in Git workflows, branching strategies, and version control best practices including conventional commits, rebasing, worktrees, and CI-friendly branch management.",
+  "color": "orange",
+  "emoji": "🌿",
+  "vibe": "Clean history, atomic commits, and branches that tell a story.",
+  "department": "engineering"
+}

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAgentsStore } from '@/stores/agents';
 import { useGatewayStore } from '@/stores/gateway';
 import { hostApiFetch } from '@/lib/host-api';
@@ -23,6 +24,8 @@ import dingtalkIcon from '@/assets/channels/dingtalk.svg';
 import feishuIcon from '@/assets/channels/feishu.svg';
 import wecomIcon from '@/assets/channels/wecom.svg';
 import qqIcon from '@/assets/channels/qq.svg';
+import { Marketplace } from './Marketplace';
+import { MyEmployees } from './MyEmployees';
 
 interface ChannelAccountItem {
   accountId: string;
@@ -142,37 +145,53 @@ export function Agents() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 pb-10 min-h-0 -mr-2">
-          {gatewayStatus.state !== 'running' && (
-            <div className="mb-8 p-4 rounded-xl border border-yellow-500/50 bg-yellow-500/10 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-              <span className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
-                {t('gatewayWarning')}
-              </span>
-            </div>
-          )}
+        <Tabs defaultValue="marketplace" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mb-4">
+            <TabsTrigger value="marketplace">{t('employees:tabs.marketplace')}</TabsTrigger>
+            <TabsTrigger value="myEmployees">{t('employees:tabs.myEmployees')}</TabsTrigger>
+            <TabsTrigger value="agents">{t('agents')}</TabsTrigger>
+          </TabsList>
 
-          {error && (
-            <div className="mb-8 p-4 rounded-xl border border-destructive/50 bg-destructive/10 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <span className="text-destructive text-sm font-medium">
-                {error}
-              </span>
-            </div>
-          )}
+          <TabsContent value="marketplace" className="flex-1 min-h-0 m-0">
+            <Marketplace />
+          </TabsContent>
 
-          <div className="space-y-3">
-            {agents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                channelGroups={channelGroups}
-                onOpenSettings={() => setActiveAgentId(agent.id)}
-                onDelete={() => setAgentToDelete(agent)}
-              />
-            ))}
-          </div>
-        </div>
+          <TabsContent value="myEmployees" className="flex-1 min-h-0 m-0">
+            <MyEmployees />
+          </TabsContent>
+
+          <TabsContent value="agents" className="flex-1 min-h-0 m-0">
+            <div className="space-y-3">
+              {gatewayStatus.state !== 'running' && (
+                <div className="mb-8 p-4 rounded-xl border border-yellow-500/50 bg-yellow-500/10 flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
+                    {t('gatewayWarning')}
+                  </span>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-8 p-4 rounded-xl border border-destructive/50 bg-destructive/10 flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <span className="text-destructive text-sm font-medium">
+                    {error}
+                  </span>
+                </div>
+              )}
+
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  channelGroups={channelGroups}
+                  onOpenSettings={() => setActiveAgentId(agent.id)}
+                  onDelete={() => setAgentToDelete(agent)}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {showAddDialog && (

@@ -1,0 +1,10 @@
+{
+  "id": "spatial-computing-terminal-integration-specialist",
+  "name": "Terminal Integration Specialist",
+  "nameZh": "科技",
+  "description": "Terminal emulation, text rendering optimization, and SwiftTerm integration for modern Swift applications",
+  "color": "green",
+  "emoji": "🖥️",
+  "vibe": "Masters terminal emulation and text rendering in modern Swift applications.",
+  "department": "spatial-computing"
+}

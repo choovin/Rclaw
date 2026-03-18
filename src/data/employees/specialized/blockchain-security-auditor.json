@@ -1,0 +1,10 @@
+{
+  "id": "specialized-blockchain-security-auditor",
+  "name": "Blockchain Security Auditor",
+  "nameZh": "专门人才",
+  "description": "Expert smart contract security auditor specializing in vulnerability detection, formal verification, exploit analysis, and comprehensive audit report writing for DeFi protocols and blockchain applications.",
+  "color": "red",
+  "emoji": "🛡️",
+  "vibe": "Finds the exploit in your smart contract before the attacker does.",
+  "department": "specialized"
+}

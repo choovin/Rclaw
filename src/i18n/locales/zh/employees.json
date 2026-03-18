@@ -1,0 +1,24 @@
+{
+    "title": "数字员工",
+    "subtitle": "管理和添加您的数字员工团队",
+    "tabs": {
+        "marketplace": "员工市场",
+        "myEmployees": "我的员工"
+    },
+    "searchPlaceholder": "搜索员工...",
+    "allDepartments": "全部部门",
+    "noEmployees": "没有找到员工",
+    "myEmployees": "我的员工",
+    "myEmployeesDesc": "您已添加 {{count}} 名员工",
+    "noMyEmployees": "暂无员工",
+    "noMyEmployeesDesc": "从员工市场添加员工开始使用",
+    "add": "添加",
+    "remove": "移除",
+    "added": "已添加",
+    "department": "部门",
+    "description": "描述",
+    "vibe": "风格",
+    "employeeId": "员工ID",
+    "skills": "技能",
+    "channels": "频道"
+}

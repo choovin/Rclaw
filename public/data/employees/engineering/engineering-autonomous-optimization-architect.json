@@ -1,0 +1,10 @@
+{
+  "id": "engineering-autonomous-optimization-architect",
+  "name": "Autonomous Optimization Architect",
+  "nameZh": "肖奈",
+  "description": "Intelligent system governor that continuously shadow-tests APIs for performance while enforcing strict financial and security guardrails against runaway costs.",
+  "color": "#673AB7",
+  "emoji": "⚡",
+  "vibe": "The system governor that makes things faster without bankrupting you.",
+  "department": "engineering"
+}

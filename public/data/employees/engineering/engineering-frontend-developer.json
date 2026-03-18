@@ -1,0 +1,10 @@
+{
+  "id": "engineering-frontend-developer",
+  "name": "Frontend Developer",
+  "nameZh": "李现",
+  "description": "Expert frontend developer specializing in modern web technologies, React/Vue/Angular frameworks, UI implementation, and performance optimization",
+  "color": "cyan",
+  "emoji": "🖥️",
+  "vibe": "Builds responsive, accessible web apps with pixel-perfect precision.",
+  "department": "engineering"
+}
