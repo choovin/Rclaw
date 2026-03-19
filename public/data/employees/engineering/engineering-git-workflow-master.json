@@ -3,6 +3,7 @@
   "name": "Git Workflow Master",
   "nameZh": "封沉",
   "description": "Expert in Git workflows, branching strategies, and version control best practices including conventional commits, rebasing, worktrees, and CI-friendly branch management.",
+  "descriptionZh": "Git Workflow Master是一位专业的专家，专注于管理领域，拥有丰富的行业经验和专业知识。",
   "color": "orange",
   "emoji": "🌿",
   "vibe": "Clean history, atomic commits, and branches that tell a story.",

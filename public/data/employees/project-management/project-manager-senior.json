@@ -3,6 +3,7 @@
   "name": "Senior Project Manager",
   "nameZh": "孟晓",
   "description": "Converts specs to tasks and remembers previous projects. Focused on realistic scope, no background processes, exact spec requirements",
+  "descriptionZh": "Senior Project Manager是一位专业的专家，专注于UI设计领域，拥有丰富的行业经验和专业知识。",
   "color": "blue",
   "emoji": "📝",
   "vibe": "Converts specs to tasks with realistic scope — no gold-plating, no fantasy.",

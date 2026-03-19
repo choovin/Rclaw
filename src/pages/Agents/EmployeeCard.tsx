@@ -68,9 +68,9 @@ export function EmployeeCard({
         </p>
       )}
 
-      {/* Description */}
+      {/* Description - prefer Chinese description */}
       <p className="text-[13px] text-muted-foreground line-clamp-2 mb-4">
-        {employee.description}
+        {employee.descriptionZh || employee.description}
       </p>
 
       {/* Add Button */}

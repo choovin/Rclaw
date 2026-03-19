@@ -3,6 +3,7 @@
   "name": "Incident Response Commander",
   "nameZh": "韩商言",
   "description": "Expert incident commander specializing in production incident management, structured response coordination, post-mortem facilitation, SLO/SLI tracking, and on-call process design for reliable engineering organizations.",
+  "descriptionZh": "Incident Response Commander是一位专业的工程师，专注于工程开发领域，拥有丰富的行业经验和专业知识。",
   "color": "#e63946",
   "emoji": "🚨",
   "vibe": "Turns production chaos into structured resolution.",

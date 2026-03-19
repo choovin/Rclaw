@@ -25,6 +25,7 @@ export interface Employee {
   name: string;
   nameZh: string; // Chinese name from TV shows
   description: string;
+  descriptionZh?: string; // Chinese description
   color: string;
   emoji: string;
   vibe: string;

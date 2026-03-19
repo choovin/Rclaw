@@ -21,20 +21,15 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const isAdded = isEmployeeAdded(employee.id);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  console.log('[EmployeeDetail] Render, employee:', employee?.id, 'isAdded:', isAdded);
-
   const handleAddRemove = async () => {
-    console.log('[EmployeeDetail] handleAddRemove clicked, isProcessing:', isProcessing);
     if (isProcessing) return;
 
     setIsProcessing(true);
     try {
       if (isAdded) {
-        console.log('[EmployeeDetail] Removing employee:', employee.id);
         removeEmployee(employee.id);
         toast.success(t('removed'));
       } else {
-        console.log('[EmployeeDetail] Adding employee:', employee.id);
         const success = await addEmployee(employee);
         if (success) {
           toast.success(t('addSuccess'));
@@ -86,12 +81,12 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
           </div>
         )}
 
-        {/* Description */}
+        {/* Description - prefer Chinese description */}
         <div>
           <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             {t('description')}
           </h4>
-          <p className="text-[14px] text-foreground leading-relaxed">{employee.description}</p>
+          <p className="text-[14px] text-foreground leading-relaxed">{employee.descriptionZh || employee.description}</p>
         </div>
 
         {/* ID */}

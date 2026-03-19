@@ -51,18 +51,8 @@ export const useEmployeesStore = create<EmployeesState>()(
         try {
           set({ isLoading: true });
 
-          console.log('[employees] Calling IPC agents:create-employee', employee.id);
-          console.log('[employees] Employee data:', {
-            employeeId: employee.id,
-            nameZh: employee.nameZh,
-            nameEn: employee.name,
-            hasSoulContent: !!employee.soulContent,
-            hasAgentsContent: !!employee.agentsContent,
-            hasIdentityContent: !!employee.identityContent,
-          });
-
           // Call backend API to create workspace
-          const result = await window.electron.ipcRenderer.invoke('agents:create-employee', {
+          await window.electron.ipcRenderer.invoke('agents:create-employee', {
             employeeId: employee.id,
             nameZh: employee.nameZh,
             nameEn: employee.name,
@@ -70,8 +60,6 @@ export const useEmployeesStore = create<EmployeesState>()(
             agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
             identityContent: (employee as EmployeeWithStatus).identityContent || '',
           });
-
-          console.log('[employees] IPC result:', result);
 
           // Add to my employees
           const newMyEmployees = [...myEmployees, employee];

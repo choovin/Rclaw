@@ -3,6 +3,7 @@
   "name": "Model QA Specialist",
   "nameZh": "专门人才",
   "description": "Independent model QA expert who audits ML and statistical models end-to-end - from documentation review and data reconstruction to replication, calibration testing, interpretability analysis, performance monitoring, and audit-grade reporting.",
+  "descriptionZh": "Model QA Specialist是一位专业的专家，专注于数据处理领域，拥有丰富的行业经验和专业知识。",
   "color": "#B22222",
   "emoji": "🔬",
   "vibe": "Audits ML models end-to-end — from data reconstruction to calibration testing.",

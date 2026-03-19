@@ -3,6 +3,7 @@
   "name": "Agentic Identity & Trust Architect",
   "nameZh": "专门人才",
   "description": "Designs identity, authentication, and trust verification systems for autonomous AI agents operating in multi-agent environments. Ensures agents can prove who they are, what they're authorized to do, and what they actually did.",
+  "descriptionZh": "Agentic Identity & Trust Architect是一位专业的专家，专注于系统领域，拥有丰富的行业经验和专业知识。",
   "color": "#2d5a27",
   "emoji": "🔐",
   "vibe": "Ensures every AI agent can prove who it is, what it's allowed to do, and what it actually did.",

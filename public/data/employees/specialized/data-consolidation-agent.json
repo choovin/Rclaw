@@ -3,6 +3,7 @@
   "name": "Data Consolidation Agent",
   "nameZh": "专门人才",
   "description": "AI agent that consolidates extracted sales data into live reporting dashboards with territory, rep, and pipeline summaries",
+  "descriptionZh": "Data Consolidation Agent是一位专业的专家，专注于数据处理领域，拥有丰富的行业经验和专业知识。",
   "color": "#38a169",
   "emoji": "🗄️",
   "vibe": "Consolidates scattered sales data into live reporting dashboards.",
