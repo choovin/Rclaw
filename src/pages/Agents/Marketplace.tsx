@@ -27,6 +27,9 @@ export function Marketplace() {
     getFilteredEmployees,
   } = useEmployeesStore();
 
+  // employees is used for debugging purposes
+  void employees;
+
   const departments = getAllDepartments();
 
   // Load employees on mount

@@ -145,7 +145,12 @@ export async function repairClawXOnlyBootstrapFiles(): Promise<void> {
 async function mergeClawXContextOnce(): Promise<number> {
   const contextDir = join(getResourcesDir(), 'context');
   if (!(await fileExists(contextDir))) {
-    logger.debug('ClawX context directory not found, skipping context merge');
+    // Avoid logging if the logger might be broken (e.g., during app shutdown)
+    try {
+      logger.debug('ClawX context directory not found, skipping context merge');
+    } catch {
+      // ignore
+    }
     return 0;
   }
 
@@ -167,7 +172,11 @@ async function mergeClawXContextOnce(): Promise<number> {
       const targetPath = join(workspaceDir, targetName);
 
       if (!(await fileExists(targetPath))) {
-        logger.debug(`Skipping ${targetName} in ${workspaceDir} (file does not exist yet, will be seeded by gateway)`);
+        try {
+          logger.debug(`Skipping ${targetName} in ${workspaceDir} (file does not exist yet, will be seeded by gateway)`);
+        } catch {
+          // ignore logging errors during shutdown
+        }
         skipped++;
         continue;
       }
@@ -178,7 +187,11 @@ async function mergeClawXContextOnce(): Promise<number> {
       const merged = mergeClawXSection(existing, section);
       if (merged !== existing) {
         await writeFile(targetPath, merged, 'utf-8');
-        logger.info(`Merged ClawX context into ${targetName} (${workspaceDir})`);
+        try {
+          logger.info(`Merged ClawX context into ${targetName} (${workspaceDir})`);
+        } catch {
+          // ignore logging errors during shutdown
+        }
       }
     }
   }
@@ -201,11 +214,23 @@ export async function ensureClawXContext(): Promise<void> {
     await new Promise((r) => setTimeout(r, RETRY_INTERVAL_MS));
     skipped = await mergeClawXContextOnce();
     if (skipped === 0) {
-      logger.info(`ClawX context merge completed after ${attempt} retry(ies)`);
+      try {
+        logger.info(`ClawX context merge completed after ${attempt} retry(ies)`);
+      } catch {
+        // ignore logging errors during shutdown
+      }
       return;
     }
-    logger.debug(`ClawX context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
+    try {
+      logger.debug(`ClawX context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
+    } catch {
+      // ignore logging errors during shutdown
+    }
   }
 
-  logger.warn(`ClawX context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
+  try {
+    logger.warn(`ClawX context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
+  } catch {
+    // ignore logging errors during shutdown
+  }
 }

@@ -967,7 +967,7 @@ export class GatewayManager extends EventEmitter {
    */
   private async fetchGatewayVersion(): Promise<void> {
     try {
-      const versionInfo = await this.client.getVersion();
+      const versionInfo = await this.rpc<{ version: string }>('getVersion', undefined, 5000);
       this.setStatus({ version: versionInfo.version });
     } catch (error) {
       logger.debug('Failed to fetch gateway version:', error);
