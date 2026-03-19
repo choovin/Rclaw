@@ -20,9 +20,12 @@ interface EmployeesState {
   // Selected employee for detail view
   selectedEmployee: Employee | null;
 
+  // Loading state
+  isLoading: boolean;
+
   // Actions
   setEmployees: (employees: EmployeeWithStatus[]) => void;
-  addEmployee: (employee: Employee) => void;
+  addEmployee: (employee: Employee) => Promise<boolean>;
   removeEmployee: (employeeId: string) => void;
   setSelectedDepartment: (department: Department | 'all') => void;
   setSelectedEmployee: (employee: Employee | null) => void;
@@ -38,24 +41,58 @@ export const useEmployeesStore = create<EmployeesState>()(
       myEmployees: [],
       selectedDepartment: 'all',
       selectedEmployee: null,
+      isLoading: false,
 
       setEmployees: (employees) => set({ employees }),
 
-      addEmployee: (employee) => {
+      addEmployee: async (employee) => {
         const { employees, myEmployees } = get();
 
-        // Add to my employees
-        const newMyEmployees = [...myEmployees, employee];
+        try {
+          set({ isLoading: true });
 
-        // Update employees list to mark as added
-        const updatedEmployees = employees.map((emp) =>
-          emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
-        );
+          console.log('[employees] Calling IPC agents:create-employee', employee.id);
+          console.log('[employees] Employee data:', {
+            employeeId: employee.id,
+            nameZh: employee.nameZh,
+            nameEn: employee.name,
+            hasSoulContent: !!employee.soulContent,
+            hasAgentsContent: !!employee.agentsContent,
+            hasIdentityContent: !!employee.identityContent,
+          });
 
-        set({
-          myEmployees: newMyEmployees,
-          employees: updatedEmployees,
-        });
+          // Call backend API to create workspace
+          const result = await window.electron.ipcRenderer.invoke('agents:create-employee', {
+            employeeId: employee.id,
+            nameZh: employee.nameZh,
+            nameEn: employee.name,
+            soulContent: (employee as EmployeeWithStatus).soulContent || '',
+            agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
+            identityContent: (employee as EmployeeWithStatus).identityContent || '',
+          });
+
+          console.log('[employees] IPC result:', result);
+
+          // Add to my employees
+          const newMyEmployees = [...myEmployees, employee];
+
+          // Update employees list to mark as added
+          const updatedEmployees = employees.map((emp) =>
+            emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
+          );
+
+          set({
+            myEmployees: newMyEmployees,
+            employees: updatedEmployees,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error) {
+          console.error('Failed to add employee:', error);
+          set({ isLoading: false });
+          return false;
+        }
       },
 
       removeEmployee: (employeeId) => {

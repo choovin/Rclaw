@@ -31,6 +31,10 @@ export interface Employee {
   department: Department;
   skills?: string[];
   channels?: string[];
+  // Enhanced fields from conversion script
+  soulContent?: string;
+  agentsContent?: string;
+  identityContent?: string;
 }
 
 export interface EmployeeWithStatus extends Employee {

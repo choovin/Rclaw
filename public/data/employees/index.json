@@ -16,7 +16,7 @@
   {
     "id": "academic-geographer",
     "name": "Geographer",
-    "nameZh": "茹",
+    "nameZh": "春茹",
     "description": "Expert in physical and human geography, climate systems, cartography, and spatial analysis — builds geographically coherent worlds where terrain, climate, resources, and settlement patterns make scientific sense",
     "color": "#059669",
     "emoji": "🗺️",
@@ -58,7 +58,7 @@
   {
     "id": "academic-psychologist",
     "name": "Psychologist",
-    "nameZh": "茹",
+    "nameZh": "春茹",
     "description": "Expert in human behavior, personality theory, motivation, and cognitive patterns — builds psychologically credible characters and interactions grounded in clinical and research frameworks",
     "color": "#EC4899",
     "emoji": "🧠",
@@ -520,7 +520,7 @@
   {
     "id": "game-development-game-designer",
     "name": "Game Designer",
-    "nameZh": "古",
+    "nameZh": "令古",
     "description": "Systems and mechanics architect - Masters GDD authorship, player psychology, economy balancing, and gameplay loop design across all engines and genres",
     "color": "yellow",
     "emoji": "🎮",
@@ -534,7 +534,7 @@
   {
     "id": "game-development-level-designer",
     "name": "Level Designer",
-    "nameZh": "古",
+    "nameZh": "令古",
     "description": "Spatial storytelling and flow specialist - Masters layout theory, pacing architecture, encounter design, and environmental narrative across all game engines",
     "color": "teal",
     "emoji": "🗺️",
@@ -548,7 +548,7 @@
   {
     "id": "game-development-narrative-designer",
     "name": "Narrative Designer",
-    "nameZh": "令",
+    "nameZh": "令山",
     "description": "Story systems and dialogue architect - Masters GDD-aligned narrative design, branching dialogue, lore architecture, and environmental storytelling across all game engines",
     "color": "red",
     "emoji": "📖",
@@ -590,7 +590,7 @@
   {
     "id": "marketing-app-store-optimizer",
     "name": "App Store Optimizer",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Expert app store marketing specialist focused on App Store Optimization (ASO), conversion rate optimization, and app discoverability",
     "color": "blue",
     "emoji": "📱",
@@ -604,7 +604,7 @@
   {
     "id": "marketing-baidu-seo-specialist",
     "name": "Baidu SEO Specialist",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Expert Baidu search optimization specialist focused on Chinese search engine ranking, Baidu ecosystem integration, ICP compliance, Chinese keyword research, and mobile-first indexing for the China market.",
     "color": "blue",
     "emoji": "🇨🇳",
@@ -660,7 +660,7 @@
   {
     "id": "marketing-china-e-commerce-operator",
     "name": "China E-Commerce Operator",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Expert China e-commerce operations specialist covering Taobao, Tmall, Pinduoduo, and JD ecosystems with deep expertise in product listing optimization, live commerce, store operations, 618/Double 11 campaigns, and cross-platform strategy.",
     "color": "red",
     "emoji": "🛒",
@@ -702,7 +702,7 @@
   {
     "id": "marketing-douyin-strategist",
     "name": "Douyin Strategist",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Short-video marketing expert specializing in the Douyin platform, with deep expertise in recommendation algorithm mechanics, viral video planning, livestream commerce workflows, and full-funnel brand growth through content matrix strategies.",
     "color": "#000000",
     "emoji": "🎵",
@@ -716,7 +716,7 @@
   {
     "id": "marketing-growth-hacker",
     "name": "Growth Hacker",
-    "nameZh": "宁",
+    "nameZh": "宁静",
     "description": "Expert growth strategist specializing in rapid user acquisition through data-driven experimentation. Develops viral loops, optimizes conversion funnels, and finds scalable growth channels for exponential business growth.",
     "color": "green",
     "emoji": "🚀",
@@ -730,7 +730,7 @@
   {
     "id": "marketing-instagram-curator",
     "name": "Instagram Curator",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Expert Instagram marketing specialist focused on visual storytelling, community building, and multi-format content optimization. Masters aesthetic development and drives meaningful engagement.",
     "color": "#E4405F",
     "emoji": "📸",
@@ -758,7 +758,7 @@
   {
     "id": "marketing-linkedin-content-creator",
     "name": "LinkedIn Content Creator",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Expert LinkedIn content strategist focused on thought leadership, personal brand building, and high-engagement professional content. Masters LinkedIn's algorithm and culture to drive inbound opportunities for founders, job seekers, developers, and anyone building a professional presence.",
     "color": "#0A66C2",
     "emoji": "💼",
@@ -772,7 +772,7 @@
   {
     "id": "marketing-livestream-commerce-coach",
     "name": "Livestream Commerce Coach",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Veteran livestream e-commerce coach specializing in host training and live room operations across Douyin, Kuaishou, Taobao Live, and Channels, covering script design, product sequencing, paid-vs-organic traffic balancing, conversion closing techniques, and real-time data-driven optimization.",
     "color": "#E63946",
     "emoji": "🎙️",
@@ -786,7 +786,7 @@
   {
     "id": "marketing-podcast-strategist",
     "name": "Podcast Strategist",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Content strategy and operations expert for the Chinese podcast market, with deep expertise in Xiaoyuzhou, Ximalaya, and other major audio platforms, covering show positioning, audio production, audience growth, multi-platform distribution, and monetization to help podcast creators build sticky audio content brands.",
     "color": "purple",
     "emoji": "🎧",
@@ -800,7 +800,7 @@
   {
     "id": "marketing-private-domain-operator",
     "name": "Private Domain Operator",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Expert in building enterprise WeChat (WeCom) private domain ecosystems, with deep expertise in SCRM systems, segmented community operations, Mini Program commerce integration, user lifecycle management, and full-funnel conversion optimization.",
     "color": "#1A73E8",
     "emoji": "🔒",
@@ -842,7 +842,7 @@
   {
     "id": "marketing-short-video-editing-coach",
     "name": "Short-Video Editing Coach",
-    "nameZh": "宁",
+    "nameZh": "宁静",
     "description": "Hands-on short-video editing coach covering the full post-production pipeline, with mastery of CapCut Pro, Premiere Pro, DaVinci Resolve, and Final Cut Pro across composition and camera language, color grading, audio engineering, motion graphics and VFX, subtitle design, multi-platform export optimization, editing workflow efficiency, and AI-assisted editing.",
     "color": "#7B2D8E",
     "emoji": "🎬",
@@ -856,7 +856,7 @@
   {
     "id": "marketing-social-media-strategist",
     "name": "Social Media Strategist",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Expert social media strategist for LinkedIn, Twitter, and professional platforms. Creates cross-platform campaigns, builds communities, manages real-time engagement, and develops thought leadership strategies.",
     "color": "blue",
     "emoji": "📣",
@@ -884,7 +884,7 @@
   {
     "id": "marketing-twitter-engager",
     "name": "Twitter Engager",
-    "nameZh": "郡",
+    "nameZh": "郡书",
     "description": "Expert Twitter marketing specialist focused on real-time engagement, thought leadership building, and community-driven growth. Builds brand authority through authentic conversation participation and viral thread creation.",
     "color": "#1DA1F2",
     "emoji": "🐦",
@@ -912,7 +912,7 @@
   {
     "id": "marketing-weibo-strategist",
     "name": "Weibo Strategist",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Full-spectrum operations expert for Sina Weibo, with deep expertise in trending topic mechanics, Super Topic community management, public sentiment monitoring, fan economy strategies, and Weibo advertising, helping brands achieve viral reach and sustained growth on China's leading public discourse platform.",
     "color": "#FF8200",
     "emoji": "🔥",
@@ -940,7 +940,7 @@
   {
     "id": "marketing-zhihu-strategist",
     "name": "Zhihu Strategist",
-    "nameZh": "静",
+    "nameZh": "静蕾",
     "description": "Expert Zhihu marketing specialist focused on thought leadership, community credibility, and knowledge-driven engagement. Masters question-answering strategy and builds brand authority through authentic expertise sharing.",
     "color": "#0084FF",
     "emoji": "🧠",
@@ -954,7 +954,7 @@
   {
     "id": "paid-media-paid-media-auditor",
     "name": "Paid Media Auditor",
-    "nameZh": "人",
+    "nameZh": "明远",
     "description": "Comprehensive paid media auditor who systematically evaluates Google Ads, Microsoft Ads, and Meta accounts across 200+ checkpoints spanning account structure, tracking, bidding, creative, audiences, and competitive positioning. Produces actionable audit reports with prioritized recommendations and projected impact.",
     "color": "orange",
     "emoji": "📋",
@@ -968,7 +968,7 @@
   {
     "id": "paid-media-ad-creative-strategist",
     "name": "Ad Creative Strategist",
-    "nameZh": "告",
+    "nameZh": "广告狂人",
     "description": "Paid media creative specialist focused on ad copywriting, RSA optimization, asset group design, and creative testing frameworks across Google, Meta, Microsoft, and programmatic platforms. Bridges the gap between performance data and persuasive messaging.",
     "color": "orange",
     "emoji": "✍️",
@@ -982,7 +982,7 @@
   {
     "id": "paid-media-paid-social-strategist",
     "name": "Paid Social Strategist",
-    "nameZh": "明",
+    "nameZh": "远航",
     "description": "Cross-platform paid social advertising specialist covering Meta (Facebook/Instagram), LinkedIn, TikTok, Pinterest, X, and Snapchat. Designs full-funnel social ad programs from prospecting through retargeting with platform-specific creative and audience strategies.",
     "color": "orange",
     "emoji": "📱",
@@ -996,7 +996,7 @@
   {
     "id": "paid-media-ppc-campaign-strategist",
     "name": "PPC Campaign Strategist",
-    "nameZh": "告",
+    "nameZh": "广明",
     "description": "Senior paid media strategist specializing in large-scale search, shopping, and performance max campaign architecture across Google, Microsoft, and Amazon ad platforms. Designs account structures, budget allocation frameworks, and bidding strategies that scale from $10K to $10M+ monthly spend.",
     "color": "orange",
     "emoji": "💰",
@@ -1010,7 +1010,7 @@
   {
     "id": "paid-media-programmatic-display-buyer",
     "name": "Programmatic & Display Buyer",
-    "nameZh": "人",
+    "nameZh": "远航",
     "description": "Display advertising and programmatic media buying specialist covering managed placements, Google Display Network, DV360, trade desk platforms, partner media (newsletters, sponsored content), and ABM display strategies via platforms like Demandbase and 6Sense.",
     "color": "orange",
     "emoji": "📺",
@@ -1024,7 +1024,7 @@
   {
     "id": "paid-media-search-query-analyst",
     "name": "Search Query Analyst",
-    "nameZh": "人",
+    "nameZh": "明远",
     "description": "Specialist in search term analysis, negative keyword architecture, and query-to-intent mapping. Turns raw search query data into actionable optimizations that eliminate waste and amplify high-intent traffic across paid search accounts.",
     "color": "orange",
     "emoji": "🔍",
@@ -1038,7 +1038,7 @@
   {
     "id": "paid-media-tracking-measurement-specialist",
     "name": "Tracking & Measurement Specialist",
-    "nameZh": "广",
+    "nameZh": "广告狂人",
     "description": "Expert in conversion tracking architecture, tag management, and attribution modeling across Google Tag Manager, GA4, Google Ads, Meta CAPI, LinkedIn Insight Tag, and server-side implementations. Ensures every conversion is counted correctly and every dollar of ad spend is measurable.",
     "color": "orange",
     "emoji": "📡",
@@ -1122,7 +1122,7 @@
   {
     "id": "project-management-experiment-tracker",
     "name": "Experiment Tracker",
-    "nameZh": "鸣",
+    "nameZh": "雨薇",
     "description": "Expert project manager specializing in experiment design, execution tracking, and data-driven decision making. Focused on managing A/B tests, feature experiments, and hypothesis validation through systematic experimentation and rigorous analysis.",
     "color": "purple",
     "emoji": "🧪",
@@ -1136,7 +1136,7 @@
   {
     "id": "project-management-jira-workflow-steward",
     "name": "Jira Workflow Steward",
-    "nameZh": "辛",
+    "nameZh": "辛鹿鸣",
     "description": "Expert delivery operations specialist who enforces Jira-linked Git workflows, traceable commits, structured pull requests, and release-safe branch strategy across software teams.",
     "color": "orange",
     "emoji": "📋",
@@ -1150,7 +1150,7 @@
   {
     "id": "project-management-project-shepherd",
     "name": "Project Shepherd",
-    "nameZh": "辛",
+    "nameZh": "辛鹿鸣",
     "description": "Expert project manager specializing in cross-functional project coordination, timeline management, and stakeholder alignment. Focused on shepherding projects from conception to completion while managing resources, risks, and communications across multiple teams and departments.",
     "color": "blue",
     "emoji": "🐑",
@@ -1164,7 +1164,7 @@
   {
     "id": "project-management-studio-operations",
     "name": "Studio Operations",
-    "nameZh": "鹿",
+    "nameZh": "鹿鸣",
     "description": "Expert operations manager specializing in day-to-day studio efficiency, process optimization, and resource coordination. Focused on ensuring smooth operations, maintaining productivity standards, and supporting all teams with the tools and processes needed for success.",
     "color": "green",
     "emoji": "🏭",
@@ -1178,7 +1178,7 @@
   {
     "id": "project-management-studio-producer",
     "name": "Studio Producer",
-    "nameZh": "鸣",
+    "nameZh": "雨薇",
     "description": "Senior strategic leader specializing in high-level creative and technical project orchestration, resource allocation, and multi-project portfolio management. Focused on aligning creative vision with business objectives while managing complex cross-functional initiatives and ensuring optimal studio operations.",
     "color": "gold",
     "emoji": "🎬",
@@ -1206,7 +1206,7 @@
   {
     "id": "sales-account-strategist",
     "name": "Account Strategist",
-    "nameZh": "老",
+    "nameZh": "老白",
     "description": "Expert post-sale account strategist specializing in land-and-expand execution, stakeholder mapping, QBR facilitation, and net revenue retention. Turns closed deals into long-term platform relationships through systematic expansion planning and multi-threaded account development.",
     "color": "#2E7D32",
     "emoji": "🗺️",
@@ -1234,7 +1234,7 @@
   {
     "id": "sales-deal-strategist",
     "name": "Deal Strategist",
-    "nameZh": "苏",
+    "nameZh": "苏明玉",
     "description": "Senior deal strategist specializing in MEDDPICC qualification, competitive positioning, and win planning for complex B2B sales cycles. Scores opportunities, exposes pipeline risk, and builds deal strategies that survive forecast review.",
     "color": "#1B4D3E",
     "emoji": "♟️",
@@ -1248,7 +1248,7 @@
   {
     "id": "sales-discovery-coach",
     "name": "Discovery Coach",
-    "nameZh": "白",
+    "nameZh": "白凡",
     "description": "Coaches sales teams on elite discovery methodology — question design, current-state mapping, gap quantification, and call structure that surfaces real buying motivation.",
     "color": "#5C7CFA",
     "emoji": "🔍",
@@ -1276,7 +1276,7 @@
   {
     "id": "sales-outbound-strategist",
     "name": "Outbound Strategist",
-    "nameZh": "苏",
+    "nameZh": "苏明玉",
     "description": "Signal-based outbound specialist who designs multi-channel prospecting sequences, defines ICPs, and builds pipeline through research-driven personalization — not volume.",
     "color": "#E8590C",
     "emoji": "🎯",
@@ -1290,7 +1290,7 @@
   {
     "id": "sales-pipeline-analyst",
     "name": "Pipeline Analyst",
-    "nameZh": "苏",
+    "nameZh": "苏明玉",
     "description": "Revenue operations analyst specializing in pipeline health diagnostics, deal velocity analysis, forecast accuracy, and data-driven sales coaching. Turns CRM data into actionable pipeline intelligence that surfaces risks before they become missed quarters.",
     "color": "#059669",
     "emoji": "📊",
@@ -1304,7 +1304,7 @@
   {
     "id": "sales-proposal-strategist",
     "name": "Proposal Strategist",
-    "nameZh": "苏",
+    "nameZh": "苏明玉",
     "description": "Strategic proposal architect who transforms RFPs and sales opportunities into compelling win narratives. Specializes in win theme development, competitive positioning, executive summary craft, and building proposals that persuade rather than merely comply.",
     "color": "#2563EB",
     "emoji": "🏹",
@@ -1318,7 +1318,7 @@
   {
     "id": "spatial-computing-macos-spatial-metal-engineer",
     "name": "macOS Spatial/Metal Engineer",
-    "nameZh": "星",
+    "nameZh": "星际",
     "description": "Native Swift and Metal specialist building high-performance 3D rendering systems and spatial computing experiences for macOS and Vision Pro",
     "color": "metallic-blue",
     "emoji": "🍎",
@@ -1374,7 +1374,7 @@
   {
     "id": "spatial-computing-xr-immersive-developer",
     "name": "XR Immersive Developer",
-    "nameZh": "星",
+    "nameZh": "星际",
     "description": "Expert WebXR and immersive technology developer with specialization in browser-based AR/VR/XR applications",
     "color": "neon-cyan",
     "emoji": "🌐",
@@ -1780,7 +1780,7 @@
   {
     "id": "support-analytics-reporter",
     "name": "Analytics Reporter",
-    "nameZh": "王",
+    "nameZh": "王漫妮",
     "description": "Expert data analyst transforming raw data into actionable business insights. Creates dashboards, performs statistical analysis, tracks KPIs, and provides strategic decision support through data visualization and reporting.",
     "color": "teal",
     "emoji": "📊",
@@ -1794,7 +1794,7 @@
   {
     "id": "support-executive-summary-generator",
     "name": "Executive Summary Generator",
-    "nameZh": "漫",
+    "nameZh": "漫妮",
     "description": "Consultant-grade AI specialist trained to think and communicate like a senior strategy consultant. Transforms complex business inputs into concise, actionable executive summaries using McKinsey SCQA, BCG Pyramid Principle, and Bain frameworks for C-suite decision-makers.",
     "color": "purple",
     "emoji": "📝",
@@ -1808,7 +1808,7 @@
   {
     "id": "support-finance-tracker",
     "name": "Finance Tracker",
-    "nameZh": "漫",
+    "nameZh": "漫妮",
     "description": "Expert financial analyst and controller specializing in financial planning, budget management, and business performance analysis. Maintains financial health, optimizes cash flow, and provides strategic financial insights for business growth.",
     "color": "green",
     "emoji": "💰",
@@ -1822,7 +1822,7 @@
   {
     "id": "support-infrastructure-maintainer",
     "name": "Infrastructure Maintainer",
-    "nameZh": "妮",
+    "nameZh": "小王",
     "description": "Expert infrastructure specialist focused on system reliability, performance optimization, and technical operations management. Maintains robust, scalable infrastructure supporting business operations with security, performance, and cost efficiency.",
     "color": "orange",
     "emoji": "🏢",
@@ -1850,7 +1850,7 @@
   {
     "id": "support-support-responder",
     "name": "Support Responder",
-    "nameZh": "王",
+    "nameZh": "王漫妮",
     "description": "Expert customer support specialist delivering exceptional customer service, issue resolution, and user experience optimization. Specializes in multi-channel support, proactive customer care, and turning support interactions into positive brand experiences.",
     "color": "blue",
     "emoji": "💬",
@@ -1864,7 +1864,7 @@
   {
     "id": "testing-accessibility-auditor",
     "name": "Accessibility Auditor",
-    "nameZh": "子",
+    "nameZh": "张丽",
     "description": "Expert accessibility specialist who audits interfaces against WCAG standards, tests with assistive technologies, and ensures inclusive design. Defaults to finding barriers — if it's not tested with a screen reader, it's not accessible.",
     "color": "#0077B6",
     "emoji": "♿",
@@ -1892,7 +1892,7 @@
   {
     "id": "testing-evidence-collector",
     "name": "Evidence Collector",
-    "nameZh": "李",
+    "nameZh": "李贞子",
     "description": "Screenshot-obsessed, fantasy-allergic QA specialist - Default to finding 3-5 issues, requires visual proof for everything",
     "color": "orange",
     "emoji": "📸",
@@ -1906,7 +1906,7 @@
   {
     "id": "testing-performance-benchmarker",
     "name": "Performance Benchmarker",
-    "nameZh": "子",
+    "nameZh": "张丽",
     "description": "Expert performance testing and optimization specialist focused on measuring, analyzing, and improving system performance across all applications and infrastructure",
     "color": "orange",
     "emoji": "⏱️",
@@ -1920,7 +1920,7 @@
   {
     "id": "testing-reality-checker",
     "name": "Reality Checker",
-    "nameZh": "贞",
+    "nameZh": "贞子",
     "description": "Stops fantasy approvals, evidence-based certification - Default to \"NEEDS WORK\", requires overwhelming proof for production readiness",
     "color": "red",
     "emoji": "🧐",
@@ -1962,7 +1962,7 @@
   {
     "id": "testing-workflow-optimizer",
     "name": "Workflow Optimizer",
-    "nameZh": "李",
+    "nameZh": "李贞子",
     "description": "Expert process improvement specialist focused on analyzing, optimizing, and automating workflows across all business functions for maximum productivity and efficiency",
     "color": "green",
     "emoji": "⚡",

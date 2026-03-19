@@ -32,6 +32,9 @@ export function Marketplace() {
     const loadEmployees = async () => {
       try {
         const response = await fetch('/data/employees/index.json');
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
         const data: EmployeeWithStatus[] = await response.json();
 
         // Add isAdded property to each employee

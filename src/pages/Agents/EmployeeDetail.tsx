@@ -2,11 +2,13 @@
  * Employee Detail Component
  * Displays detailed information about an employee in a sidebar
  */
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
 import { useEmployeesStore } from '@/stores/employees';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface EmployeeDetailProps {
   employee: Employee;
@@ -17,12 +19,31 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const { t } = useTranslation('employees');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const isAdded = isEmployeeAdded(employee.id);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleAddRemove = () => {
-    if (isAdded) {
-      removeEmployee(employee.id);
-    } else {
-      addEmployee(employee);
+  console.log('[EmployeeDetail] Render, employee:', employee?.id, 'isAdded:', isAdded);
+
+  const handleAddRemove = async () => {
+    console.log('[EmployeeDetail] handleAddRemove clicked, isProcessing:', isProcessing);
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    try {
+      if (isAdded) {
+        console.log('[EmployeeDetail] Removing employee:', employee.id);
+        removeEmployee(employee.id);
+        toast.success(t('removed'));
+      } else {
+        console.log('[EmployeeDetail] Adding employee:', employee.id);
+        const success = await addEmployee(employee);
+        if (success) {
+          toast.success(t('addSuccess'));
+        } else {
+          toast.error('添加失败');
+        }
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -90,8 +111,16 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
           variant={isAdded ? 'outline' : 'default'}
           className="w-full rounded-full"
           onClick={handleAddRemove}
+          disabled={isProcessing}
         >
-          {isAdded ? t('remove') : t('addToMyEmployees')}
+          {isProcessing ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : isAdded ? (
+            <Trash2 className="h-4 w-4 mr-2" />
+          ) : (
+            <Plus className="h-4 w-4 mr-2" />
+          )}
+          {isProcessing ? t('adding') : isAdded ? t('remove') : t('addToMyEmployees')}
         </Button>
       </div>
     </div>

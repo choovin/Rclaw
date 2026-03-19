@@ -6,7 +6,24 @@
         "myEmployees": "我的员工"
     },
     "searchPlaceholder": "搜索员工...",
-    "allDepartments": "全部部门",
+    "allDepartments": "全部",
+    "departments": {
+        "engineering": "研发",
+        "design": "设计",
+        "marketing": "营销",
+        "sales": "销售",
+        "product": "产品",
+        "project-management": "项目管理",
+        "academic": "学术",
+        "game-development": "游戏开发",
+        "strategy": "战略",
+        "support": "客服",
+        "testing": "测试",
+        "integrations": "集成",
+        "specialized": "专门技能",
+        "spatial-computing": "空间计算",
+        "paid-media": "付费媒体"
+    },
     "noEmployees": "没有找到员工",
     "myEmployees": "我的员工",
     "myEmployeesDesc": "您已添加 {{count}} 名员工",
@@ -20,5 +37,12 @@
     "vibe": "风格",
     "employeeId": "员工ID",
     "skills": "技能",
-    "channels": "频道"
+    "channels": "频道",
+    "addEmployee": "添加员工",
+    "addToMyEmployees": "添加到我的员工",
+    "addSuccess": "添加成功",
+    "alreadyAdded": "已添加",
+    "adding": "添加中...",
+    "startChat": "发起对话",
+    "removed": "已移除"
 }
