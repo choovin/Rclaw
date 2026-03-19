@@ -10,10 +10,12 @@ import { useEmployeesStore, getAllDepartments } from '@/stores/employees';
 import type { EmployeeWithStatus, Department } from '@/types/employee';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import employeesData from '@/data/employees/index.json';
 
 export function Marketplace() {
   const { t } = useTranslation('employees');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const {
     employees,
@@ -29,30 +31,17 @@ export function Marketplace() {
 
   // Load employees on mount
   useEffect(() => {
-    const loadEmployees = async () => {
-      try {
-        const response = await fetch('/data/employees/index.json');
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-        const data: EmployeeWithStatus[] = await response.json();
+    if (isLoaded) return;
 
-        // Add isAdded property to each employee
-        const employeesWithStatus = data.map((emp) => ({
-          ...emp,
-          isAdded: false,
-        }));
+    // Add isAdded property to each employee
+    const employeesWithStatus: EmployeeWithStatus[] = (employeesData as EmployeeWithStatus[]).map((emp) => ({
+      ...emp,
+      isAdded: false,
+    }));
 
-        setEmployees(employeesWithStatus);
-      } catch (error) {
-        console.error('Failed to load employees:', error);
-      }
-    };
-
-    if (employees.length === 0) {
-      loadEmployees();
-    }
-  }, [setEmployees, employees.length]);
+    setEmployees(employeesWithStatus);
+    setIsLoaded(true);
+  }, [setEmployees, isLoaded]);
 
   // Filter employees by search query
   const filteredEmployees = getFilteredEmployees().filter((emp) => {

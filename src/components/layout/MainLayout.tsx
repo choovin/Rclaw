@@ -5,6 +5,7 @@
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
+import { VersionDisplay } from './VersionDisplay';
 
 export function MainLayout() {
   return (
@@ -19,6 +20,9 @@ export function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Version display at bottom left */}
+      <VersionDisplay />
     </div>
   );
 }

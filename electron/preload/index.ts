@@ -256,6 +256,13 @@ const electronAPI = {
    * Check if running in development
    */
   isDev: process.env.NODE_ENV === 'development' || !!process.env.VITE_DEV_SERVER_URL,
+
+  /**
+   * App versions
+   */
+  versions: {
+    app: '0.2.5',
+  },
 };
 
 // Expose the API to the renderer process

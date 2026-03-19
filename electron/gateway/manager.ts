@@ -738,6 +738,8 @@ export class GatewayManager extends EventEmitter {
           connectedAt: Date.now(),
         });
         this.startPing();
+        // Fetch gateway version after connection
+        this.fetchGatewayVersion();
       },
       onMessage: (message) => {
         this.handleMessage(message);
@@ -941,5 +943,17 @@ export class GatewayManager extends EventEmitter {
    */
   private setStatus(update: Partial<GatewayStatus>): void {
     this.stateController.setStatus(update);
+  }
+
+  /**
+   * Fetch Gateway version after connection
+   */
+  private async fetchGatewayVersion(): Promise<void> {
+    try {
+      const versionInfo = await this.client.getVersion();
+      this.setStatus({ version: versionInfo.version });
+    } catch (error) {
+      logger.debug('Failed to fetch gateway version:', error);
+    }
   }
 }

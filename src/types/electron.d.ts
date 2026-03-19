@@ -15,6 +15,9 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   platform: NodeJS.Platform;
   isDev: boolean;
+  versions: {
+    app: string;
+  };
 }
 
 declare global {
