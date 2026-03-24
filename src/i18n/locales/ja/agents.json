@@ -1,7 +1,6 @@
 {
     "title": "デジタル従業員",
     "subtitle": "新しい Agent を追加すると、Rclaw はメイン Agent のワークスペース初期ファイルと実行時認証設定をコピーします。これらの設定は対話形式で編集できます",
-    "refresh": "更新",
     "addAgent": "Agent を追加",
     "gatewayWarning": "Gateway サービスが停止しています。Agent または Channel の変更が反映されるまで少し時間がかかる場合があります。",
     "defaultBadge": "default",
@@ -15,8 +14,9 @@
     "createDialog": {
         "title": "Agent を追加",
         "description": "名前だけで新しい Agent を作成できます。Rclaw はメイン Agent のワークスペース初期ファイルと認証設定をコピーします。",
-        "nameLabel": "Agent 名",
-        "namePlaceholder": "Coding Helper"
+        "namePlaceholder": "Coding Helper",
+        "inheritWorkspaceLabel": "メイン Agent のワークスペースを引き継ぐ",
+        "inheritWorkspaceDescription": "SOUL.md、AGENTS.md などの初期ファイルをコピーします"
     },
     "deleteDialog": {
         "title": "Agent を削除",

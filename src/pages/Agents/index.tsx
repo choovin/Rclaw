@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAgentsStore } from '@/stores/agents';
@@ -20,6 +21,7 @@ import { cn } from '@/lib/utils';
 import telegramIcon from '@/assets/channels/telegram.svg';
 import discordIcon from '@/assets/channels/discord.svg';
 import whatsappIcon from '@/assets/channels/whatsapp.svg';
+import wechatIcon from '@/assets/channels/wechat.svg';
 import dingtalkIcon from '@/assets/channels/dingtalk.svg';
 import feishuIcon from '@/assets/channels/feishu.svg';
 import wecomIcon from '@/assets/channels/wecom.svg';
@@ -197,8 +199,8 @@ export function Agents() {
       {showAddDialog && (
         <AddAgentDialog
           onClose={() => setShowAddDialog(false)}
-          onCreate={async (name) => {
-            await createAgent(name);
+          onCreate={async (name, options) => {
+            await createAgent(name, options);
             setShowAddDialog(false);
             toast.success(t('toast.agentCreated'));
           }}
@@ -343,6 +345,8 @@ function ChannelLogo({ type }: { type: ChannelType }) {
       return <img src={discordIcon} alt="Discord" className="w-[20px] h-[20px] dark:invert" />;
     case 'whatsapp':
       return <img src={whatsappIcon} alt="WhatsApp" className="w-[20px] h-[20px] dark:invert" />;
+    case 'wechat':
+      return <img src={wechatIcon} alt="WeChat" className="w-[20px] h-[20px] dark:invert" />;
     case 'dingtalk':
       return <img src={dingtalkIcon} alt="DingTalk" className="w-[20px] h-[20px] dark:invert" />;
     case 'feishu':
@@ -361,17 +365,18 @@ function AddAgentDialog({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (name: string) => Promise<void>;
+  onCreate: (name: string, options: { inheritWorkspace: boolean }) => Promise<void>;
 }) {
   const { t } = useTranslation('agents');
   const [name, setName] = useState('');
+  const [inheritWorkspace, setInheritWorkspace] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onCreate(name.trim());
+      await onCreate(name.trim(), { inheritWorkspace });
     } catch (error) {
       toast.error(t('toast.agentCreateFailed', { error: String(error) }));
       setSaving(false);
@@ -400,6 +405,17 @@ function AddAgentDialog({
               onChange={(event) => setName(event.target.value)}
               placeholder={t('createDialog.namePlaceholder')}
               className={inputClasses}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="inherit-workspace" className={labelClasses}>{t('createDialog.inheritWorkspaceLabel')}</Label>
+              <p className="text-[13px] text-foreground/60">{t('createDialog.inheritWorkspaceDescription')}</p>
+            </div>
+            <Switch
+              id="inherit-workspace"
+              checked={inheritWorkspace}
+              onCheckedChange={setInheritWorkspace}
             />
           </div>
           <div className="flex justify-end gap-2">

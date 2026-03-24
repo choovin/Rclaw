@@ -1,7 +1,6 @@
 {
     "title": "数字员工",
     "subtitle": "添加新的 Agent 时，Rclaw 会复制主 Agent 的工作区引导文件和运行时认证配置， 配置可以通过以对话的形式进行修改",
-    "refresh": "刷新",
     "addAgent": "添加 Agent",
     "gatewayWarning": "Gateway 服务未运行。Agent 或频道变更可能需要一点时间生效。",
     "defaultBadge": "默认",
@@ -15,8 +14,9 @@
     "createDialog": {
         "title": "添加 Agent",
         "description": "只需输入名称即可创建新 Agent。Rclaw 会复制主 Agent 的工作区引导文件和运行时认证配置。",
-        "nameLabel": "Agent 名称",
-        "namePlaceholder": "Coding Helper"
+        "namePlaceholder": "Coding Helper",
+        "inheritWorkspaceLabel": "继承主 Agent 工作区",
+        "inheritWorkspaceDescription": "从主 Agent 复制 SOUL.md、AGENTS.md 等引导文件"
     },
     "deleteDialog": {
         "title": "删除 Agent",

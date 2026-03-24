@@ -1,7 +1,6 @@
 {
     "title": "Digital Employees",
     "subtitle": "When adding a new Agent, Rclaw will copy the main Agent's workspace files and runtime auth setup. The configuration can be modified through a dialog.",
-    "refresh": "Refresh",
     "addAgent": "Add Agent",
     "gatewayWarning": "Gateway service is not running. Agent/channel changes may take a moment to apply.",
     "defaultBadge": "default",
@@ -15,8 +14,9 @@
     "createDialog": {
         "title": "Add Agent",
         "description": "Create a new agent by name. Rclaw will copy the main agent's workspace bootstrap files and runtime auth setup.",
-        "nameLabel": "Agent Name",
-        "namePlaceholder": "Coding Helper"
+        "namePlaceholder": "Coding Helper",
+        "inheritWorkspaceLabel": "Inherit main agent workspace",
+        "inheritWorkspaceDescription": "Copy SOUL.md, AGENTS.md, etc. from the main agent"
     },
     "deleteDialog": {
         "title": "Delete Agent",
