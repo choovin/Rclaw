@@ -1,6 +1,7 @@
 {
     "name": "rclaw",
     "version": "0.2.7-beta.0",
+    "pnpm": {
         "onlyBuiltDependencies": [
             "@discordjs/opus",
             "@whiskeysockets/baileys",
