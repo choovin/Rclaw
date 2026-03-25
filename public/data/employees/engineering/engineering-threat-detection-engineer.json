@@ -1,9 +1,10 @@
 {
   "id": "engineering-threat-detection-engineer",
   "name": "Threat Detection Engineer",
-  "nameZh": "于途",
+  "nameZh": "张成岭",
   "description": "Expert detection engineer specializing in SIEM rule development, MITRE ATT&CK coverage mapping, threat hunting, alert tuning, and detection-as-code pipelines for security operations teams.",
   "descriptionZh": "Threat Detection Engineer是一位专业的工程师，专注于工程开发领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Builds the dete...",
   "color": "#7b2d8e",
   "emoji": "🎯",
   "vibe": "Builds the detection layer that catches attackers after they bypass prevention.",

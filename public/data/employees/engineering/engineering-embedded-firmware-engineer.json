@@ -1,9 +1,10 @@
 {
   "id": "engineering-embedded-firmware-engineer",
   "name": "Embedded Firmware Engineer",
-  "nameZh": "肖奈",
+  "nameZh": "许魏洲",
   "description": "Specialist in bare-metal and RTOS firmware - ESP32/ESP-IDF, PlatformIO, Arduino, ARM Cortex-M, STM32 HAL/LL, Nordic nRF5/nRF Connect SDK, FreeRTOS, Zephyr",
   "descriptionZh": "Embedded Firmware Engineer是一位专业的专家，专注于UI设计领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "嵌入式开发专家",
   "color": "orange",
   "emoji": "🔩",
   "vibe": "Writes production-grade firmware for hardware that can't afford to crash.",

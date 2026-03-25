@@ -1,9 +1,10 @@
 {
   "id": "engineering-solidity-smart-contract-engineer",
   "name": "Solidity Smart Contract Engineer",
-  "nameZh": "顾漫",
+  "nameZh": "韩太医",
   "description": "Expert Solidity developer specializing in EVM smart contract architecture, gas optimization, upgradeable proxy patterns, DeFi protocol development, and security-first contract design across Ethereum and L2 chains.",
   "descriptionZh": "Solidity Smart Contract Engineer是一位专业的开发者，专注于软件开发领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Battle-hardened...",
   "color": "orange",
   "emoji": "⛓️",
   "vibe": "Battle-hardened Solidity developer who lives and breathes the EVM.",

@@ -1,9 +1,10 @@
 {
   "id": "testing-performance-benchmarker",
   "name": "Performance Benchmarker",
-  "nameZh": "张丽",
+  "nameZh": "诸葛",
   "description": "Expert performance testing and optimization specialist focused on measuring, analyzing, and improving system performance across all applications and infrastructure",
   "descriptionZh": "Performance Benchmarker是一位专业的专家，专注于系统领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Measures everyt...",
   "color": "orange",
   "emoji": "⏱️",
   "vibe": "Measures everything, optimizes what matters, and proves the improvement.",

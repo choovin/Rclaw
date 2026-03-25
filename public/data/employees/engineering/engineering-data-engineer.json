@@ -1,9 +1,10 @@
 {
   "id": "engineering-data-engineer",
   "name": "Data Engineer",
-  "nameZh": "顾漫",
+  "nameZh": "徐地址",
   "description": "Expert data engineer specializing in building reliable data pipelines, lakehouse architectures, and scalable data infrastructure. Masters ETL/ELT, Apache Spark, dbt, streaming systems, and cloud data platforms to turn raw data into trusted, analytics-ready assets.",
   "descriptionZh": "Data Engineer是一位专业的架构师，专注于架构设计领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "销售管道分析师",
   "color": "orange",
   "emoji": "🔧",
   "vibe": "Builds the pipelines that turn raw data into trusted, analytics-ready assets.",

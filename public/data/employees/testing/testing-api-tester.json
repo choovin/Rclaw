@@ -1,9 +1,10 @@
 {
   "id": "testing-api-tester",
   "name": "API Tester",
-  "nameZh": "张伟",
+  "nameZh": "上官",
   "description": "Expert API testing specialist focused on comprehensive API validation, performance testing, and quality assurance across all systems and third-party integrations",
   "descriptionZh": "API Tester是一位专业的专家，专注于系统领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Breaks your API...",
   "color": "purple",
   "emoji": "🔌",
   "vibe": "Breaks your API before your users do.",

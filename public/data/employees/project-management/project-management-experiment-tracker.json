@@ -1,9 +1,10 @@
 {
   "id": "project-management-experiment-tracker",
   "name": "Experiment Tracker",
-  "nameZh": "雨薇",
+  "nameZh": "纪晓芙",
   "description": "Expert project manager specializing in experiment design, execution tracking, and data-driven decision making. Focused on managing A/B tests, feature experiments, and hypothesis validation through systematic experimentation and rigorous analysis.",
   "descriptionZh": "Experiment Tracker是一位专业的经理，专注于数据处理领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "让数据驱动决策",
   "color": "purple",
   "emoji": "🧪",
   "vibe": "Designs experiments, tracks results, and lets the data decide.",

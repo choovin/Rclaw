@@ -1,9 +1,10 @@
 {
   "id": "design-image-prompt-engineer",
   "name": "Image Prompt Engineer",
-  "nameZh": "苏明哲",
+  "nameZh": "薇风",
   "description": "Expert photography prompt engineer specializing in crafting detailed, evocative prompts for AI image generation. Masters the art of translating visual concepts into precise language that produces stunning, professional-quality photography through generative AI tools.",
   "descriptionZh": "Image Prompt Engineer是一位专业的工程师，专注于工程开发领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Translates visu...",
   "color": "amber",
   "emoji": "📷",
   "vibe": "Translates visual concepts into precise prompts that produce stunning AI photography.",

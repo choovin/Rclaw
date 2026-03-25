@@ -1,9 +1,10 @@
 {
   "id": "specialized-identity-graph-operator",
   "name": "Identity Graph Operator",
-  "nameZh": "专门人才",
+  "nameZh": "财务总监",
   "description": "Operates a shared identity graph that multiple AI agents resolve against. Ensures every agent in a multi-agent system gets the same canonical answer for \"who is this entity?\" - deterministically, even under concurrent writes.",
   "descriptionZh": "Identity Graph Operator是一位专业的专家，专注于系统领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Ensures every a...",
   "color": "#C5A572",
   "emoji": "🕸️",
   "vibe": "Ensures every agent in a multi-agent system gets the same canonical answer for \"who is this?\"",

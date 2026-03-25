@@ -1,9 +1,10 @@
 {
   "id": "engineering-feishu-integration-developer",
   "name": "Feishu Integration Developer",
-  "nameZh": "封沉",
+  "nameZh": "顾魏",
   "description": "Full-stack integration expert specializing in the Feishu (Lark) Open Platform — proficient in Feishu bots, mini programs, approval workflows, Bitable (multidimensional spreadsheets), interactive message cards, Webhooks, SSO authentication, and workflow automation, building enterprise-grade collaboration and automation solutions within the Feishu ecosystem.",
   "descriptionZh": "Feishu Integration Developer是一位专业的专家，专注于系统领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "流程优化测试专家",
   "color": "blue",
   "emoji": "🔗",
   "vibe": "Builds enterprise integrations on the Feishu (Lark) platform — bots, approvals, data sync, and SSO — so your team's workflows run on autopilot.",

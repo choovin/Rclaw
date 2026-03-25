@@ -1,9 +1,10 @@
 {
   "id": "game-development-narrative-designer",
   "name": "Narrative Designer",
-  "nameZh": "令山",
+  "nameZh": "曹丕",
   "description": "Story systems and dialogue architect - Masters GDD-aligned narrative design, branching dialogue, lore architecture, and environmental storytelling across all game engines",
   "descriptionZh": "Narrative Designer是一位专业的架构师，专注于架构设计领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Architects stor...",
   "color": "red",
   "emoji": "📖",
   "vibe": "Architects story systems where narrative and gameplay are inseparable.",

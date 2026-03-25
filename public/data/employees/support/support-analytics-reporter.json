@@ -1,9 +1,10 @@
 {
   "id": "support-analytics-reporter",
   "name": "Analytics Reporter",
-  "nameZh": "王漫妮",
+  "nameZh": "顾夜白",
   "description": "Expert data analyst transforming raw data into actionable business insights. Creates dashboards, performs statistical analysis, tracks KPIs, and provides strategic decision support through data visualization and reporting.",
   "descriptionZh": "Analytics Reporter是一位专业的分析师，专注于数据处理领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Transforms raw ...",
   "color": "teal",
   "emoji": "📊",
   "vibe": "Transforms raw data into the insights that drive your next decision.",

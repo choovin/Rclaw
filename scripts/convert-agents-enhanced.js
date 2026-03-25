@@ -30,23 +30,82 @@ const DEPARTMENT_MAPPING = {
   'paid-media': { id: 'paid-media', nameZh: '付费媒体', emoji: '📺' },
 };
 
-// Chinese names from popular TV dramas
+// Chinese names from popular TV dramas - expanded for uniqueness
 const CHINESE_NAMES = {
-  engineering: ['韩商言', '于途', '肖奈', '何以琛', '封沉', '顾漫', '李现'],
-  design: ['唐晶', '安迪', '林无敌', '苏明哲', '陈美嘉'],
-  marketing: ['房似锦', '童薇', '樊书涛', '郡书', '宁静', '静蕾'],
-  sales: ['贺涵', '许半夏', '程开', '苏明玉', '老白', '白凡'],
-  product: ['苏明玉', '安迪', '曲筱绡'],
-  'project-management': ['方思雨', '孟晓', '辛鹿鸣', '鹿鸣', '雨薇'],
-  academic: ['叶春梅', '霍心', '心茹', '春茹'],
-  'game-development': ['韩商言', '小米', 'grunt', '令山', '古川', '令古'],
-  strategy: ['贺涵', '陈俊生', '魏渊', '深渊', '魏深'],
-  support: ['小张', '王漫妮', '漫妮', '小王'],
-  testing: ['张伟', '李贞子', '贞子', '张丽'],
-  integrations: ['Tony', 'Micheal', '林八斗', '八斗', '林宇'],
-  specialized: ['专门人才'],
-  'spatial-computing': ['未来', '科技', '星际', '凡星', '宇凡'],
-  'paid-media': ['广告狂人', '明远', '广明', '远航', '广厦'],
+  engineering: [
+    '韩商言', '于途', '肖奈', '何以琛', '封沉', '顾漫', '李现', 'DT', '小米', 'grunt',
+    '令山', '古川', '令古', '索南', '沈教授', '言冰云', '陈湛', '卢 amp', '徐地址',
+    '温苒', '宋焰', '许魏洲', '顾魏', '顾剑', '韩沉', '陆然', '邵江', '顾夜寻',
+    '程巍', '陆展元', '沐春风', '韩太医', '温客行', '周子舒', '张成岭', '曹蔚宁'
+  ],
+  design: [
+    '唐晶', '安迪', '林无敌', '苏明哲', '陈美嘉', '艾莉', '薇风', '乔菲', '苏澄',
+    '苏晚', '姜小宁', '林漾', '顾佳', '王漫妮', '苏艺', '杜拉拉', '沈月伦', '温如',
+    '郝非非', '朱锁锁', '蒋南孙', '唐柔', '苏苏', '莉莉安', '安妮', '斯黛拉', '费蕾娜'
+  ],
+  marketing: [
+    '房似锦', '童薇', '樊书涛', '郡书', '宁静', '静蕾', '张乘乘', '张芝安', '珊曼妮',
+    'Grace', 'Summer', 'Annie', 'Lisa', '陈开怡', '夏宁', '张思嘉', '吴芳', '郑采言',
+    '秦清', '丁夏', '左小青', '顾明', '赵宽', '吴琅', '霍贝贝', '沈若鱼', '徐斯'
+  ],
+  sales: [
+    '贺涵', '许半夏', '程开', '苏明玉', '老白', '白凡', '陈俊生', '唐晶', '凌玲',
+    '子君', '俊生', '白光', '韩丁', '史奇', '程峥', '顾关', '陆川', '杨光', '许朗',
+    '江浩', '孟晏', '陈就', '梁元', '蒋南孙', '谢洛杉矶', '周放', '宁夕', '陆既明'
+  ],
+  product: [
+    '苏明玉', '安迪', '曲筱绡', '顾佳', '王漫妮', '朱锁锁', '蒋南孙', '唐柔', '苏苏',
+    '陈菲', '顾清', '陆漫漫', '沈绿以', '何洛洛', '苏艺', '艾苏', '苏九九', '顾七七',
+    '陆剧', '程焉', '商战', '沈月', '林略', '顾沈', '孟张', '白木', '苏白'
+  ],
+  'project-management': [
+    '方思雨', '孟晓', '辛鹿鸣', '鹿鸣', '雨薇', '徐oyan', '沈冰', '林QUIET', '蒋南',
+    '张晓', '陈不死', '顾筝', '陆既明', '秦小冲', '林动', '周翡', '吴楚之', '张翠山',
+    '殷素素', '张无忌', '赵敏', '周芷若', '小昭', '蛛儿', '杨不悔', '殷离', '纪晓芙'
+  ],
+  academic: [
+    '叶春梅', '霍心', '心茹', '春茹', '林宛瑜', '秦文君', '唐微微', '苏洵', '苏辙',
+    '苏轼', '唐宋', '八贤', '林黛玉', '薛宝钗', '贾宝玉', '史湘云', '探春', '惜春',
+    '迎春', '王熙凤', '贾母', '邢夫人', '尤氏', '李纨', '秦可卿', '巧姐', '妙玉'
+  ],
+  'game-development': [
+    '韩商言', '小米', 'grunt', '令山', '古川', '令古', '索南', '沈教授', '言冰云',
+    '令妃', '甄宓', '郭女王', '曹丕', '曹植', '司马懿', '司马昭', '曹操', '刘备',
+    '关羽', '张飞', '赵云', '马超', '黄忠', '魏延', '姜维', '邓艾', '钟会', '张郃'
+  ],
+  strategy: [
+    '贺涵', '陈俊生', '魏渊', '深渊', '魏深', '顾辉', '孟晚舟', '孟晚霞', '刘弗陵',
+    '上官小妹', '许平君', '许谌', '曹c', '司马迁', '司马光', '司马相如', '东方朔',
+    '张骞', '班超', '甘英', '郑和', '鉴真', '玄奘', '法显', '神秀', '慧能', '惠能'
+  ],
+  support: [
+    '小张', '王漫妮', '漫妮', '小王', '贝微微', '二喜', '赵二喜', '林山水', '郑小小',
+    '田二喜', '苏小' , '郝态度', '林动', '周让', '郑微微', '吴微微', '徐微微', '叶满',
+    '林漾', '顾夜白', '陆本', '周宁', '陆既白', '陈白羊', '沈肯尼', '陆锦', '韩言之'
+  ],
+  testing: [
+    '张伟', '李贞子', '贞子', '张丽', '张芃', '刘伟大', '陈伟', '周文', '赵洪',
+    '李宁', '黄志忠', '包贝', '刘bp', '张一', '陈KE', '陆俊', '吴下', '冯j',
+    '曹c', '司马光', '东方', '南宫', '上官', '欧阳', '诸葛', '慕容', '令狐', '独孤'
+  ],
+  integrations: [
+    'Tony', 'Micheal', '林八斗', '八斗', '林宇', '泰勒', '杰克', '露西', '莉莉',
+    '麦克', '大卫', '约翰', '汤姆', '安娜', '凯特', '马克', '大卫', '保罗', '汤姆',
+    '罗伯特', '查尔斯', '乔治', '弗兰克', '阿什利', '艾米丽', '阿曼达', '克劳迪娅'
+  ],
+  specialized: [
+    '专门人才', '首席专家', '资深顾问', '高级经理', '特邀嘉宾', '项目总监', '技术VP',
+    '产品总监', '运营总监', '市场总监', '销售总监', '行政总监', '财务总监', '人力总监'
+  ],
+  'spatial-computing': [
+    '未来', '科技', '星际', '凡星', '宇凡', '星河', '光年', '维度', '平行', '时空',
+    '莫比', '乌斯', '德雷克', '阿萨', '奥丁', '雅典娜', '阿波罗', '赫尔墨斯', '波塞冬'
+  ],
+  'paid-media': [
+    '广告狂人', '明远', '广明', '远航', '广厦', '飞翔', '蓝鲸', '巨浪', '风暴',
+    '烈火', '寒冰', '疾风', '骤雨', '闪电', '惊雷', '朝霞', '夕阳', '星辰', '明月',
+    '骄阳', '青云', '紫电', '白虹', '碧落', '苍穹', '大地', '山川', '河岳', '湖海'
+  ],
 };
 
 // Keywords that determine which bucket content goes to
@@ -439,6 +498,177 @@ function generateDescriptionZh(name, description, department) {
   return `${displayName}是一位专业的${title}，在相关领域拥有丰富的经验。`;
 }
 
+/**
+ * Generate Chinese vibe from English vibe
+ * 人才猎头风格：简洁有力，6-15字
+ */
+function generateVibeZh(vibe) {
+  if (!vibe) return '';
+
+  const vibeLower = vibe.toLowerCase();
+
+  // Pattern-based translation with talent recruitment style
+  const patterns = [
+    // Experiment/Data driven
+    { pattern: /data driven|experiments?.*data|let the data/i, zh: '让数据驱动决策' },
+    { pattern: /experiment.*design|design.*experiment/i, zh: '用实验设计验证想法' },
+    { pattern: /hypothesis.*validat|validat.*hypothesis/i, zh: '严谨假设，精准验证' },
+    { pattern: /a.b test|ab test/i, zh: 'A/B测试专家' },
+    { pattern: /statistical|statistic.*significance/i, zh: '统计分析见长' },
+    { pattern: /results.*decide|decide.*results/i, zh: '用数据说话' },
+    { pattern: /systematic|rigorous/i, zh: '系统化思维' },
+
+    // Engineering
+    { pattern: /full.?stack|full.?stack.*develop/i, zh: '全栈开发专家' },
+    { pattern: /frontend|front.?end/i, zh: '前端开发专家' },
+    { pattern: /backend|back.?end/i, zh: '后端架构专家' },
+    { pattern: /devops|sre|automation/i, zh: 'DevOps自动化实践者' },
+    { pattern: /security|threat.*detect/i, zh: '安全工程专家' },
+    { pattern: /database|data.*optimi/i, zh: '数据库优化专家' },
+    { pattern: /mobile|ios|android|app.*builder/i, zh: '移动端开发专家' },
+    { pattern: /ai.*engineer|machine.?learn/i, zh: 'AI工程专家' },
+    { pattern: /embedded.*firmware|firmware/i, zh: '嵌入式开发专家' },
+    { pattern: /git.*workflow|code.*review/i, zh: '代码质量守护者' },
+    { pattern: /incident.*response|on.?call/i, zh: '应急响应专家' },
+    { pattern: /technical.*writer|document/i, zh: '技术文档专家' },
+
+    // Design
+    { pattern: /ui.*design|interface.*design/i, zh: 'UI设计专家' },
+    { pattern: /ux.*design|user.*experience/i, zh: '用户体验设计专家' },
+    { pattern: /brand.*guardian|brand.*design/i, zh: '品牌设计守护者' },
+    { pattern: /image.*prompt|prompt.*engine/i, zh: 'AI图像提示词专家' },
+    { pattern: /inclusive.*visual|accessibility/i, zh: '无障碍设计专家' },
+    { pattern: /visual.*story|storytell/i, zh: '视觉叙事专家' },
+    { pattern: /whimsy|playful|fun/i, zh: '趣味设计注入者' },
+
+    // Marketing
+    { pattern: /seo|search.*optim/i, zh: 'SEO优化专家' },
+    { pattern: /content.*creat|content.*market/i, zh: '内容营销专家' },
+    { pattern: /social.*media|social.*strateg/i, zh: '社交媒体策略师' },
+    { pattern: /growth.*hack|growth.*market/i, zh: '增长黑客' },
+    { pattern: /tiktok|douyin|short.*video/i, zh: '短视频运营专家' },
+    { pattern: /ecommerce|e.?commerce/i, zh: '电商运营专家' },
+    { pattern: /livestream|live.*stream/i, zh: '直播带货专家' },
+    { pattern: /wechat.*official|wechat.*account/i, zh: '微信生态运营专家' },
+
+    // Sales
+    { pattern: /sales.*coach|coach.*sales/i, zh: '销售教练' },
+    { pattern: /deal.*strateg|negotiat/i, zh: '交易策略专家' },
+    { pattern: /outbound|lead.*gener/i, zh: '外销拓展专家' },
+    { pattern: /pipeline.*analyst|pipeline/i, zh: '销售管道分析师' },
+    { pattern: /account.*strateg|enterprise.*sale/i, zh: '大客户战略专家' },
+
+    // Product
+    { pattern: /behavior.*nudge|nudge.*engine/i, zh: '行为设计专家' },
+    { pattern: /feedback.*synth|synthes.*feedback/i, zh: '用户反馈整合专家' },
+    { pattern: /sprint.*priorit|sprint/i, zh: '敏捷迭代专家' },
+    { pattern: /trend.*research|trend.*analyst/i, zh: '趋势研究专家' },
+
+    // Project Management
+    { pattern: /experiment.*track|experiment.*design/i, zh: '实验项目管理专家' },
+    { pattern: /jira.*workflow|jira/i, zh: 'Jira工作流专家' },
+    { pattern: /project.*shepherd|shepherd/i, zh: '项目护航专家' },
+    { pattern: /studio.*operat|operation/i, zh: '工作室运营专家' },
+    { pattern: /producer|product.*manage/i, zh: '制作管理专家' },
+
+    // Testing
+    { pattern: /accessibilit.*audit|access.*audit/i, zh: '无障碍测试专家' },
+    { pattern: /api.*test|api.*audit/i, zh: 'API测试专家' },
+    { pattern: /performance.*benchmark|benchmark/i, zh: '性能基准测试专家' },
+    { pattern: /evidence.*collect|evidence/i, zh: '测试证据收集专家' },
+    { pattern: /reality.*check|reality.*check/i, zh: '真实性验证专家' },
+    { pattern: /workflow.*optim|workflow/i, zh: '流程优化测试专家' },
+
+    // Support
+    { pattern: /analytics.*report|analytics/i, zh: '数据分析专家' },
+    { pattern: /executive.*summary|summary/i, zh: '高管报告专家' },
+    { pattern: /finance.*track|finance/i, zh: '财务追踪专家' },
+    { pattern: /infrastructure.*maintain|infrastructure/i, zh: '基础设施维护专家' },
+    { pattern: /legal.*complian|compliance/i, zh: '合规审计专家' },
+    { pattern: /support.*respond|support/i, zh: '客户响应专家' },
+
+    // Game Development
+    { pattern: /game.*audio|audio.*engine/i, zh: '游戏音频工程师' },
+    { pattern: /level.*design|level.*design/i, zh: '关卡设计师' },
+    { pattern: /narrative.*design|story.*design/i, zh: '叙事设计师' },
+    { pattern: /technical.*artist/i, zh: '技术美术专家' },
+
+    // Spatial Computing
+    { pattern: /spatial.*metal|metal.*engine/i, zh: '空间Metal图形工程师' },
+    { pattern: /terminal.*integrat|terminal/i, zh: '终端集成专家' },
+    { pattern: /vision.*os|visionos/i, zh: 'VisionOS空间开发专家' },
+    { pattern: /xr.*immersive|immersive/i, zh: 'XR沉浸式开发专家' },
+    { pattern: /cockpit.*interact|cockpit/i, zh: 'XR座舱交互专家' },
+    { pattern: /xr.*interface|interface.*architect/i, zh: 'XR界面架构师' },
+
+    // Paid Media
+    { pattern: /programmatic.*buy|programmatic/i, zh: '程序化广告买手' },
+    { pattern: /search.*query|query.*analyst/i, zh: '搜索 Query 分析师' },
+    { pattern: /ppc.*strateg|ppc/i, zh: 'PPC策略专家' },
+    { pattern: /paid.*social|paid.*social.*strateg/i, zh: '付费社交策略师' },
+    { pattern: /creative.*strateg|creative/i, zh: '创意策略专家' },
+    { pattern: /tracking.*specialist|tracking/i, zh: '广告追踪专家' },
+
+    // Specialized
+    { pattern: /blockchain.*audit|security.*audit/i, zh: '区块链安全审计专家' },
+    { pattern: /compliance.*audit|governance/i, zh: '合规治理专家' },
+    { pattern: /corporate.*training|training.*design/i, zh: '企业培训设计师' },
+    { pattern: /data.*consolidat|data.*agent/i, zh: '数据整合专家' },
+    { pattern: /identity.*graph|identity.*graph/i, zh: '身份图谱专家' },
+    { pattern: /agentic.*identity|trust.*architect/i, zh: 'Agent身份信任架构师' },
+    { pattern: /mcp.*builder|mcp/i, zh: 'MCP构建专家' },
+    { pattern: /salesforce.*architect|salesforce/i, zh: 'Salesforce架构师' },
+    { pattern: /workflow.*architect|workflow/i, zh: '工作流架构师' },
+    { pattern: /supply.*chain|supply.*chain/i, zh: '供应链战略专家' },
+    { pattern: /zk.*steward|zero.?knowledge/i, zh: '零知识证明专家' },
+    { pattern: /model.*qa|qa.*model/i, zh: '模型质量保障专家' },
+    { pattern: /cultur.*intelligence|cultural/i, zh: '文化智能战略专家' },
+    { pattern: /korean.*business|korean.*nav/i, zh: '韩中商务导航专家' },
+    { pattern: /french.*consult|french.*market/i, zh: '法国市场咨询专家' },
+    { pattern: /study.*abroad|abroad.*advisor/i, zh: '留学咨询顾问' },
+    { pattern: /government.*digital|gov.*digital/i, zh: '政府数字化顾问' },
+    { pattern: /healthcare.*complian|healthcare/i, zh: '医疗营销合规专家' },
+  ];
+
+  for (const { pattern, zh } of patterns) {
+    if (pattern.test(vibeLower)) {
+      return zh;
+    }
+  }
+
+  // Fallback: extract key phrase and translate
+  return vibe.length > 20 ? vibe.substring(0, 15) + '...' : vibe;
+}
+
+// Global counter for unique name assignment
+let globalNameIndex = 0;
+const usedNames = new Set();
+
+// Flatten all names for global unique assignment (deduplicated)
+const ALL_NAMES = [...new Set(Object.values(CHINESE_NAMES).flat())];
+
+function getUniqueName(department, filename) {
+  const names = CHINESE_NAMES[department] || CHINESE_NAMES.specialized;
+
+  // First try to get a name specific to this department that hasn't been used
+  for (let i = 0; i < names.length; i++) {
+    const idx = (globalNameIndex + i) % names.length;
+    const name = names[idx];
+    if (!usedNames.has(name)) {
+      usedNames.add(name);
+      globalNameIndex++;
+      return name;
+    }
+  }
+
+  // Fallback: use global name pool
+  const globalIdx = globalNameIndex % ALL_NAMES.length;
+  const name = ALL_NAMES[globalIdx];
+  usedNames.add(name);
+  globalNameIndex++;
+  return name;
+}
+
 function convertAgent(department, filename, content) {
   const { frontmatter, body } = parseFrontmatter(content);
 
@@ -457,12 +687,13 @@ function convertAgent(department, filename, content) {
     frontmatter.vibe
   );
 
-  const names = CHINESE_NAMES[department] || CHINESE_NAMES.specialized;
-  const nameIndex = Math.abs(filename.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % names.length;
-  const nameZh = names[nameIndex];
+  const nameZh = getUniqueName(department, filename);
 
   // Generate Chinese description
   const descriptionZh = generateDescriptionZh(frontmatter.name, frontmatter.description, department);
+
+  // Generate Chinese vibe
+  const vibeZh = generateVibeZh(frontmatter.vibe);
 
   return {
     id: generateId(department, frontmatter.name),
@@ -470,6 +701,7 @@ function convertAgent(department, filename, content) {
     nameZh,
     description: frontmatter.description || '',
     descriptionZh, // 中文描述
+    vibeZh,         // 新增：中文风格
     color: frontmatter.color || 'blue',
     emoji: frontmatter.emoji || '👤',
     vibe: frontmatter.vibe || '',

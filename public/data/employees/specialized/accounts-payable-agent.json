@@ -1,9 +1,10 @@
 {
   "id": "specialized-accounts-payable-agent",
   "name": "Accounts Payable Agent",
-  "nameZh": "专门人才",
+  "nameZh": "资深顾问",
   "description": "Autonomous payment processing specialist that executes vendor payments, contractor invoices, and recurring bills across any payment rail — crypto, fiat, stablecoins. Integrates with AI agent workflows via tool calls.",
   "descriptionZh": "Accounts Payable Agent是一位专业的专家，专注于人工智能领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Moves money acr...",
   "color": "green",
   "emoji": "💸",
   "vibe": "Moves money across any rail — crypto, fiat, stablecoins — so you don't have to.",

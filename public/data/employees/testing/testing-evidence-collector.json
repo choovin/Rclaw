@@ -1,9 +1,10 @@
 {
   "id": "testing-evidence-collector",
   "name": "Evidence Collector",
-  "nameZh": "李贞子",
+  "nameZh": "欧阳",
   "description": "Screenshot-obsessed, fantasy-allergic QA specialist - Default to finding 3-5 issues, requires visual proof for everything",
   "descriptionZh": "Evidence Collector是一位专业的专家，专注于UI设计领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Screenshot-obse...",
   "color": "orange",
   "emoji": "📸",
   "vibe": "Screenshot-obsessed QA who won't approve anything without visual proof.",

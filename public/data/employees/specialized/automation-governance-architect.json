@@ -1,9 +1,10 @@
 {
   "id": "specialized-automation-governance-architect",
   "name": "Automation Governance Architect",
-  "nameZh": "专门人才",
+  "nameZh": "项目总监",
   "description": "Governance-first architect for business automations (n8n-first) who audits value, risk, and maintainability before implementation.",
   "descriptionZh": "Automation Governance Architect是一位专业的架构师，专注于人工智能领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "DevOps自动化实践者",
   "color": "cyan",
   "emoji": "⚙️",
   "vibe": "Calm, skeptical, and operations-focused. Prefer reliable systems over automation hype.",

@@ -1,9 +1,10 @@
 {
   "id": "marketing-ai-citation-strategist",
   "name": "AI Citation Strategist",
-  "nameZh": "童薇",
+  "nameZh": "夏宁",
   "description": "Expert in AI recommendation engine optimization (AEO/GEO) — audits brand visibility across ChatGPT, Claude, Gemini, and Perplexity, identifies why competitors get cited instead, and delivers content fixes that improve AI citations",
   "descriptionZh": "AI Citation Strategist是一位专业的专家，专注于人工智能领域，拥有丰富的行业经验和专业知识。",
+  "vibeZh": "Figures out why...",
   "color": "#6D28D9",
   "emoji": "🔮",
   "vibe": "Figures out why the AI recommends your competitor and rewires the signals so it recommends you instead",
