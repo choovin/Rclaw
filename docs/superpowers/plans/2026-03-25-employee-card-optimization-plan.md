@@ -224,7 +224,14 @@ Expected: 所有 JSON 文件包含 `vibeZh` 字段
 
 - [ ] **Step 5: 同步数据到 src/data/employees**
 
-Run: `rm -rf src/data/employees && cp -r public/data/employees src/data/employees`
+Run (Windows):
+```bash
+rmdir /s /q src\data\employees 2>nul & xcopy /e /i public\data\employees src\data\employees
+```
+Run (Unix):
+```bash
+rm -rf src/data/employees && cp -r public/data/employees src/data/employees
+```
 Expected: src/data/employees 包含所有更新后的 JSON
 
 - [ ] **Step 6: 提交代码**
@@ -626,14 +633,16 @@ git commit -m "feat: EmployeeDetail添加原型头像、中文文案、步骤进
 **Files:**
 - Modify: `src/stores/employees.ts`
 - Import: `hostApiFetch` 从 `@/lib/host-api`
+- Import: `useAgentsStore` 从 `@/stores/agents`
 
-- [ ] **Step 1: 添加 hostApiFetch 导入**
+- [ ] **Step 1: 添加 hostApiFetch 和 useAgentsStore 导入**
 
 ```tsx
 import { hostApiFetch } from '@/lib/host-api';
+import { useAgentsStore } from '@/stores/agents';
 ```
 
-- [ ] **Step 2: 修改 addEmployee 函数实现双写**
+- [ ] **Step 2: 修改 addEmployee 函数实现双写 + Agents刷新**
 
 ```tsx
 addEmployee: async (employee) => {
@@ -665,7 +674,10 @@ addEmployee: async (employee) => {
       identityContent: (employee as EmployeeWithStatus).identityContent || '',
     });
 
-    // 3. 更新本地状态
+    // 3. 刷新 Agents 列表（使"Agents"标签页能看到新添加的Agent）
+    useAgentsStore.getState().fetchAgents();
+
+    // 4. 更新本地状态
     const newMyEmployees = [...myEmployees, employee];
     const updatedEmployees = employees.map((emp) =>
       emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
@@ -732,6 +744,11 @@ git commit -m "fix: AgentSettingsModal背景色与主题统一"
 
 - [ ] **Step 1: 运行同步命令**
 
+Run (Windows):
+```bash
+rmdir /s /q src\data\employees 2>nul & xcopy /e /i public\data\employees src\data\employees
+```
+Run (Unix):
 ```bash
 rm -rf src/data/employees && cp -r public/data/employees src/data/employees
 ```
