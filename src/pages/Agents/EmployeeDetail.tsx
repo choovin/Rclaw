@@ -7,8 +7,31 @@ import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
 import { useEmployeesStore } from '@/stores/employees';
 import { Button } from '@/components/ui/button';
+import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const DEPARTMENT_COLORS: Record<string, string> = {
+  engineering: '#3b82f6',
+  design: '#ec4899',
+  marketing: '#f97316',
+  sales: '#22c55e',
+  product: '#8b5cf6',
+  'project-management': '#06b6d4',
+  academic: '#eab308',
+  'game-development': '#ef4444',
+  support: '#8b5cf6',
+  testing: '#06b6d4',
+  integrations: '#6b7280',
+  specialized: '#f97316',
+  'spatial-computing': '#3b82f6',
+  'paid-media': '#f97316',
+  strategy: '#6b7280',
+};
+
+function getAvatarColor(department: string): string {
+  return DEPARTMENT_COLORS[department] || '#6b7280';
+}
 
 interface EmployeeDetailProps {
   employee: Employee;
@@ -20,25 +43,37 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const isAdded = isEmployeeAdded(employee.id);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [addProgress, setAddProgress] = useState<number | null>(null);
+
+  const ADD_STEPS: StepConfig[] = [
+    { label: '正在准备员工配置...', icon: '⚙️' },
+    { label: '正在创建工作目录...', icon: '📁' },
+    { label: '正在初始化文件...', icon: '📝' },
+    { label: '正在注册到系统...', icon: '✅' },
+  ];
 
   const handleAddRemove = async () => {
-    if (isProcessing) return;
+    if (isProcessing || addProgress !== null) return;
 
-    setIsProcessing(true);
-    try {
-      if (isAdded) {
-        removeEmployee(employee.id);
-        toast.success(t('removed'));
-      } else {
+    if (isAdded) {
+      removeEmployee(employee.id);
+      toast.success(t('removed'));
+    } else {
+      // 模拟步骤进度
+      for (let step = 0; step < ADD_STEPS.length; step++) {
+        setAddProgress(step);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      try {
         const success = await addEmployee(employee);
         if (success) {
           toast.success(t('addSuccess'));
         } else {
           toast.error('添加失败');
         }
+      } finally {
+        setAddProgress(null);
       }
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -47,7 +82,15 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
       {/* Header */}
       <div className="p-5 border-b flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-4xl">{employee.emoji}</span>
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center text-3xl"
+            style={{
+              backgroundColor: getAvatarColor(employee.department) + '25',
+              border: `2px solid ${getAvatarColor(employee.department)}40`
+            }}
+          >
+            {employee.emoji}
+          </div>
           <div>
             <h3 className="text-[17px] font-semibold text-foreground">{employee.nameZh}</h3>
             <p className="text-[13px] text-muted-foreground">{employee.name}</p>
@@ -77,7 +120,7 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
             <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
               {t('vibe')}
             </h4>
-            <p className="text-[14px] text-foreground/80 italic">{employee.vibe}</p>
+            <p className="text-[14px] text-foreground/80 italic">{employee.vibeZh || employee.vibe}</p>
           </div>
         )}
 
@@ -106,17 +149,23 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
           variant={isAdded ? 'outline' : 'default'}
           className="w-full rounded-full"
           onClick={handleAddRemove}
-          disabled={isProcessing}
+          disabled={isProcessing || addProgress !== null}
         >
-          {isProcessing ? (
+          {addProgress !== null ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : isAdded ? (
             <Trash2 className="h-4 w-4 mr-2" />
           ) : (
             <Plus className="h-4 w-4 mr-2" />
           )}
-          {isProcessing ? t('adding') : isAdded ? t('remove') : t('addToMyEmployees')}
+          {addProgress !== null ? t('adding') : isAdded ? t('remove') : t('addToMyEmployees')}
         </Button>
+
+        {addProgress !== null && (
+          <div className="mt-2">
+            <AddProgress currentStep={addProgress} steps={ADD_STEPS} isComplete={false} />
+          </div>
+        )}
       </div>
     </div>
   );
