@@ -270,7 +270,7 @@ const electronAPI = {
    * App versions
    */
   versions: {
-    app: '0.2.5',
+    app: require('../../package.json').version,
   },
 };
 
