@@ -29,6 +29,7 @@ export interface Employee {
   color: string;
   emoji: string;
   vibe: string;
+  vibeZh?: string; // Chinese vibe
   department: Department;
   skills?: string[];
   channels?: string[];
