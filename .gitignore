@@ -72,3 +72,5 @@ Rclaw-resimg/
 # Worktrees
 .worktrees/
 CLAUDE.md
+claude/
+docs/
