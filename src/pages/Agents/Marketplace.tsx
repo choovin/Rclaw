@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { EmployeeCard } from './EmployeeCard';
 import { EmployeeDetail } from './EmployeeDetail';
 import { useEmployeesStore, getAllDepartments } from '@/stores/employees';
-import type { EmployeeWithStatus, Department } from '@/types/employee';
+import type { Employee, EmployeeWithStatus, Department } from '@/types/employee';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import employeesData from '@/data/employees/index.json';
@@ -37,7 +37,7 @@ export function Marketplace() {
     if (isLoaded) return;
 
     // Add isAdded property to each employee
-    const employeesWithStatus: EmployeeWithStatus[] = (employeesData as EmployeeWithStatus[]).map((emp) => ({
+    const employeesWithStatus: EmployeeWithStatus[] = (employeesData as unknown as Employee[]).map((emp) => ({
       ...emp,
       isAdded: false,
     }));

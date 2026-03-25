@@ -42,7 +42,6 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const { t } = useTranslation('employees');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const isAdded = isEmployeeAdded(employee.id);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [addProgress, setAddProgress] = useState<number | null>(null);
 
   const ADD_STEPS: StepConfig[] = [
@@ -53,7 +52,7 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   ];
 
   const handleAddRemove = async () => {
-    if (isProcessing || addProgress !== null) return;
+    if (addProgress !== null) return;
 
     if (isAdded) {
       removeEmployee(employee.id);
@@ -149,7 +148,7 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
           variant={isAdded ? 'outline' : 'default'}
           className="w-full rounded-full"
           onClick={handleAddRemove}
-          disabled={isProcessing || addProgress !== null}
+          disabled={addProgress !== null}
         >
           {addProgress !== null ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
