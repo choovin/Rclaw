@@ -6,6 +6,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Employee, EmployeeWithStatus, Department } from '@/types/employee';
 import { DEPARTMENT_MAP } from '@/types/employee';
+import { hostApiFetch } from '@/lib/host-api';
+import { useAgentsStore } from '@/stores/agents';
 
 interface EmployeesState {
   // All available employees from marketplace
@@ -51,7 +53,20 @@ export const useEmployeesStore = create<EmployeesState>()(
         try {
           set({ isLoading: true });
 
-          // Call backend API to create workspace
+          // 1. 调用 OpenClaw API 创建 Agent（如果失败不阻塞继续）
+          try {
+            await hostApiFetch('/api/agents', {
+              method: 'POST',
+              body: JSON.stringify({
+                name: employee.nameZh,
+                inheritWorkspace: false,
+              }),
+            });
+          } catch (apiError) {
+            console.warn('OpenClaw API call failed, continuing with workspace creation:', apiError);
+          }
+
+          // 2. 调用 IPC 创建员工 workspace 文件
           await window.electron.ipcRenderer.invoke('agents:create-employee', {
             employeeId: employee.id,
             nameZh: employee.nameZh,
@@ -61,10 +76,11 @@ export const useEmployeesStore = create<EmployeesState>()(
             identityContent: (employee as EmployeeWithStatus).identityContent || '',
           });
 
-          // Add to my employees
-          const newMyEmployees = [...myEmployees, employee];
+          // 3. 刷新 Agents 列表（使"Agents"标签页能看到新添加的Agent）
+          useAgentsStore.getState().fetchAgents();
 
-          // Update employees list to mark as added
+          // 4. 更新本地状态
+          const newMyEmployees = [...myEmployees, employee];
           const updatedEmployees = employees.map((emp) =>
             emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
           );
