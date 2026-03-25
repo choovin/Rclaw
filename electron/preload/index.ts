@@ -132,6 +132,8 @@ const electronAPI = {
         'chat:sendWithMedia',
         // Session management
         'session:delete',
+        // Agents
+        'agents:create-employee',
         // OpenClaw extras
         'openclaw:getDir',
         'openclaw:getConfigDir',
