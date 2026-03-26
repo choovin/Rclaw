@@ -66,14 +66,17 @@ export const useEmployeesStore = create<EmployeesState>()(
             console.warn('OpenClaw API call failed, continuing with workspace creation:', apiError);
           }
 
-          // 2. 调用 IPC 创建员工 workspace 文件
-          await window.electron.ipcRenderer.invoke('agents:create-employee', {
-            employeeId: employee.id,
-            nameZh: employee.nameZh,
-            nameEn: employee.name,
-            soulContent: (employee as EmployeeWithStatus).soulContent || '',
-            agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
-            identityContent: (employee as EmployeeWithStatus).identityContent || '',
+          // 2. 调用 API 创建员工 workspace 文件
+          await hostApiFetch('/api/employees/workspace', {
+            method: 'POST',
+            body: JSON.stringify({
+              employeeId: employee.id,
+              nameZh: employee.nameZh,
+              nameEn: employee.name,
+              soulContent: (employee as EmployeeWithStatus).soulContent || '',
+              agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
+              identityContent: (employee as EmployeeWithStatus).identityContent || '',
+            }),
           });
 
           // 3. 刷新 Agents 列表（使"Agents"标签页能看到新添加的Agent）

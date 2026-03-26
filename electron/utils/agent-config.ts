@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readdir, rm } from 'fs/promises';
+import { access, copyFile, mkdir, readdir, rm, writeFileSync } from 'fs';
 import { constants } from 'fs';
 import { join, normalize } from 'path';
 import { deleteAgentChannelAccounts, listConfiguredChannels, readOpenClawConfig, writeOpenClawConfig } from './channel-config';
@@ -771,4 +771,98 @@ export async function clearAllBindingsForChannel(channelType: string): Promise<v
     await writeOpenClawConfig(config);
     logger.info('Cleared all bindings for channel', { channelType });
   });
+}
+
+export interface CreateEmployeeWorkspaceOptions {
+  employeeId: string;
+  nameZh: string;
+  nameEn: string;
+  soulContent: string;
+  agentsContent: string;
+  identityContent: string;
+}
+
+export interface CreateEmployeeWorkspaceResult {
+  success: boolean;
+  agentId: string;
+  workspacePath: string;
+}
+
+export async function createEmployeeWorkspace(
+  options: CreateEmployeeWorkspaceOptions,
+): Promise<CreateEmployeeWorkspaceResult> {
+  const openclawDir = getOpenClawConfigDir();
+  const workspaceDir = join(openclawDir, `workspace-${options.employeeId}`);
+
+  try {
+    // Create workspace directory
+    mkdirSync(workspaceDir, { recursive: true });
+
+    // Write workspace files
+    if (options.soulContent) {
+      writeFileSync(join(workspaceDir, 'SOUL.md'), options.soulContent, 'utf-8');
+    }
+    if (options.agentsContent) {
+      writeFileSync(join(workspaceDir, 'AGENTS.md'), options.agentsContent, 'utf-8');
+    }
+    if (options.identityContent) {
+      writeFileSync(join(workspaceDir, 'IDENTITY.md'), options.identityContent, 'utf-8');
+    }
+
+    // Write user.md template
+    const userContent = `# 👤 我的资料
+
+## 基本信息
+- **名字**：${options.nameZh}
+- **英文名**：${options.nameEn}
+- **角色**：数字员工
+
+## 我擅长的
+<!-- 从员工技能中提取 -->
+
+## 我的工作风格
+<!-- 从员工人设中提取 -->
+
+## 当前项目
+<!-- 记录当前正在处理的项目 -->
+
+## 常用工具
+<!-- 记录常用的工具和命令 -->
+
+---
+*由 Rclaw 数字员工系统生成*
+`;
+    writeFileSync(join(workspaceDir, 'user.md'), userContent, 'utf-8');
+
+    // Write todo.md template
+    const todoContent = `# 📋 待办事项
+
+## 今日任务
+- [ ]
+
+## 本周目标
+- [ ]
+
+## 进行中的项目
+<!-- 记录正在进行的项目 -->
+
+## 已完成
+- [ ]
+
+---
+*由 Rclaw 数字员工系统生成*
+`;
+    writeFileSync(join(workspaceDir, 'todo.md'), todoContent, 'utf-8');
+
+    logger.info(`[createEmployeeWorkspace] Created workspace for ${options.nameZh} at ${workspaceDir}`);
+
+    return {
+      success: true,
+      agentId: options.employeeId,
+      workspacePath: workspaceDir,
+    };
+  } catch (error) {
+    logger.error('[createEmployeeWorkspace] Failed:', error);
+    throw error;
+  }
 }

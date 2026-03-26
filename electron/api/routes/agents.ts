@@ -3,6 +3,7 @@ import {
   assignChannelToAgent,
   clearChannelBinding,
   createAgent,
+  createEmployeeWorkspace,
   deleteAgentConfig,
   listAgentsSnapshot,
   removeAgentWorkspaceDirectory,
@@ -241,6 +242,32 @@ export async function handleAgentRoutes(
       }
       return true;
     }
+  }
+
+  // POST /api/employees/workspace - Create employee workspace (IPC-free alternative)
+  if (url.pathname === '/api/employees/workspace' && req.method === 'POST') {
+    try {
+      const body = await parseJsonBody<{
+        employeeId: string;
+        nameZh: string;
+        nameEn: string;
+        soulContent: string;
+        agentsContent: string;
+        identityContent: string;
+      }>(req);
+      const result = await createEmployeeWorkspace({
+        employeeId: body.employeeId,
+        nameZh: body.nameZh,
+        nameEn: body.nameEn,
+        soulContent: body.soulContent || '',
+        agentsContent: body.agentsContent || '',
+        identityContent: body.identityContent || '',
+      });
+      sendJson(res, 200, { success: true, ...result });
+    } catch (error) {
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
+    return true;
   }
 
   return false;
