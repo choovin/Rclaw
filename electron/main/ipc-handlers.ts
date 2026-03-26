@@ -2467,9 +2467,9 @@ ipcMain.handle('agents:create-employee', async (_, options: {
   identityContent: string;
 }) => {
   try {
-    // Generate workspace path
+    // Generate workspace path (must match OpenClaw's expected path: ~/.openclaw/workspace-{id})
     const openclawDir = join(homedir(), '.openclaw');
-    const workspaceDir = join(openclawDir, 'workspaces', options.employeeId);
+    const workspaceDir = join(openclawDir, `workspace-${options.employeeId}`);
 
     // Create workspace directory
     mkdirSync(workspaceDir, { recursive: true });
