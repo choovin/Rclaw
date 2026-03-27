@@ -28,7 +28,11 @@ function scheduleGatewayReload(ctx: HostApiContext, reason: string): void {
 type ProvisionEmitStage = ProvisionWorkspaceStage | 'sync_reload';
 
 function emitProvisionStage(ctx: HostApiContext, stage: ProvisionEmitStage): void {
-  ctx.mainWindow?.webContents.send('employee-provision:stage', { stage });
+  try {
+    ctx.mainWindow?.webContents.send('employee-provision:stage', { stage });
+  } catch (err) {
+    console.warn('[agents] employee-provision:stage emit failed:', err);
+  }
 }
 
 import { exec } from 'child_process';
@@ -262,6 +266,11 @@ export async function handleAgentRoutes(
         agentsContent: string;
         identityContent: string;
       }>(req);
+
+      if (typeof body.nameZh !== 'string') {
+        sendJson(res, 400, { success: false, error: 'nameZh is required (string)' });
+        return true;
+      }
 
       const result = await provisionDigitalEmployeeAgent(
         {

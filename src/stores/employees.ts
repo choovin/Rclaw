@@ -80,6 +80,11 @@ export const useEmployeesStore = create<EmployeesState>()(
           };
 
           if (!res.success || !res.agentId) {
+            if (res.error) {
+              console.error('[employees] provision failed:', res.error);
+            } else {
+              console.error('[employees] provision failed (no error message):', res);
+            }
             set({ isLoading: false });
             return false;
           }

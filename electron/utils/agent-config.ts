@@ -126,8 +126,12 @@ function formatModelLabel(model: unknown): string | null {
   return null;
 }
 
-function normalizeAgentName(name: string): string {
-  return name.trim() || 'Agent';
+function normalizeAgentName(name: string | undefined): string {
+  if (name == null || typeof name !== 'string') {
+    return 'Agent';
+  }
+  const t = name.trim();
+  return t || 'Agent';
 }
 
 function slugifyAgentId(name: string): string {
@@ -622,14 +626,11 @@ export async function provisionDigitalEmployeeAgent(
   onStage?: (stage: ProvisionWorkspaceStage) => void,
 ): Promise<ProvisionDigitalEmployeeResult> {
   onStage?.('create_agent');
-  const { snapshot: after, agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
+  const { agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
 
-  const created = after.agents.find((a) => a.id === agentId);
-  if (!created) {
-    throw new Error(`provisionDigitalEmployeeAgent: missing agent "${agentId}" in snapshot`);
-  }
-
-  const workspacePath = expandPath(created.workspace);
+  // Must match createAgent's workspace pattern (~/.openclaw/workspace-${agentId}); do not rely on
+  // snapshot lookup — buildSnapshotFromConfig can differ from in-memory config in edge cases.
+  const workspacePath = expandPath(`~/.openclaw/workspace-${agentId}`);
 
   onStage?.('write_files');
   try {
@@ -642,7 +643,7 @@ export async function provisionDigitalEmployeeAgent(
     });
   } catch (err) {
     const e = new Error(String(err)) as Error & { agentId?: string };
-    e.agentId = created.id;
+    e.agentId = agentId;
     throw e;
   }
 
@@ -650,11 +651,11 @@ export async function provisionDigitalEmployeeAgent(
   const existsSoul = await fileExists(join(workspacePath, 'SOUL.md'));
   if (payload.soulContent && !existsSoul) {
     const e = new Error('provisionDigitalEmployeeAgent: SOUL.md missing after write') as Error & { agentId?: string };
-    e.agentId = created.id;
+    e.agentId = agentId;
     throw e;
   }
 
-  return { agentId: created.id, workspacePath };
+  return { agentId, workspacePath };
 }
 
 export async function updateAgentName(agentId: string, name: string): Promise<AgentsSnapshot> {
