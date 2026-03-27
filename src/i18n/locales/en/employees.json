@@ -30,6 +30,7 @@
     "startChat": "Start chat",
     "removed": "Removed",
     "removeSuccess": "Employee and linked Agent removed",
+    "openRuntimeSettings": "Runtime settings",
     "removeDialog": {
         "title": "Remove digital employee?",
         "intro": "This will remove the linked OpenClaw Agent from your local config and delete its workspace directory.",
@@ -42,7 +43,9 @@
     },
     "errors": {
         "missingLinkedAgentTitle": "Cannot remove automatically",
-        "missingLinkedAgent": "This employee is not linked to an OpenClaw Agent, so the app cannot delete config or workspace automatically. Please clean up in Agents or your local OpenClaw folder first, then handle the list entry.",
-        "addMustRemoveFirst": "This employee is already in your list. Remove them first before adding again."
+        "missingLinkedAgent": "This employee is not linked to an OpenClaw Agent, so the app cannot delete config or workspace automatically. Use Channels, Settings, or your local OpenClaw folder to clean up, then handle the list entry.",
+        "addMustRemoveFirst": "This employee is already in your list. Remove them first before adding again.",
+        "agentNotInSnapshotTitle": "Agent not found in snapshot",
+        "agentNotInSnapshot": "The linked Agent ID is missing from the current OpenClaw list. Try refreshing; if it persists, check your local OpenClaw configuration."
     }
 }

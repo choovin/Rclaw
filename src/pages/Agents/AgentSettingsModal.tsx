@@ -1,0 +1,514 @@
+/**
+ * Runtime settings modal for an OpenClaw agent (model, channels summary, name).
+ * Used from the digital employees "My employees" detail panel when linkedAgentId is set.
+ */
+import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAgentsStore } from '@/stores/agents';
+import { useProviderStore } from '@/stores/providers';
+import { CHANNEL_ICONS, CHANNEL_NAMES, type ChannelType } from '@/types/channel';
+import type { AgentSummary } from '@/types/agent';
+import type { ProviderAccount, ProviderVendorInfo, ProviderWithKeyInfo } from '@/lib/providers';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import telegramIcon from '@/assets/channels/telegram.svg';
+import discordIcon from '@/assets/channels/discord.svg';
+import whatsappIcon from '@/assets/channels/whatsapp.svg';
+import wechatIcon from '@/assets/channels/wechat.svg';
+import dingtalkIcon from '@/assets/channels/dingtalk.svg';
+import feishuIcon from '@/assets/channels/feishu.svg';
+import wecomIcon from '@/assets/channels/wecom.svg';
+import qqIcon from '@/assets/channels/qq.svg';
+
+export interface ChannelAccountItem {
+  accountId: string;
+  name: string;
+  configured: boolean;
+  status: 'connected' | 'connecting' | 'disconnected' | 'error';
+  lastError?: string;
+  isDefault: boolean;
+  agentId?: string;
+}
+
+export interface ChannelGroupItem {
+  channelType: string;
+  defaultAccountId: string;
+  status: 'connected' | 'connecting' | 'disconnected' | 'error';
+  accounts: ChannelAccountItem[];
+}
+
+interface RuntimeProviderOption {
+  runtimeProviderKey: string;
+  accountId: string;
+  label: string;
+  modelIdPlaceholder?: string;
+  configuredModelId?: string;
+}
+
+function resolveRuntimeProviderKey(account: ProviderAccount): string {
+  if (account.authMode === 'oauth_browser') {
+    if (account.vendorId === 'google') return 'google-gemini-cli';
+    if (account.vendorId === 'openai') return 'openai-codex';
+  }
+
+  if (account.vendorId === 'custom' || account.vendorId === 'ollama') {
+    const suffix = account.id.replace(/-/g, '').slice(0, 8);
+    return `${account.vendorId}-${suffix}`;
+  }
+
+  if (account.vendorId === 'minimax-portal-cn') {
+    return 'minimax-portal';
+  }
+
+  return account.vendorId;
+}
+
+function splitModelRef(modelRef: string | null | undefined): { providerKey: string; modelId: string } | null {
+  const value = (modelRef || '').trim();
+  if (!value) return null;
+  const separatorIndex = value.indexOf('/');
+  if (separatorIndex <= 0 || separatorIndex >= value.length - 1) return null;
+  return {
+    providerKey: value.slice(0, separatorIndex),
+    modelId: value.slice(separatorIndex + 1),
+  };
+}
+
+function hasConfiguredProviderCredentials(
+  account: ProviderAccount,
+  statusById: Map<string, ProviderWithKeyInfo>,
+): boolean {
+  if (account.authMode === 'oauth_device' || account.authMode === 'oauth_browser' || account.authMode === 'local') {
+    return true;
+  }
+  return statusById.get(account.id)?.hasKey ?? false;
+}
+
+const inputClasses = 'h-[44px] rounded-xl font-mono text-[13px] bg-[#eeece3] dark:bg-muted border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground placeholder:text-foreground/40';
+const selectClasses = 'h-[44px] w-full rounded-xl font-mono text-[13px] bg-[#eeece3] dark:bg-muted border border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground px-3';
+const labelClasses = 'text-[14px] text-foreground/80 font-bold';
+
+function ChannelLogo({ type }: { type: ChannelType }) {
+  switch (type) {
+    case 'telegram':
+      return <img src={telegramIcon} alt="Telegram" className="w-[20px] h-[20px] dark:invert" />;
+    case 'discord':
+      return <img src={discordIcon} alt="Discord" className="w-[20px] h-[20px] dark:invert" />;
+    case 'whatsapp':
+      return <img src={whatsappIcon} alt="WhatsApp" className="w-[20px] h-[20px] dark:invert" />;
+    case 'wechat':
+      return <img src={wechatIcon} alt="WeChat" className="w-[20px] h-[20px] dark:invert" />;
+    case 'dingtalk':
+      return <img src={dingtalkIcon} alt="DingTalk" className="w-[20px] h-[20px] dark:invert" />;
+    case 'feishu':
+      return <img src={feishuIcon} alt="Feishu" className="w-[20px] h-[20px] dark:invert" />;
+    case 'wecom':
+      return <img src={wecomIcon} alt="WeCom" className="w-[20px] h-[20px] dark:invert" />;
+    case 'qqbot':
+      return <img src={qqIcon} alt="QQ" className="w-[20px] h-[20px] dark:invert" />;
+    default:
+      return <span className="text-[20px] leading-none">{CHANNEL_ICONS[type] || '💬'}</span>;
+  }
+}
+
+export function AgentSettingsModal({
+  agent,
+  channelGroups,
+  onClose,
+}: {
+  agent: AgentSummary;
+  channelGroups: ChannelGroupItem[];
+  onClose: () => void;
+}) {
+  const { t } = useTranslation('agents');
+  const { updateAgent, defaultModelRef } = useAgentsStore();
+  const [name, setName] = useState(agent.name);
+  const [savingName, setSavingName] = useState(false);
+  const [showModelModal, setShowModelModal] = useState(false);
+
+  useEffect(() => {
+    setName(agent.name);
+  }, [agent.name]);
+
+  const handleSaveName = async () => {
+    if (!name.trim() || name.trim() === agent.name) return;
+    setSavingName(true);
+    try {
+      await updateAgent(agent.id, name.trim());
+      toast.success(t('toast.agentUpdated'));
+    } catch (error) {
+      toast.error(t('toast.agentUpdateFailed', { error: String(error) }));
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const assignedChannels = channelGroups.flatMap((group) =>
+    group.accounts
+      .filter((account) => account.agentId === agent.id)
+      .map((account) => ({
+        channelType: group.channelType as ChannelType,
+        accountId: account.accountId,
+        name:
+          account.accountId === 'default'
+            ? t('settingsDialog.mainAccount')
+            : account.name || account.accountId,
+        error: account.lastError,
+      })),
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border border-border bg-card dark:bg-card overflow-hidden">
+        <CardHeader className="flex flex-row items-start justify-between pb-2 shrink-0">
+          <div>
+            <CardTitle className="text-2xl font-serif font-normal tracking-tight">
+              {t('settingsDialog.title', { name: agent.name })}
+            </CardTitle>
+            <CardDescription className="text-[15px] mt-1 text-foreground/70">
+              {t('settingsDialog.description')}
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full h-8 w-8 -mr-2 -mt-2 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-4 overflow-y-auto flex-1 p-6">
+          <div className="space-y-4">
+            <div className="space-y-2.5">
+              <Label htmlFor="agent-settings-name" className={labelClasses}>{t('settingsDialog.nameLabel')}</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="agent-settings-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  readOnly={agent.isDefault}
+                  className={inputClasses}
+                />
+                {!agent.isDefault && (
+                  <Button
+                    variant="outline"
+                    onClick={() => void handleSaveName()}
+                    disabled={savingName || !name.trim() || name.trim() === agent.name}
+                    className="h-[44px] text-[13px] font-medium rounded-xl px-4 border-black/10 dark:border-white/10 bg-[#eeece3] dark:bg-muted hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-foreground/80 hover:text-foreground"
+                  >
+                    {savingName ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t('common:actions.save')
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground/80 font-medium">
+                  {t('settingsDialog.agentIdLabel')}
+                </p>
+                <p className="font-mono text-[13px] text-foreground">{agent.id}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModelModal(true)}
+                className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4 text-left hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              >
+                <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground/80 font-medium">
+                  {t('settingsDialog.modelLabel')}
+                </p>
+                <p className="text-[13.5px] text-foreground">
+                  {agent.modelDisplay}
+                  {agent.inheritedModel ? ` (${t('inherited')})` : ''}
+                </p>
+                <p className="font-mono text-[12px] text-foreground/70 break-all">
+                  {agent.modelRef || defaultModelRef || '-'}
+                </p>
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-serif text-foreground font-normal tracking-tight">
+                  {t('settingsDialog.channelsTitle')}
+                </h3>
+                <p className="text-[14px] text-foreground/70 mt-1">{t('settingsDialog.channelsDescription')}</p>
+              </div>
+            </div>
+
+            {assignedChannels.length === 0 && agent.channelTypes.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-4 text-[13.5px] text-muted-foreground">
+                {t('settingsDialog.noChannels')}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {assignedChannels.map((channel) => (
+                  <div key={`${channel.channelType}-${channel.accountId}`} className="flex items-center justify-between rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-[40px] w-[40px] shrink-0 flex items-center justify-center text-foreground bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-full shadow-sm">
+                        <ChannelLogo type={channel.channelType} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-semibold text-foreground">{channel.name}</p>
+                        <p className="text-[13.5px] text-muted-foreground">
+                          {CHANNEL_NAMES[channel.channelType]} · {channel.accountId === 'default' ? t('settingsDialog.mainAccount') : channel.accountId}
+                        </p>
+                        {channel.error && (
+                          <p className="text-xs text-destructive mt-1">{channel.error}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0" />
+                  </div>
+                ))}
+                {assignedChannels.length === 0 && agent.channelTypes.length > 0 && (
+                  <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-4 text-[13.5px] text-muted-foreground">
+                    {t('settingsDialog.channelsManagedInChannels')}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      {showModelModal && (
+        <AgentModelModal
+          agent={agent}
+          onClose={() => setShowModelModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AgentModelModal({
+  agent,
+  onClose,
+}: {
+  agent: AgentSummary;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation('agents');
+  const providerAccounts = useProviderStore((state) => state.accounts);
+  const providerStatuses = useProviderStore((state) => state.statuses);
+  const providerVendors = useProviderStore((state) => state.vendors);
+  const providerDefaultAccountId = useProviderStore((state) => state.defaultAccountId);
+  const { updateAgentModel, defaultModelRef } = useAgentsStore();
+  const [selectedRuntimeProviderKey, setSelectedRuntimeProviderKey] = useState('');
+  const [modelIdInput, setModelIdInput] = useState('');
+  const [savingModel, setSavingModel] = useState(false);
+
+  const runtimeProviderOptions = useMemo<RuntimeProviderOption[]>(() => {
+    const vendorMap = new Map<string, ProviderVendorInfo>(providerVendors.map((vendor) => [vendor.id, vendor]));
+    const statusById = new Map<string, ProviderWithKeyInfo>(providerStatuses.map((status) => [status.id, status]));
+    const entries = providerAccounts
+      .filter((account) => account.enabled && hasConfiguredProviderCredentials(account, statusById))
+      .sort((left, right) => {
+        if (left.id === providerDefaultAccountId) return -1;
+        if (right.id === providerDefaultAccountId) return 1;
+        return right.updatedAt.localeCompare(left.updatedAt);
+      });
+
+    const deduped = new Map<string, RuntimeProviderOption>();
+    for (const account of entries) {
+      const runtimeProviderKey = resolveRuntimeProviderKey(account);
+      if (!runtimeProviderKey || deduped.has(runtimeProviderKey)) continue;
+      const vendor = vendorMap.get(account.vendorId);
+      const label = `${account.label} (${vendor?.name || account.vendorId})`;
+      const configuredModelId = account.model
+        ? (account.model.startsWith(`${runtimeProviderKey}/`)
+          ? account.model.slice(runtimeProviderKey.length + 1)
+          : account.model)
+        : undefined;
+
+      deduped.set(runtimeProviderKey, {
+        runtimeProviderKey,
+        accountId: account.id,
+        label,
+        modelIdPlaceholder: vendor?.modelIdPlaceholder,
+        configuredModelId,
+      });
+    }
+
+    return [...deduped.values()];
+  }, [providerAccounts, providerDefaultAccountId, providerStatuses, providerVendors]);
+
+  useEffect(() => {
+    const override = splitModelRef(agent.overrideModelRef);
+    if (override) {
+      setSelectedRuntimeProviderKey(override.providerKey);
+      setModelIdInput(override.modelId);
+      return;
+    }
+
+    const effective = splitModelRef(agent.modelRef || defaultModelRef);
+    if (effective) {
+      setSelectedRuntimeProviderKey(effective.providerKey);
+      setModelIdInput(effective.modelId);
+      return;
+    }
+
+    setSelectedRuntimeProviderKey(runtimeProviderOptions[0]?.runtimeProviderKey || '');
+    setModelIdInput('');
+  }, [agent.modelRef, agent.overrideModelRef, defaultModelRef, runtimeProviderOptions]);
+
+  const selectedProvider = runtimeProviderOptions.find((option) => option.runtimeProviderKey === selectedRuntimeProviderKey) || null;
+  const trimmedModelId = modelIdInput.trim();
+  const nextModelRef = selectedRuntimeProviderKey && trimmedModelId
+    ? `${selectedRuntimeProviderKey}/${trimmedModelId}`
+    : '';
+  const normalizedDefaultModelRef = (defaultModelRef || '').trim();
+  const isUsingDefaultModelInForm = Boolean(normalizedDefaultModelRef) && nextModelRef === normalizedDefaultModelRef;
+  const currentOverrideModelRef = (agent.overrideModelRef || '').trim();
+  const desiredOverrideModelRef = nextModelRef && nextModelRef !== normalizedDefaultModelRef
+    ? nextModelRef
+    : null;
+  const modelChanged = (desiredOverrideModelRef || '') !== currentOverrideModelRef;
+
+  const handleSaveModel = async () => {
+    if (!selectedRuntimeProviderKey) {
+      toast.error(t('toast.agentModelProviderRequired'));
+      return;
+    }
+    if (!trimmedModelId) {
+      toast.error(t('toast.agentModelIdRequired'));
+      return;
+    }
+    if (!modelChanged) return;
+    if (!nextModelRef.includes('/')) {
+      toast.error(t('toast.agentModelInvalid'));
+      return;
+    }
+
+    setSavingModel(true);
+    try {
+      await updateAgentModel(agent.id, desiredOverrideModelRef);
+      toast.success(desiredOverrideModelRef ? t('toast.agentModelUpdated') : t('toast.agentModelReset'));
+      onClose();
+    } catch (error) {
+      toast.error(t('toast.agentModelUpdateFailed', { error: String(error) }));
+    } finally {
+      setSavingModel(false);
+    }
+  };
+
+  const handleUseDefaultModel = () => {
+    const parsedDefault = splitModelRef(normalizedDefaultModelRef);
+    if (!parsedDefault) {
+      setSelectedRuntimeProviderKey('');
+      setModelIdInput('');
+      return;
+    }
+    setSelectedRuntimeProviderKey(parsedDefault.providerKey);
+    setModelIdInput(parsedDefault.modelId);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-xl rounded-3xl border-0 shadow-2xl bg-[#f3f1e9] dark:bg-card overflow-hidden">
+        <CardHeader className="flex flex-row items-start justify-between pb-2">
+          <div>
+            <CardTitle className="text-2xl font-serif font-normal tracking-tight">
+              {t('settingsDialog.modelLabel')}
+            </CardTitle>
+            <CardDescription className="text-[15px] mt-1 text-foreground/70">
+              {t('settingsDialog.modelOverrideDescription', { defaultModel: defaultModelRef || '-' })}
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full h-8 w-8 -mr-2 -mt-2 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4 p-6 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="agent-model-provider" className="text-[12px] text-foreground/70">{t('settingsDialog.modelProviderLabel')}</Label>
+            <select
+              id="agent-model-provider"
+              value={selectedRuntimeProviderKey}
+              onChange={(event) => {
+                const nextProvider = event.target.value;
+                setSelectedRuntimeProviderKey(nextProvider);
+                if (!modelIdInput.trim()) {
+                  const option = runtimeProviderOptions.find((candidate) => candidate.runtimeProviderKey === nextProvider);
+                  setModelIdInput(option?.configuredModelId || '');
+                }
+              }}
+              className={selectClasses}
+            >
+              <option value="">{t('settingsDialog.modelProviderPlaceholder')}</option>
+              {runtimeProviderOptions.map((option) => (
+                <option key={option.runtimeProviderKey} value={option.runtimeProviderKey}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="agent-model-id" className="text-[12px] text-foreground/70">{t('settingsDialog.modelIdLabel')}</Label>
+            <Input
+              id="agent-model-id"
+              value={modelIdInput}
+              onChange={(event) => setModelIdInput(event.target.value)}
+              placeholder={selectedProvider?.modelIdPlaceholder || selectedProvider?.configuredModelId || t('settingsDialog.modelIdPlaceholder')}
+              className={inputClasses}
+            />
+          </div>
+          {!!nextModelRef && (
+            <p className="text-[12px] font-mono text-foreground/70 break-all">
+              {t('settingsDialog.modelPreview')}: {nextModelRef}
+            </p>
+          )}
+          {runtimeProviderOptions.length === 0 && (
+            <p className="text-[12px] text-amber-600 dark:text-amber-400">
+              {t('settingsDialog.modelProviderEmpty')}
+            </p>
+          )}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleUseDefaultModel}
+              disabled={savingModel || !normalizedDefaultModelRef || isUsingDefaultModelInForm}
+              className="h-9 text-[13px] font-medium rounded-full px-4 border-black/10 dark:border-white/10 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-foreground/80 hover:text-foreground"
+            >
+              {t('settingsDialog.useDefaultModel')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="h-9 text-[13px] font-medium rounded-full px-4 border-black/10 dark:border-white/10 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-foreground/80 hover:text-foreground"
+            >
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              onClick={() => void handleSaveModel()}
+              disabled={savingModel || !selectedRuntimeProviderKey || !trimmedModelId || !modelChanged}
+              className="h-9 text-[13px] font-medium rounded-full px-4 shadow-none"
+            >
+              {savingModel ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                t('common:actions.save')
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

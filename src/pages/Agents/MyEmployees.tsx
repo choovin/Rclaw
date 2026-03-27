@@ -8,8 +8,25 @@ import { EmployeeDetail } from './EmployeeDetail';
 import { useEmployeesStore } from '@/stores/employees';
 import type { Employee } from '@/types/employee';
 import { EmployeeWithStatus } from '@/types/employee';
+import type { AgentSummary } from '@/types/agent';
+import type { GatewayStatus } from '@/types/gateway';
+import type { ChannelGroupItem } from './AgentSettingsModal';
 
-export function MyEmployees() {
+export interface MyEmployeesProps {
+  agents: AgentSummary[];
+  channelGroups: ChannelGroupItem[];
+  gatewayStatus: GatewayStatus;
+  agentsError: string | null;
+  onRefreshAgents?: () => void;
+}
+
+export function MyEmployees({
+  agents,
+  channelGroups,
+  gatewayStatus,
+  agentsError,
+  onRefreshAgents,
+}: MyEmployeesProps) {
   const { t } = useTranslation('employees');
   const { myEmployees, selectedEmployee, setSelectedEmployee } = useEmployeesStore();
 
@@ -64,6 +81,11 @@ export function MyEmployees() {
         <EmployeeDetail
           employee={selectedEmployee}
           onClose={handleCloseDetail}
+          agents={agents}
+          channelGroups={channelGroups}
+          gatewayStatus={gatewayStatus}
+          agentsError={agentsError}
+          onRefreshAgents={onRefreshAgents}
         />
       )}
     </div>

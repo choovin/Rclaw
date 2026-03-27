@@ -11,8 +11,25 @@ import type { Employee, EmployeeWithStatus, Department } from '@/types/employee'
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import employeesData from '@/data/employees/index.json';
+import type { AgentSummary } from '@/types/agent';
+import type { GatewayStatus } from '@/types/gateway';
+import type { ChannelGroupItem } from './AgentSettingsModal';
 
-export function Marketplace() {
+export interface MarketplaceProps {
+  agents: AgentSummary[];
+  channelGroups: ChannelGroupItem[];
+  gatewayStatus: GatewayStatus;
+  agentsError: string | null;
+  onRefreshAgents?: () => void;
+}
+
+export function Marketplace({
+  agents,
+  channelGroups,
+  gatewayStatus,
+  agentsError,
+  onRefreshAgents,
+}: MarketplaceProps) {
   const { t } = useTranslation('employees');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -129,6 +146,11 @@ export function Marketplace() {
         <EmployeeDetail
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
+          agents={agents}
+          channelGroups={channelGroups}
+          gatewayStatus={gatewayStatus}
+          agentsError={agentsError}
+          onRefreshAgents={onRefreshAgents}
         />
       )}
     </div>

@@ -2,17 +2,20 @@
  * Employee Detail Component
  * Displays detailed information about an employee in a sidebar
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
+import type { AgentSummary } from '@/types/agent';
+import type { GatewayStatus } from '@/types/gateway';
 import { useEmployeesStore } from '@/stores/employees';
 import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmployeeRemoveDialog } from '@/components/common/EmployeeRemoveDialog';
-import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Settings2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { AgentSettingsModal, type ChannelGroupItem } from './AgentSettingsModal';
 
 const DEPARTMENT_COLORS: Record<string, string> = {
   engineering: '#3b82f6',
@@ -39,10 +42,24 @@ function getAvatarColor(department: string): string {
 interface EmployeeDetailProps {
   employee: Employee;
   onClose: () => void;
+  agents: AgentSummary[];
+  channelGroups: ChannelGroupItem[];
+  gatewayStatus: GatewayStatus;
+  agentsError: string | null;
+  onRefreshAgents?: () => void;
 }
 
-export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
+export function EmployeeDetail({
+  employee,
+  onClose,
+  agents,
+  channelGroups,
+  gatewayStatus,
+  agentsError,
+  onRefreshAgents,
+}: EmployeeDetailProps) {
   const { t } = useTranslation('employees');
+  const { t: tAgents } = useTranslation('agents');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const linkedRow = myEmployees.find((e) => e.id === employee.id);
@@ -51,6 +68,12 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const [addProgress, setAddProgress] = useState<number | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [missingLinkOpen, setMissingLinkOpen] = useState(false);
+  const [runtimeSettingsOpen, setRuntimeSettingsOpen] = useState(false);
+
+  const linkedAgentSummary = useMemo((): AgentSummary | null => {
+    if (!linkedAgentId) return null;
+    return agents.find((a) => a.id === linkedAgentId) ?? null;
+  }, [agents, linkedAgentId]);
 
   const ADD_STEPS: StepConfig[] = [
     { label: '创建 Agent', icon: '🤖' },
@@ -114,6 +137,29 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-5 space-y-5">
+        {isAdded && linkedAgentId && gatewayStatus.state !== 'running' && (
+          <div className="p-3 rounded-xl border border-yellow-500/50 bg-yellow-500/10 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <span className="text-yellow-700 dark:text-yellow-400 text-xs font-medium leading-relaxed">
+              {tAgents('gatewayWarning')}
+            </span>
+          </div>
+        )}
+
+        {agentsError && (
+          <div className="p-3 rounded-xl border border-destructive/50 bg-destructive/10 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <span className="text-destructive text-xs font-medium leading-relaxed">{agentsError}</span>
+          </div>
+        )}
+
+        {isAdded && linkedAgentId && !linkedAgentSummary && (
+          <div className="p-3 rounded-xl border border-destructive/50 bg-destructive/10">
+            <p className="text-xs font-medium text-destructive">{t('errors.agentNotInSnapshotTitle')}</p>
+            <p className="text-xs text-destructive/90 mt-1">{t('errors.agentNotInSnapshot')}</p>
+          </div>
+        )}
+
         {/* Department */}
         <div>
           <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
@@ -155,7 +201,18 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
       </div>
 
       {/* Footer Actions */}
-      <div className="p-5 border-t">
+      <div className="p-5 border-t space-y-2">
+        {isAdded && linkedAgentSummary && (
+          <Button
+            variant="secondary"
+            className="w-full rounded-full"
+            onClick={() => setRuntimeSettingsOpen(true)}
+          >
+            <Settings2 className="h-4 w-4 mr-2" />
+            {t('openRuntimeSettings')}
+          </Button>
+        )}
+
         <Button
           variant={isAdded ? 'outline' : 'default'}
           className="w-full rounded-full"
@@ -204,6 +261,17 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
           }
         }}
       />
+
+      {runtimeSettingsOpen && linkedAgentSummary && (
+        <AgentSettingsModal
+          agent={linkedAgentSummary}
+          channelGroups={channelGroups}
+          onClose={() => {
+            setRuntimeSettingsOpen(false);
+            onRefreshAgents?.();
+          }}
+        />
+      )}
     </div>
   );
 }

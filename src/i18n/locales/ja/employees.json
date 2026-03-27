@@ -30,6 +30,7 @@
     "startChat": "チャットを開始",
     "removed": "削除しました",
     "removeSuccess": "従業員と関連 Agent を削除しました",
+    "openRuntimeSettings": "ランタイム設定",
     "removeDialog": {
         "title": "デジタル従業員を削除しますか？",
         "intro": "ローカルの OpenClaw 設定から関連 Agent を削除し、ワークスペースディレクトリを削除します。",
@@ -42,7 +43,9 @@
     },
     "errors": {
         "missingLinkedAgentTitle": "自動削除できません",
-        "missingLinkedAgent": "この従業員は OpenClaw Agent に関連付けられていないため、設定やワークスペースを自動削除できません。「Agents」またはローカルの OpenClaw フォルダで手動整理後、リストを処理してください。",
-        "addMustRemoveFirst": "すでにリストにいます。追加する前に削除してください。"
+        "missingLinkedAgent": "この従業員は OpenClaw Agent に関連付けられていないため、設定やワークスペースを自動削除できません。IM 接続・設定、またはローカルの OpenClaw フォルダで手動整理後、リストを処理してください。",
+        "addMustRemoveFirst": "すでにリストにいます。追加する前に削除してください。",
+        "agentNotInSnapshotTitle": "スナップショットに Agent がありません",
+        "agentNotInSnapshot": "関連付けられた Agent が現在の一覧にありません。更新を試すか、ローカルの OpenClaw 設定を確認してください。"
     }
 }

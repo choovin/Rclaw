@@ -47,6 +47,7 @@
     "startChat": "发起对话",
     "removed": "已移除",
     "removeSuccess": "已移除员工及对应 Agent",
+    "openRuntimeSettings": "运行时设置",
     "removeDialog": {
         "title": "确认移除数字员工",
         "intro": "将从本机 OpenClaw 配置中移除该员工对应的 Agent，并删除其工作区目录。",
@@ -59,7 +60,9 @@
     },
     "errors": {
         "missingLinkedAgentTitle": "无法自动移除",
-        "missingLinkedAgent": "该员工记录未关联 OpenClaw Agent，无法自动删除配置与工作区。请到「Agents」页面或本地 OpenClaw 目录中手动清理后，再处理列表中的条目。",
-        "addMustRemoveFirst": "该员工已在列表中，请先移除后再添加。"
+        "missingLinkedAgent": "该员工记录未关联 OpenClaw Agent，无法自动删除配置与工作区。请通过「连接 IM」、设置或本地 OpenClaw 目录手动清理后，再处理列表中的条目。",
+        "addMustRemoveFirst": "该员工已在列表中，请先移除后再添加。",
+        "agentNotInSnapshotTitle": "未在列表中找到对应 Agent",
+        "agentNotInSnapshot": "当前快照中缺少已关联的 Agent。可尝试刷新页面；若仍存在，请检查本机 OpenClaw 配置。"
     }
 }

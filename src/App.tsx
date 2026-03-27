@@ -2,7 +2,7 @@
  * Root Application Component
  * Handles routing and global providers
  */
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Component, useEffect } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
@@ -177,7 +177,8 @@ function App() {
             <Route element={<MainLayout />}>
               <Route path="/" element={<Chat />} />
               <Route path="/models" element={<Models />} />
-              <Route path="/agents" element={<Agents />} />
+              <Route path="/employees" element={<Agents />} />
+              <Route path="/agents" element={<Navigate to="/employees" replace />} />
               <Route path="/channels" element={<Channels />} />
               <Route path="/skills" element={<Skills />} />
               <Route path="/cron" element={<Cron />} />
