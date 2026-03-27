@@ -280,12 +280,6 @@ export async function handleAgentRoutes(
       });
       scheduleGatewayReload(ctx, 'provision-employee');
 
-      const snap = await listAgentsSnapshot();
-      const exists = snap.agents.some((a) => a.id === result.agentId);
-      if (!exists) {
-        throw new Error('Provisioned agent missing from snapshot after reload schedule');
-      }
-
       sendJson(res, 200, {
         success: true,
         agentId: result.agentId,
@@ -294,6 +288,7 @@ export async function handleAgentRoutes(
       });
     } catch (error) {
       const err = error as Error & { agentId?: string };
+      console.error('[agents] POST /api/employees/provision failed:', error);
       sendJson(res, 500, {
         success: false,
         error: String(error),

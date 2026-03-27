@@ -551,6 +551,17 @@ export async function createAgent(
   name: string,
   options?: { inheritWorkspace?: boolean },
 ): Promise<AgentsSnapshot> {
+  const { snapshot } = await createAgentWithResult(name, options);
+  return snapshot;
+}
+
+/**
+ * Same as createAgent but returns the new agent id (slug) for reliable provisioning.
+ */
+export async function createAgentWithResult(
+  name: string,
+  options?: { inheritWorkspace?: boolean },
+): Promise<{ snapshot: AgentsSnapshot; agentId: string }> {
   return withConfigLock(async () => {
     const config = await readOpenClawConfig() as AgentConfigDocument;
     const { agentsConfig, entries, syntheticMain } = normalizeAgentsConfig(config);
@@ -586,7 +597,8 @@ export async function createAgent(
     await provisionAgentFilesystem(config, newAgent, { inheritWorkspace: options?.inheritWorkspace });
     await writeOpenClawConfig(config);
     logger.info('Created agent config entry', { agentId: nextId, inheritWorkspace: !!options?.inheritWorkspace });
-    return buildSnapshotFromConfig(config);
+    const snapshot = await buildSnapshotFromConfig(config);
+    return { snapshot, agentId: nextId };
   });
 }
 
@@ -609,15 +621,12 @@ export async function provisionDigitalEmployeeAgent(
   payload: ProvisionDigitalEmployeePayload,
   onStage?: (stage: ProvisionWorkspaceStage) => void,
 ): Promise<ProvisionDigitalEmployeeResult> {
-  const before = await listAgentsSnapshot();
-  const beforeIds = new Set(before.agents.map((a) => a.id));
-
   onStage?.('create_agent');
-  const after = await createAgent(payload.nameZh, { inheritWorkspace: false });
+  const { snapshot: after, agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
 
-  const created = after.agents.find((a) => !beforeIds.has(a.id));
+  const created = after.agents.find((a) => a.id === agentId);
   if (!created) {
-    throw new Error('provisionDigitalEmployeeAgent: could not resolve new agent id');
+    throw new Error(`provisionDigitalEmployeeAgent: missing agent "${agentId}" in snapshot`);
   }
 
   const workspacePath = expandPath(created.workspace);
