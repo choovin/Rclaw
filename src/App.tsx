@@ -3,15 +3,16 @@
  * Handles routing and global providers
  */
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Component, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
 import { MainLayout } from './components/layout/MainLayout';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Models } from './pages/Models';
 import { Chat } from './pages/Chat';
-import { Agents } from './pages/Agents';
 import { Channels } from './pages/Channels';
 import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
@@ -22,6 +23,20 @@ import { useGatewayStore } from './stores/gateway';
 import { useProviderStore } from './stores/providers';
 import { applyGatewayTransportPreference } from './lib/api-client';
 
+const Agents = lazy(() => import('./pages/Agents'));
+
+function EmployeesRouteFallback() {
+  const { t } = useTranslation('common');
+  return (
+    <div
+      className="flex min-h-[calc(100vh-2.5rem)] w-full flex-col items-center justify-center"
+      style={{ backgroundColor: 'hsl(var(--background))' }}
+    >
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+      <p className="mt-3 text-sm text-muted-foreground">{t('status.loading')}</p>
+    </div>
+  );
+}
 
 /**
  * Error Boundary to catch and display React rendering errors
@@ -165,10 +180,7 @@ function App() {
   return (
     <ErrorBoundary>
       <TooltipProvider delayDuration={300}>
-        <div
-          key={location.pathname}
-          className="animate-fade-in min-h-full flex-1"
-        >
+        <div className="min-h-full flex-1">
           <Routes>
             {/* Setup wizard (shown on first launch) */}
             <Route path="/setup/*" element={<Setup />} />
@@ -177,7 +189,14 @@ function App() {
             <Route element={<MainLayout />}>
               <Route path="/" element={<Chat />} />
               <Route path="/models" element={<Models />} />
-              <Route path="/employees" element={<Agents />} />
+              <Route
+                path="/employees"
+                element={
+                  <Suspense fallback={<EmployeesRouteFallback />}>
+                    <Agents />
+                  </Suspense>
+                }
+              />
               <Route path="/agents" element={<Navigate to="/employees" replace />} />
               <Route path="/channels" element={<Channels />} />
               <Route path="/skills" element={<Skills />} />
