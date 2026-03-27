@@ -360,23 +360,34 @@ function getManagedWorkspaceDirectory(agent: AgentListEntry): string | null {
 }
 
 export async function removeAgentWorkspaceDirectory(agent: { id: string; workspace?: string }): Promise<void> {
-  const workspaceDir = getManagedWorkspaceDirectory(agent as AgentListEntry);
-  if (!workspaceDir) {
-    logger.warn('Skipping agent workspace deletion for unmanaged path', {
-      agentId: agent.id,
-      workspace: agent.workspace,
-    });
+  if (agent.id === MAIN_AGENT_ID) {
     return;
   }
 
-  try {
-    await rm(workspaceDir, { recursive: true, force: true });
-  } catch (error) {
-    logger.warn('Failed to remove agent workspace directory', {
-      agentId: agent.id,
-      workspaceDir,
-      error: String(error),
-    });
+  const candidates = new Set<string>();
+  const managed = getManagedWorkspaceDirectory(agent as AgentListEntry);
+  if (managed) {
+    candidates.add(normalize(trimTrailingSeparators(managed)));
+  }
+  const openclawDir = getOpenClawConfigDir();
+  candidates.add(normalize(trimTrailingSeparators(join(openclawDir, `workspace-${agent.id}`)))));
+  candidates.add(
+    normalize(
+      trimTrailingSeparators(expandPath(agent.workspace || `~/.openclaw/workspace-${agent.id}`)),
+    ),
+  );
+
+  for (const workspaceDir of candidates) {
+    try {
+      await rm(workspaceDir, { recursive: true, force: true });
+      logger.info('Removed agent workspace directory', { agentId: agent.id, workspaceDir });
+    } catch (error) {
+      logger.warn('Failed to remove agent workspace directory', {
+        agentId: agent.id,
+        workspaceDir,
+        error: String(error),
+      });
+    }
   }
 }
 
@@ -724,40 +735,51 @@ export async function updateAgentModel(agentId: string, modelRef: string | null)
 
 export async function deleteAgentConfig(agentId: string): Promise<{ snapshot: AgentsSnapshot; removedEntry: AgentListEntry }> {
   return withConfigLock(async () => {
-    if (agentId === MAIN_AGENT_ID) {
+    const input = agentId.trim();
+    if (!input) {
+      throw new Error('Agent id is required');
+    }
+    if (input.toLowerCase() === MAIN_AGENT_ID.toLowerCase()) {
       throw new Error('The main agent cannot be deleted');
     }
 
     const config = await readOpenClawConfig() as AgentConfigDocument;
     const { agentsConfig, entries, defaultAgentId } = normalizeAgentsConfig(config);
     const snapshotBeforeDeletion = await buildSnapshotFromConfig(config);
-    const removedEntry = entries.find((entry) => entry.id === agentId);
-    const nextEntries = entries.filter((entry) => entry.id !== agentId);
-    if (!removedEntry || nextEntries.length === entries.length) {
+    const inputLower = input.toLowerCase();
+    const removeIndex = entries.findIndex((entry) => entry.id.trim().toLowerCase() === inputLower);
+    if (removeIndex === -1) {
       throw new Error(`Agent "${agentId}" not found`);
     }
+
+    const removedEntry = entries[removeIndex];
+    const canonicalId = removedEntry.id.trim();
+    const nextEntries = entries.filter((_, i) => i !== removeIndex);
 
     config.agents = {
       ...agentsConfig,
       list: nextEntries,
     };
+    const canonicalNorm = normalizeAgentIdForBinding(canonicalId);
     config.bindings = Array.isArray(config.bindings)
-      ? config.bindings.filter((binding) => !(isChannelBinding(binding) && binding.agentId === agentId))
+      ? config.bindings.filter((binding) => {
+          if (!isChannelBinding(binding)) return true;
+          return normalizeAgentIdForBinding(binding.agentId!) !== canonicalNorm;
+        })
       : undefined;
 
-    if (defaultAgentId === agentId && nextEntries.length > 0) {
+    if (defaultAgentId === canonicalId && nextEntries.length > 0) {
       nextEntries[0] = {
         ...nextEntries[0],
         default: true,
       };
     }
 
-    const normalizedAgentId = normalizeAgentIdForBinding(agentId);
-    const legacyAccountId = resolveAccountIdForAgent(agentId);
+    const legacyAccountId = resolveAccountIdForAgent(canonicalId);
     const ownedLegacyAccounts = new Set(
       Object.entries(snapshotBeforeDeletion.channelAccountOwners)
         .filter(([channelAccountKey, owner]) => {
-          if (owner !== normalizedAgentId) return false;
+          if (owner !== canonicalNorm) return false;
           const accountId = channelAccountKey.slice(channelAccountKey.indexOf(':') + 1);
           return accountId === legacyAccountId;
         })
@@ -765,15 +787,15 @@ export async function deleteAgentConfig(agentId: string): Promise<{ snapshot: Ag
     );
 
     await writeOpenClawConfig(config);
-    await deleteAgentChannelAccounts(agentId, ownedLegacyAccounts);
-    await removeAgentRuntimeDirectory(agentId);
+    await deleteAgentChannelAccounts(canonicalId, ownedLegacyAccounts);
+    await removeAgentRuntimeDirectory(canonicalId);
     // NOTE: workspace directory is NOT deleted here intentionally.
     // The caller (route handler) defers workspace removal until after
     // the Gateway process has fully restarted, so that any in-flight
     // process.chdir(workspace) calls complete before the directory
     // disappears (otherwise process.cwd() throws ENOENT for the rest
     // of the Gateway's lifetime).
-    logger.info('Deleted agent config entry', { agentId });
+    logger.info('Deleted agent config entry', { agentId: canonicalId, requestedAs: agentId });
     return { snapshot: await buildSnapshotFromConfig(config), removedEntry };
   });
 }

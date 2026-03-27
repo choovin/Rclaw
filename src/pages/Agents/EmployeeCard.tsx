@@ -8,7 +8,10 @@ import { cn } from '@/lib/utils';
 import type { EmployeeWithStatus } from '@/types/employee';
 import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmployeeRemoveDialog } from '@/components/common/EmployeeRemoveDialog';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { useEmployeesStore } from '@/stores/employees';
 import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 
@@ -49,8 +52,13 @@ export function EmployeeCard({
 }: EmployeeCardProps) {
   const { t } = useTranslation('employees');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
+  const myEmployees = useEmployeesStore((s) => s.myEmployees);
+  const linkedRow = myEmployees.find((e) => e.id === employee.id);
+  const linkedAgentId = linkedRow?.linkedAgentId?.trim();
   const isAdded = isEmployeeAdded(employee.id);
   const [addProgress, setAddProgress] = useState<number | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [missingLinkOpen, setMissingLinkOpen] = useState(false);
 
   const ADD_STEPS: StepConfig[] = [
     { label: '创建 Agent', icon: '🤖' },
@@ -62,21 +70,32 @@ export function EmployeeCard({
   const handleAddClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isAdded) {
-      removeEmployee(employee.id);
-      setAddProgress(null);
+      if (!linkedAgentId) {
+        setMissingLinkOpen(true);
+        return;
+      }
+      setRemoveOpen(true);
       return;
     }
     setAddProgress(0);
     try {
-      await addEmployee(employee, (stage) => {
+      const success = await addEmployee(employee, (stage) => {
         setAddProgress(provisionStageToIndex(stage));
       });
+      if (success) {
+        toast.success(t('addSuccess'));
+      } else if (isEmployeeAdded(employee.id)) {
+        toast.error(t('errors.addMustRemoveFirst'));
+      } else {
+        toast.error(t('addFailed'));
+      }
     } finally {
       setAddProgress(null);
     }
   };
 
   return (
+    <>
     <div
       onClick={onClick}
       className={cn(
@@ -150,5 +169,32 @@ export function EmployeeCard({
         </div>
       )}
     </div>
+
+    <ConfirmDialog
+      open={missingLinkOpen}
+      title={t('errors.missingLinkedAgentTitle')}
+      message={t('errors.missingLinkedAgent')}
+      confirmLabel={t('common:actions.confirm')}
+      cancelLabel={t('common:actions.cancel')}
+      variant="default"
+      onConfirm={() => setMissingLinkOpen(false)}
+      onCancel={() => setMissingLinkOpen(false)}
+    />
+
+    <EmployeeRemoveDialog
+      key={`${employee.id}-${removeOpen}`}
+      open={removeOpen}
+      onCancel={() => setRemoveOpen(false)}
+      onConfirm={async () => {
+        try {
+          await removeEmployee(employee.id);
+          setRemoveOpen(false);
+          toast.success(t('removeSuccess'));
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : String(err));
+        }
+      }}
+    />
+    </>
   );
 }

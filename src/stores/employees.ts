@@ -9,6 +9,14 @@ import { DEPARTMENT_MAP } from '@/types/employee';
 import { hostApiFetch } from '@/lib/host-api';
 import { useAgentsStore } from '@/stores/agents';
 
+/** Thrown when myEmployees row has no linkedAgentId (legacy / corrupt); UI should show errors.missingLinkedAgent. */
+export class MissingLinkedAgentError extends Error {
+  constructor() {
+    super('MISSING_LINKED_AGENT');
+    this.name = 'MissingLinkedAgentError';
+  }
+}
+
 interface EmployeesState {
   // All available employees from marketplace
   employees: EmployeeWithStatus[];
@@ -28,7 +36,7 @@ interface EmployeesState {
   // Actions
   setEmployees: (employees: EmployeeWithStatus[]) => void;
   addEmployee: (employee: Employee, onProvisionStage?: (stage: string) => void) => Promise<boolean>;
-  removeEmployee: (employeeId: string) => void;
+  removeEmployee: (employeeId: string) => Promise<void>;
   setSelectedDepartment: (department: Department | 'all') => void;
   setSelectedEmployee: (employee: Employee | null) => void;
   isEmployeeAdded: (employeeId: string) => boolean;
@@ -48,6 +56,10 @@ export const useEmployeesStore = create<EmployeesState>()(
       setEmployees: (employees) => set({ employees }),
 
       addEmployee: async (employee, onProvisionStage) => {
+        if (get().isEmployeeAdded(employee.id)) {
+          return false;
+        }
+
         const { employees, myEmployees } = get();
 
         let unsubscribe: (() => void) | undefined;
@@ -113,13 +125,17 @@ export const useEmployeesStore = create<EmployeesState>()(
         }
       },
 
-      removeEmployee: (employeeId) => {
+      removeEmployee: async (employeeId) => {
         const { employees, myEmployees, selectedEmployee } = get();
+        const row = myEmployees.find((e) => e.id === employeeId);
+        const linkedAgentId = row?.linkedAgentId?.trim();
+        if (!linkedAgentId) {
+          throw new MissingLinkedAgentError();
+        }
 
-        // Remove from my employees
+        await useAgentsStore.getState().deleteAgent(linkedAgentId);
+
         const newMyEmployees = myEmployees.filter((emp) => emp.id !== employeeId);
-
-        // Update employees list to mark as not added
         const updatedEmployees = employees.map((emp) =>
           emp.id === employeeId ? { ...emp, isAdded: false, addedAt: undefined } : emp
         );

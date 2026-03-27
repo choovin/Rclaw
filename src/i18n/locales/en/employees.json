@@ -20,5 +20,29 @@
     "vibe": "Style",
     "employeeId": "Employee ID",
     "skills": "Skills",
-    "channels": "Channels"
+    "channels": "Channels",
+    "addEmployee": "Add employee",
+    "addToMyEmployees": "Add to My Employees",
+    "addSuccess": "Added successfully",
+    "addFailed": "Could not add employee",
+    "alreadyAdded": "Already added",
+    "adding": "Adding…",
+    "startChat": "Start chat",
+    "removed": "Removed",
+    "removeSuccess": "Employee and linked Agent removed",
+    "removeDialog": {
+        "title": "Remove digital employee?",
+        "intro": "This will remove the linked OpenClaw Agent from your local config and delete its workspace directory.",
+        "bulletConfig": "Remove the Agent from OpenClaw configuration",
+        "bulletWorkspace": "Delete its workspace directory (persona and workspace Markdown, etc.)",
+        "bulletRuntime": "May affect runtime sessions or data tied to this Agent",
+        "bulletIrreversible": "This cannot be undone",
+        "acknowledge": "I understand the above",
+        "confirm": "Remove"
+    },
+    "errors": {
+        "missingLinkedAgentTitle": "Cannot remove automatically",
+        "missingLinkedAgent": "This employee is not linked to an OpenClaw Agent, so the app cannot delete config or workspace automatically. Please clean up in Agents or your local OpenClaw folder first, then handle the list entry.",
+        "addMustRemoveFirst": "This employee is already in your list. Remove them first before adding again."
+    }
 }

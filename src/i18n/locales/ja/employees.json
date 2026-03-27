@@ -20,5 +20,29 @@
     "vibe": "スタイル",
     "employeeId": "従業員ID",
     "skills": "スキル",
-    "channels": "チャンネル"
+    "channels": "チャンネル",
+    "addEmployee": "従業員を追加",
+    "addToMyEmployees": "マイ従業員に追加",
+    "addSuccess": "追加しました",
+    "addFailed": "追加に失敗しました",
+    "alreadyAdded": "追加済み",
+    "adding": "追加中…",
+    "startChat": "チャットを開始",
+    "removed": "削除しました",
+    "removeSuccess": "従業員と関連 Agent を削除しました",
+    "removeDialog": {
+        "title": "デジタル従業員を削除しますか？",
+        "intro": "ローカルの OpenClaw 設定から関連 Agent を削除し、ワークスペースディレクトリを削除します。",
+        "bulletConfig": "OpenClaw 設定から Agent を削除",
+        "bulletWorkspace": "ワークスペースディレクトリを削除（ペルソナや Markdown など）",
+        "bulletRuntime": "この Agent に紐づくランタイムのセッションやデータに影響する場合があります",
+        "bulletIrreversible": "この操作は元に戻せません",
+        "acknowledge": "上記の内容を理解しました",
+        "confirm": "削除する"
+    },
+    "errors": {
+        "missingLinkedAgentTitle": "自動削除できません",
+        "missingLinkedAgent": "この従業員は OpenClaw Agent に関連付けられていないため、設定やワークスペースを自動削除できません。「Agents」またはローカルの OpenClaw フォルダで手動整理後、リストを処理してください。",
+        "addMustRemoveFirst": "すでにリストにいます。追加する前に削除してください。"
+    }
 }

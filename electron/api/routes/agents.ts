@@ -214,6 +214,9 @@ export async function handleAgentRoutes(
         await removeAgentWorkspaceDirectory(removedEntry).catch((err) => {
           console.warn('[agents] Failed to remove workspace after agent deletion:', err);
         });
+        // Extra in-process reload hint so any attached supervisor picks up openclaw.json
+        // without relying solely on the kill+respawn path above.
+        scheduleGatewayReload(ctx, 'delete-agent');
         sendJson(res, 200, { success: true, ...snapshot });
       } catch (error) {
         sendJson(res, 500, { success: false, error: String(error) });
