@@ -1,5 +1,5 @@
-import { access, copyFile, mkdir, readdir, rm } from 'fs';
 import { constants } from 'fs';
+import { access, copyFile, mkdir, readdir, rm } from 'fs/promises';
 import { join, normalize } from 'path';
 import { deleteAgentChannelAccounts, listConfiguredChannels, readOpenClawConfig, writeOpenClawConfig } from './channel-config';
 import { withConfigLock } from './config-mutex';
