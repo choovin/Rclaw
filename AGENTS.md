@@ -23,6 +23,11 @@ Standard dev commands are in `package.json` scripts and `README.md`. Key ones:
 | E2E tests (Playwright) | `pnpm run test:e2e` |
 | Build frontend only | `pnpm run build:vite` |
 
+### Git 提交信息
+
+- **提交说明（标题与正文）请使用中文**，便于阅读历史与协作；专有名词、文件路径、API、命令等可保留英文。
+- 多行正文时，首行概括改动，空行后分条说明要点即可。
+
 ### Non-obvious caveats
 
 - **pnpm version**: The exact pnpm version is pinned via `packageManager` in `package.json`. Use `corepack enable && corepack prepare` to activate the correct version before installing.
