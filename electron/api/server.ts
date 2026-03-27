@@ -3,6 +3,7 @@ import { PORTS } from '../utils/config';
 import { logger } from '../utils/logger';
 import type { HostApiContext } from './context';
 import { handleAppRoutes } from './routes/app';
+import { handleCloudAuthRoutes } from './routes/cloud-auth';
 import { handleGatewayRoutes } from './routes/gateway';
 import { handleSettingsRoutes } from './routes/settings';
 import { handleProviderRoutes } from './routes/providers';
@@ -24,6 +25,7 @@ type RouteHandler = (
 ) => Promise<boolean>;
 
 const routeHandlers: RouteHandler[] = [
+  handleCloudAuthRoutes,
   handleAppRoutes,
   handleGatewayRoutes,
   handleSettingsRoutes,

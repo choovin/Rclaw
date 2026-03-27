@@ -5,6 +5,7 @@
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
+import { LoginModal } from '@/components/common/LoginModal';
 import { VersionDisplay } from './VersionDisplay';
 
 export function MainLayout() {
@@ -23,6 +24,9 @@ export function MainLayout() {
 
       {/* Version display at bottom left */}
       <VersionDisplay />
+
+      {/* Login modal overlay */}
+      <LoginModal />
     </div>
   );
 }

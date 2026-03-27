@@ -9,9 +9,11 @@ import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { useChatStore, type RawMessage } from '@/stores/chat';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
+import { useAuthStore } from '@/stores/auth';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import type { FileAttachment } from './ChatInput';
 import { ChatToolbar } from './ChatToolbar';
 import { extractImages, extractText, extractThinking, extractToolUse } from './message-utils';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +41,14 @@ export function Chat() {
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
 
   const cleanupEmptySession = useChatStore((s) => s.cleanupEmptySession);
+
+  // Gate: 检查登录状态，未登录则弹出登录框
+  const handleSend = async (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {
+    if (!(await useAuthStore.getState().requireAuth())) {
+      return; // 未登录，登录框已弹出
+    }
+    sendMessage(text, attachments, targetAgentId);
+  };
 
   const [streamingTimestamp, setStreamingTimestamp] = useState<number>(0);
   const minLoading = useMinLoading(loading && messages.length > 0);
@@ -167,7 +177,7 @@ export function Chat() {
 
       {/* Input Area */}
       <ChatInput
-        onSend={sendMessage}
+        onSend={handleSend}
         onStop={abortRun}
         disabled={!isGatewayRunning}
         sending={sending}

@@ -164,6 +164,8 @@ const electronAPI = {
         'channel:wechat-qr',
         'channel:wechat-success',
         'channel:wechat-error',
+        'cloud:token-refreshed',   // Token 刷新成功事件
+        'cloud:logged-out',        // 登出事件
         'gateway:exit',
         'gateway:error',
         'navigate',
