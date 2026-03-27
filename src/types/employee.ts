@@ -37,6 +37,8 @@ export interface Employee {
   soulContent?: string;
   agentsContent?: string;
   identityContent?: string;
+  /** OpenClaw agent id after provisioning (slug); may differ from `id`. */
+  linkedAgentId?: string;
 }
 
 export interface EmployeeWithStatus extends Employee {

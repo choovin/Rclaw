@@ -1,9 +1,10 @@
-import { access, copyFile, mkdir, readdir, rm, writeFileSync } from 'fs';
+import { access, copyFile, mkdir, readdir, rm } from 'fs';
 import { constants } from 'fs';
 import { join, normalize } from 'path';
 import { deleteAgentChannelAccounts, listConfiguredChannels, readOpenClawConfig, writeOpenClawConfig } from './channel-config';
 import { withConfigLock } from './config-mutex';
 import { expandPath, getOpenClawConfigDir } from './paths';
+import { writeDigitalEmployeeWorkspaceFiles } from './digital-employee-workspace';
 import * as logger from './logger';
 import { toUiChannelType } from './channel-alias';
 
@@ -589,6 +590,64 @@ export async function createAgent(
   });
 }
 
+export type ProvisionWorkspaceStage = 'create_agent' | 'write_files' | 'verify';
+
+export interface ProvisionDigitalEmployeePayload {
+  nameZh: string;
+  nameEn: string;
+  soulContent: string;
+  agentsContent: string;
+  identityContent: string;
+}
+
+export interface ProvisionDigitalEmployeeResult {
+  agentId: string;
+  workspacePath: string;
+}
+
+export async function provisionDigitalEmployeeAgent(
+  payload: ProvisionDigitalEmployeePayload,
+  onStage?: (stage: ProvisionWorkspaceStage) => void,
+): Promise<ProvisionDigitalEmployeeResult> {
+  const before = await listAgentsSnapshot();
+  const beforeIds = new Set(before.agents.map((a) => a.id));
+
+  onStage?.('create_agent');
+  const after = await createAgent(payload.nameZh, { inheritWorkspace: false });
+
+  const created = after.agents.find((a) => !beforeIds.has(a.id));
+  if (!created) {
+    throw new Error('provisionDigitalEmployeeAgent: could not resolve new agent id');
+  }
+
+  const workspacePath = expandPath(created.workspace);
+
+  onStage?.('write_files');
+  try {
+    writeDigitalEmployeeWorkspaceFiles(workspacePath, {
+      nameZh: payload.nameZh,
+      nameEn: payload.nameEn,
+      soulContent: payload.soulContent,
+      agentsContent: payload.agentsContent,
+      identityContent: payload.identityContent,
+    });
+  } catch (err) {
+    const e = new Error(String(err)) as Error & { agentId?: string };
+    e.agentId = created.id;
+    throw e;
+  }
+
+  onStage?.('verify');
+  const existsSoul = await fileExists(join(workspacePath, 'SOUL.md'));
+  if (payload.soulContent && !existsSoul) {
+    const e = new Error('provisionDigitalEmployeeAgent: SOUL.md missing after write') as Error & { agentId?: string };
+    e.agentId = created.id;
+    throw e;
+  }
+
+  return { agentId: created.id, workspacePath };
+}
+
 export async function updateAgentName(agentId: string, name: string): Promise<AgentsSnapshot> {
   return withConfigLock(async () => {
     const config = await readOpenClawConfig() as AgentConfigDocument;
@@ -795,64 +854,13 @@ export async function createEmployeeWorkspace(
   const workspaceDir = join(openclawDir, `workspace-${options.employeeId}`);
 
   try {
-    // Create workspace directory
-    mkdirSync(workspaceDir, { recursive: true });
-
-    // Write workspace files
-    if (options.soulContent) {
-      writeFileSync(join(workspaceDir, 'SOUL.md'), options.soulContent, 'utf-8');
-    }
-    if (options.agentsContent) {
-      writeFileSync(join(workspaceDir, 'AGENTS.md'), options.agentsContent, 'utf-8');
-    }
-    if (options.identityContent) {
-      writeFileSync(join(workspaceDir, 'IDENTITY.md'), options.identityContent, 'utf-8');
-    }
-
-    // Write user.md template
-    const userContent = `# 👤 我的资料
-
-## 基本信息
-- **名字**：${options.nameZh}
-- **英文名**：${options.nameEn}
-- **角色**：数字员工
-
-## 我擅长的
-<!-- 从员工技能中提取 -->
-
-## 我的工作风格
-<!-- 从员工人设中提取 -->
-
-## 当前项目
-<!-- 记录当前正在处理的项目 -->
-
-## 常用工具
-<!-- 记录常用的工具和命令 -->
-
----
-*由 Rclaw 数字员工系统生成*
-`;
-    writeFileSync(join(workspaceDir, 'user.md'), userContent, 'utf-8');
-
-    // Write todo.md template
-    const todoContent = `# 📋 待办事项
-
-## 今日任务
-- [ ]
-
-## 本周目标
-- [ ]
-
-## 进行中的项目
-<!-- 记录正在进行的项目 -->
-
-## 已完成
-- [ ]
-
----
-*由 Rclaw 数字员工系统生成*
-`;
-    writeFileSync(join(workspaceDir, 'todo.md'), todoContent, 'utf-8');
+    writeDigitalEmployeeWorkspaceFiles(workspaceDir, {
+      nameZh: options.nameZh,
+      nameEn: options.nameEn,
+      soulContent: options.soulContent,
+      agentsContent: options.agentsContent,
+      identityContent: options.identityContent,
+    });
 
     logger.info(`[createEmployeeWorkspace] Created workspace for ${options.nameZh} at ${workspaceDir}`);
 

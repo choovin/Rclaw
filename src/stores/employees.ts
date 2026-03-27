@@ -27,7 +27,7 @@ interface EmployeesState {
 
   // Actions
   setEmployees: (employees: EmployeeWithStatus[]) => void;
-  addEmployee: (employee: Employee) => Promise<boolean>;
+  addEmployee: (employee: Employee, onProvisionStage?: (stage: string) => void) => Promise<boolean>;
   removeEmployee: (employeeId: string) => void;
   setSelectedDepartment: (department: Department | 'all') => void;
   setSelectedEmployee: (employee: Employee | null) => void;
@@ -47,27 +47,23 @@ export const useEmployeesStore = create<EmployeesState>()(
 
       setEmployees: (employees) => set({ employees }),
 
-      addEmployee: async (employee) => {
+      addEmployee: async (employee, onProvisionStage) => {
         const { employees, myEmployees } = get();
+
+        let unsubscribe: (() => void) | undefined;
+        if (typeof window !== 'undefined' && window.electron?.ipcRenderer?.on) {
+          const dispose = window.electron.ipcRenderer.on('employee-provision:stage', (...args: unknown[]) => {
+            const payload = args[0] as { stage?: string } | undefined;
+            const stage = payload?.stage;
+            if (stage) onProvisionStage?.(stage);
+          });
+          if (typeof dispose === 'function') unsubscribe = dispose;
+        }
 
         try {
           set({ isLoading: true });
 
-          // 1. 调用 OpenClaw API 创建 Agent（如果失败不阻塞继续）
-          try {
-            await hostApiFetch('/api/agents', {
-              method: 'POST',
-              body: JSON.stringify({
-                name: employee.nameZh,
-                inheritWorkspace: false,
-              }),
-            });
-          } catch (apiError) {
-            console.warn('OpenClaw API call failed, continuing with workspace creation:', apiError);
-          }
-
-          // 2. 调用 API 创建员工 workspace 文件
-          await hostApiFetch('/api/employees/workspace', {
+          const res = (await hostApiFetch('/api/employees/provision', {
             method: 'POST',
             body: JSON.stringify({
               employeeId: employee.id,
@@ -77,13 +73,21 @@ export const useEmployeesStore = create<EmployeesState>()(
               agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
               identityContent: (employee as EmployeeWithStatus).identityContent || '',
             }),
-          });
+          })) as {
+            success?: boolean;
+            agentId?: string;
+            error?: string;
+          };
 
-          // 3. 刷新 Agents 列表（使"Agents"标签页能看到新添加的Agent）
+          if (!res.success || !res.agentId) {
+            set({ isLoading: false });
+            return false;
+          }
+
           useAgentsStore.getState().fetchAgents();
 
-          // 4. 更新本地状态
-          const newMyEmployees = [...myEmployees, employee];
+          const withLink: Employee = { ...employee, linkedAgentId: res.agentId };
+          const newMyEmployees = [...myEmployees, withLink];
           const updatedEmployees = employees.map((emp) =>
             emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
           );
@@ -99,6 +103,8 @@ export const useEmployeesStore = create<EmployeesState>()(
           console.error('Failed to add employee:', error);
           set({ isLoading: false });
           return false;
+        } finally {
+          unsubscribe?.();
         }
       },
 

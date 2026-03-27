@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
 import { useEmployeesStore } from '@/stores/employees';
+import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
@@ -45,10 +46,10 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
   const [addProgress, setAddProgress] = useState<number | null>(null);
 
   const ADD_STEPS: StepConfig[] = [
-    { label: '正在准备员工配置...', icon: '⚙️' },
-    { label: '正在创建工作目录...', icon: '📁' },
-    { label: '正在初始化文件...', icon: '📝' },
-    { label: '正在注册到系统...', icon: '✅' },
+    { label: '创建 Agent', icon: '🤖' },
+    { label: '写入工作区文件', icon: '📝' },
+    { label: '校验文件', icon: '✓' },
+    { label: '同步并重载 Gateway', icon: '🔄' },
   ];
 
   const handleAddRemove = async () => {
@@ -58,13 +59,11 @@ export function EmployeeDetail({ employee, onClose }: EmployeeDetailProps) {
       removeEmployee(employee.id);
       toast.success(t('removed'));
     } else {
-      // 模拟步骤进度
-      for (let step = 0; step < ADD_STEPS.length; step++) {
-        setAddProgress(step);
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+      setAddProgress(0);
       try {
-        const success = await addEmployee(employee);
+        const success = await addEmployee(employee, (stage) => {
+          setAddProgress(provisionStageToIndex(stage));
+        });
         if (success) {
           toast.success(t('addSuccess'));
         } else {

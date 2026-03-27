@@ -168,6 +168,7 @@ const electronAPI = {
         'cloud:logged-out',        // 登出事件
         'gateway:exit',
         'gateway:error',
+        'employee-provision:stage',
         'navigate',
         'update:status-changed',
         'update:checking',

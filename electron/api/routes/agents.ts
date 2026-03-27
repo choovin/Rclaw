@@ -3,13 +3,14 @@ import {
   assignChannelToAgent,
   clearChannelBinding,
   createAgent,
-  createEmployeeWorkspace,
   deleteAgentConfig,
   listAgentsSnapshot,
+  provisionDigitalEmployeeAgent,
   removeAgentWorkspaceDirectory,
   resolveAccountIdForAgent,
   updateAgentModel,
   updateAgentName,
+  type ProvisionWorkspaceStage,
 } from '../../utils/agent-config';
 import { deleteChannelAccountConfig } from '../../utils/channel-config';
 import { syncAgentModelOverrideToRuntime, syncAllProviderAuthToRuntime } from '../../services/providers/provider-runtime-sync';
@@ -22,6 +23,12 @@ function scheduleGatewayReload(ctx: HostApiContext, reason: string): void {
     return;
   }
   void reason;
+}
+
+type ProvisionEmitStage = ProvisionWorkspaceStage | 'sync_reload';
+
+function emitProvisionStage(ctx: HostApiContext, stage: ProvisionEmitStage): void {
+  ctx.mainWindow?.webContents.send('employee-provision:stage', { stage });
 }
 
 import { exec } from 'child_process';
@@ -244,8 +251,8 @@ export async function handleAgentRoutes(
     }
   }
 
-  // POST /api/employees/workspace - Create employee workspace (IPC-free alternative)
-  if (url.pathname === '/api/employees/workspace' && req.method === 'POST') {
+  // POST /api/employees/provision — create Agent, write MD into real workspace, sync + reload
+  if (url.pathname === '/api/employees/provision' && req.method === 'POST') {
     try {
       const body = await parseJsonBody<{
         employeeId: string;
@@ -255,17 +262,43 @@ export async function handleAgentRoutes(
         agentsContent: string;
         identityContent: string;
       }>(req);
-      const result = await createEmployeeWorkspace({
-        employeeId: body.employeeId,
-        nameZh: body.nameZh,
-        nameEn: body.nameEn,
-        soulContent: body.soulContent || '',
-        agentsContent: body.agentsContent || '',
-        identityContent: body.identityContent || '',
+
+      const result = await provisionDigitalEmployeeAgent(
+        {
+          nameZh: body.nameZh,
+          nameEn: body.nameEn,
+          soulContent: body.soulContent || '',
+          agentsContent: body.agentsContent || '',
+          identityContent: body.identityContent || '',
+        },
+        (stage) => emitProvisionStage(ctx, stage),
+      );
+
+      emitProvisionStage(ctx, 'sync_reload');
+      syncAllProviderAuthToRuntime().catch((err) => {
+        console.warn('[agents] Failed to sync provider auth after employee provision:', err);
       });
-      sendJson(res, 200, { success: true, ...result });
+      scheduleGatewayReload(ctx, 'provision-employee');
+
+      const snap = await listAgentsSnapshot();
+      const exists = snap.agents.some((a) => a.id === result.agentId);
+      if (!exists) {
+        throw new Error('Provisioned agent missing from snapshot after reload schedule');
+      }
+
+      sendJson(res, 200, {
+        success: true,
+        agentId: result.agentId,
+        workspacePath: result.workspacePath,
+        employeeId: body.employeeId,
+      });
     } catch (error) {
-      sendJson(res, 500, { success: false, error: String(error) });
+      const err = error as Error & { agentId?: string };
+      sendJson(res, 500, {
+        success: false,
+        error: String(error),
+        agentId: err.agentId,
+      });
     }
     return true;
   }

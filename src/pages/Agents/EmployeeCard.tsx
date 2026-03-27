@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
 import { Plus } from 'lucide-react';
 import { useEmployeesStore } from '@/stores/employees';
+import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 
 const DEPARTMENT_COLORS: Record<string, string> = {
   engineering: 'from-blue-500 to-blue-600',
@@ -52,30 +53,26 @@ export function EmployeeCard({
   const [addProgress, setAddProgress] = useState<number | null>(null);
 
   const ADD_STEPS: StepConfig[] = [
-    { label: '准备中...', icon: '⚙️' },
-    { label: '配置中...', icon: '🔧' },
-    { label: '启动中...', icon: '🚀' },
+    { label: '创建 Agent', icon: '🤖' },
+    { label: '写入工作区', icon: '📝' },
+    { label: '校验文件', icon: '✓' },
+    { label: '同步 Gateway', icon: '🔄' },
   ];
 
-  const handleAddClick = (e: React.MouseEvent) => {
+  const handleAddClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isAdded) {
       removeEmployee(employee.id);
       setAddProgress(null);
-    } else {
-      // Simulate adding steps
-      setAddProgress(0);
-      let step = 0;
-      const interval = setInterval(() => {
-        step++;
-        if (step >= ADD_STEPS.length) {
-          clearInterval(interval);
-          addEmployee(employee);
-          setAddProgress(null);
-        } else {
-          setAddProgress(step);
-        }
-      }, 300);
+      return;
+    }
+    setAddProgress(0);
+    try {
+      await addEmployee(employee, (stage) => {
+        setAddProgress(provisionStageToIndex(stage));
+      });
+    } finally {
+      setAddProgress(null);
     }
   };
 
