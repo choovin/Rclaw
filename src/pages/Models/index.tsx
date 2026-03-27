@@ -10,6 +10,7 @@ import { useGatewayStore } from '@/stores/gateway';
 import { useSettingsStore } from '@/stores/settings';
 import { hostApiFetch } from '@/lib/host-api';
 import { trackUiEvent } from '@/lib/telemetry';
+import { cn } from '@/lib/utils';
 import { ProvidersSettings } from '@/components/settings/ProvidersSettings';
 import { FeedbackState } from '@/components/common/FeedbackState';
 import {
@@ -192,7 +193,7 @@ export function Models() {
   const usageLoading = isGatewayRunning && fetchState.status === 'loading';
 
   return (
-    <div className="flex flex-col -m-6 dark:bg-background h-[calc(100vh-2.5rem)] overflow-hidden">
+    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16">
         
         {/* Header */}
