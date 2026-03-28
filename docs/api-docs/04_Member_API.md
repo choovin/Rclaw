@@ -49,7 +49,9 @@
 
 - 需会员登录态（与其它 `/app-api/member/*` 一致）。
 - 典型响应包裹：`{ code: 0 | 200, data: { ... } }`；业务字段在 `data` 内（若后端扁平返回，客户端亦兼容）。
-- **`data.baseUrl`**（string）：OpenAI 兼容网关根地址。
+- **`data.baseUrl`**（string，优先）：OpenAI 兼容网关根地址。
+- **`data.apiUrl`**（string，可选）：与 `baseUrl` 二选一；仅当 `baseUrl` 为空时使用。
+- RClaw 会规范化地址：**若末尾不是 `/v1`（忽略大小写）则自动追加 `/v1`**，以便与 OpenAI Completions 路径对齐。
 - **`data.platformAccessToken`**（string）：作为 API Key 使用；若后端仅返回 `apiKey`，客户端同等对待。
 
 ## `AppMemberCommentController`

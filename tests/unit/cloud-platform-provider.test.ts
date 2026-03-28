@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest';
-import { parseMemberNewApiConfig } from '@electron/services/cloud-platform-provider';
+import {
+  ensureOpenAiCompatibleBaseUrlV1,
+  parseMemberNewApiConfig,
+} from '@electron/services/cloud-platform-provider';
+
+describe('ensureOpenAiCompatibleBaseUrlV1', () => {
+  it('appends /v1 when missing', () => {
+    expect(ensureOpenAiCompatibleBaseUrlV1('https://api.example.com')).toBe('https://api.example.com/v1');
+    expect(ensureOpenAiCompatibleBaseUrlV1('https://api.example.com/')).toBe('https://api.example.com/v1');
+  });
+
+  it('does not duplicate /v1', () => {
+    expect(ensureOpenAiCompatibleBaseUrlV1('https://api.example.com/v1')).toBe('https://api.example.com/v1');
+    expect(ensureOpenAiCompatibleBaseUrlV1('https://api.example.com/v1/')).toBe('https://api.example.com/v1');
+  });
+
+  it('is case-insensitive for v1 suffix', () => {
+    expect(ensureOpenAiCompatibleBaseUrlV1('https://x/V1')).toBe('https://x/V1');
+  });
+});
 
 describe('parseMemberNewApiConfig', () => {
   it('accepts code+data wrapper with platformAccessToken', () => {
@@ -10,12 +29,12 @@ describe('parseMemberNewApiConfig', () => {
     expect(r).toEqual({ baseUrl: 'https://api.example/v1', apiKey: 'tok' });
   });
 
-  it('accepts apiKey in data', () => {
+  it('normalizes trailing slash and adds /v1 when missing', () => {
     const r = parseMemberNewApiConfig({
       code: 200,
       data: { baseUrl: 'https://x/', apiKey: 'key123' },
     });
-    expect(r).toEqual({ baseUrl: 'https://x/', apiKey: 'key123' });
+    expect(r).toEqual({ baseUrl: 'https://x/v1', apiKey: 'key123' });
   });
 
   it('prefers platformAccessToken over apiKey', () => {
@@ -26,7 +45,26 @@ describe('parseMemberNewApiConfig', () => {
         apiKey: 'ak',
       },
     });
-    expect(r).toEqual({ baseUrl: 'https://a/', apiKey: 'pt' });
+    expect(r).toEqual({ baseUrl: 'https://a/v1', apiKey: 'pt' });
+  });
+
+  it('uses apiUrl when baseUrl empty', () => {
+    const r = parseMemberNewApiConfig({
+      code: 0,
+      data: { apiUrl: 'https://gw.test', platformAccessToken: 't' },
+    });
+    expect(r).toEqual({ baseUrl: 'https://gw.test/v1', apiKey: 't' });
+  });
+
+  it('prefers baseUrl over apiUrl', () => {
+    const r = parseMemberNewApiConfig({
+      data: {
+        baseUrl: 'https://primary',
+        apiUrl: 'https://ignored',
+        platformAccessToken: 't',
+      },
+    });
+    expect(r).toEqual({ baseUrl: 'https://primary/v1', apiKey: 't' });
   });
 
   it('returns null if token missing', () => {

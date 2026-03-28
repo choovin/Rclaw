@@ -30,6 +30,19 @@ import { logger } from '../utils/logger';
 
 export type SyncPlatformProviderResult = { ok: true } | { ok: false; error: string };
 
+/**
+ * OpenAI 兼容网关 baseUrl 需以 `/v1` 结尾；接口若只返回 host 或省略版本段则补上。
+ */
+export function ensureOpenAiCompatibleBaseUrlV1(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  const noTrailingSlash = trimmed.replace(/\/+$/, '');
+  if (/\/v1$/i.test(noTrailingSlash)) {
+    return noTrailingSlash;
+  }
+  return `${noTrailingSlash}/v1`;
+}
+
 export function parseMemberNewApiConfig(json: unknown): { baseUrl: string; apiKey: string } | null {
   if (json == null || typeof json !== 'object') return null;
   const root = json as Record<string, unknown>;
@@ -43,7 +56,10 @@ export function parseMemberNewApiConfig(json: unknown): { baseUrl: string; apiKe
   }
 
   const obj = payload as Record<string, unknown>;
-  const baseUrl = typeof obj.baseUrl === 'string' ? obj.baseUrl.trim() : '';
+  const fromBase = typeof obj.baseUrl === 'string' ? obj.baseUrl.trim() : '';
+  const fromApiUrl = typeof obj.apiUrl === 'string' ? obj.apiUrl.trim() : '';
+  const baseUrlRaw = fromBase || fromApiUrl;
+  const baseUrl = baseUrlRaw ? ensureOpenAiCompatibleBaseUrlV1(baseUrlRaw) : '';
   const token =
     (typeof obj.platformAccessToken === 'string' && obj.platformAccessToken.trim())
     || (typeof obj.apiKey === 'string' && obj.apiKey.trim())
