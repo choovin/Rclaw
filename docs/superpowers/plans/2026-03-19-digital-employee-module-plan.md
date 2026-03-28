@@ -13,7 +13,7 @@
 ## 文件结构
 
 ```
-ClawX/
+RClaw/
 ├── scripts/
 │   └── convert-agents-enhanced.js     # 增强版转换脚本（新建）
 │
@@ -401,7 +401,7 @@ function generateUserTemplate(options: any): string {
 <!-- 记录常用的工具和命令 -->
 
 ---
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 `;
 }
 
@@ -421,7 +421,7 @@ function generateTodoTemplate(options: any): string {
 - [ ]
 
 ---
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 `;
 }
 ```

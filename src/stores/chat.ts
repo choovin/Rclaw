@@ -1334,7 +1334,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Extract first user message text as a session label for display in the toolbar.
       // Skip main sessions (key ends with ":main") — they rely on the Gateway-provided
-      // displayName (e.g. the configured agent name "Rclaw") instead.
+      // displayName (e.g. the configured agent name "RClaw") instead.
       const isMainSession = currentSessionKey.endsWith(':main');
       if (!isMainSession) {
         const firstUserMsg = finalMessages.find((m) => m.role === 'user');

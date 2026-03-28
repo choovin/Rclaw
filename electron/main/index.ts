@@ -77,7 +77,7 @@ if (process.platform === 'linux') {
 // The losing process must exit immediately so it never reaches Gateway startup.
 const gotElectronLock = app.requestSingleInstanceLock();
 if (!gotElectronLock) {
-  console.info('[ClawX] Another instance already holds the single-instance lock; exiting duplicate process');
+  console.info('[RClaw] Another instance already holds the single-instance lock; exiting duplicate process');
   app.exit(0);
 }
 let releaseProcessInstanceFileLock: () => void = () => {};
@@ -97,12 +97,12 @@ if (gotElectronLock) {
           ? 'unknown lock format/content'
           : 'unknown owner';
       console.info(
-        `[ClawX] Another instance already holds process lock (${fileLock.lockPath}, ${ownerDescriptor}); exiting duplicate process`,
+        `[RClaw] Another instance already holds process lock (${fileLock.lockPath}, ${ownerDescriptor}); exiting duplicate process`,
       );
       app.exit(0);
     }
   } catch (error) {
-    console.warn('[ClawX] Failed to acquire process instance file lock; continuing with Electron single-instance lock only', error);
+    console.warn('[RClaw] Failed to acquire process instance file lock; continuing with Electron single-instance lock only', error);
   }
 }
 const gotTheLock = gotElectronLock && gotFileLock;
@@ -249,7 +249,7 @@ function createMainWindow(): BrowserWindow {
 async function initialize(): Promise<void> {
   // Initialize logger first
   logger.init();
-  logger.info('=== Rclaw Application Starting ===');
+  logger.info('=== RClaw Application Starting ===');
   logger.debug(
     `Runtime: platform=${process.platform}/${process.arch}, electron=${process.versions.electron}, node=${process.versions.node}, packaged=${app.isPackaged}, pid=${process.pid}, ppid=${process.ppid}`
   );
@@ -312,7 +312,7 @@ async function initialize(): Promise<void> {
   // Note: Auto-check for updates is driven by the renderer (update store init)
   // so it respects the user's "Auto-check for updates" setting.
 
-  // Repair any bootstrap files that only contain Rclaw markers (no OpenClaw
+  // Repair any bootstrap files that only contain RClaw markers (no OpenClaw
   // template content). This fixes a race condition where ensureClawXContext()
   // previously created the file before the gateway could seed the full template.
   void repairClawXOnlyBootstrapFiles().catch((error) => {
@@ -344,7 +344,7 @@ async function initialize(): Promise<void> {
     hostEventBus.emit('gateway:status', status);
     if (status.state === 'running') {
       void ensureClawXContext().catch((error) => {
-        logger.warn('Failed to re-merge Rclaw context after gateway reconnect:', error);
+        logger.warn('Failed to re-merge RClaw context after gateway reconnect:', error);
       });
     }
   });
@@ -429,11 +429,11 @@ async function initialize(): Promise<void> {
     logger.info('Gateway auto-start disabled in settings');
   }
 
-  // Merge Rclaw context snippets into the workspace bootstrap files.
+  // Merge RClaw context snippets into the workspace bootstrap files.
   // The gateway seeds workspace files asynchronously after its HTTP server
   // is ready, so ensureClawXContext will retry until the target files appear.
   void ensureClawXContext().catch((error) => {
-    logger.warn('Failed to merge Rclaw context into workspace:', error);
+    logger.warn('Failed to merge RClaw context into workspace:', error);
   });
 
   // Auto-install openclaw CLI and shell completions (non-blocking).
@@ -474,7 +474,7 @@ if (gotTheLock) {
 
   // When a second instance is launched, focus the existing window instead.
   app.on('second-instance', () => {
-    logger.info('Second Rclaw instance detected; redirecting to the existing window');
+    logger.info('Second RClaw instance detected; redirecting to the existing window');
 
     const focusRequest = requestSecondInstanceFocus(
       mainWindowFocusState,

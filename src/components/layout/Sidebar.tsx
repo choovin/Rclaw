@@ -234,7 +234,7 @@ export function Sidebar() {
       >
         {!sidebarCollapsed && (
           <div className="flex items-center gap-2.5 overflow-hidden px-1">
-            <img src={logoSvg} alt="Rclaw" className={cn('w-auto shrink-0', isMac ? 'h-5' : 'h-6')} />
+            <img src={logoSvg} alt="RClaw" className={cn('w-auto shrink-0', isMac ? 'h-5' : 'h-6')} />
             <span
               className={cn(
                 'truncate font-semibold whitespace-nowrap text-foreground/90',
@@ -242,7 +242,7 @@ export function Sidebar() {
               )}
               style={{ letterSpacing: '-0.01em' }}
             >
-              Rclaw
+              RClaw
             </span>
           </div>
         )}

@@ -26,9 +26,9 @@
             ]
         }
     },
-    "description": "Rclaw - 基于 OpenClaw 的图形化 AI 助手",
+    "description": "RClaw - 基于 OpenClaw 的图形化 AI 助手",
     "main": "dist-electron/main/index.js",
-    "author": "Rclaw Team",
+    "author": "RClaw Team",
     "license": "MIT",
     "private": true,
     "scripts": {

@@ -1,6 +1,6 @@
 # 数字员工模块完整实现 - 设计文档
 
-**项目**：ClawX (Rclaw) 数字员工系统
+**项目**：RClaw 数字员工系统
 **版本**：v1.0
 **创建日期**：2026-03-19
 **状态**：待用户评审
@@ -250,7 +250,7 @@ POST /api/agents/create-employee
 
 ---
 
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 ```
 
 #### 3.3.4 todo.md 模板
@@ -273,7 +273,7 @@ POST /api/agents/create-employee
 
 ---
 
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 ```
 
 #### 3.3.5 涉及文件
@@ -394,7 +394,7 @@ function useMyEmployees(): EmployeeWithStatus[]
 ## 六、文件结构
 
 ```
-ClawX/
+RClaw/
 ├── scripts/
 │   └── convert-agents-enhanced.js    # 增强版转换脚本
 │

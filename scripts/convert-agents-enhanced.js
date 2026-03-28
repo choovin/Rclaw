@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const AGENTS_DIR = 'C:/Users/zengqiaowen-pc/ClawX/agency-agents-zh';
+const AGENTS_DIR = 'C:/Users/zengqiaowen-pc/RClaw/agency-agents-zh';
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'data', 'employees');
 
 // Department mapping

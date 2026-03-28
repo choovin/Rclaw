@@ -67,6 +67,7 @@ docs/pr-session-notes-*.md
 .cursor/
 .pnpm-store/
 Rclaw-resimg/
+RClaw-resimg/
 .claude/
 
 # Worktrees

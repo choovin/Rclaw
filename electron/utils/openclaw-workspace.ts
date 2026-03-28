@@ -126,9 +126,9 @@ export async function repairClawXOnlyBootstrapFiles(): Promise<void> {
       if (before === '' && after === '') {
         try {
           await unlink(filePath);
-          logger.info(`Removed ClawX-only bootstrap file for re-seeding: ${file} (${workspaceDir})`);
+          logger.info(`Removed RClaw-only bootstrap file for re-seeding: ${file} (${workspaceDir})`);
         } catch {
-          logger.warn(`Failed to remove ClawX-only bootstrap file: ${filePath}`);
+          logger.warn(`Failed to remove RClaw-only bootstrap file: ${filePath}`);
         }
       }
     }
@@ -147,7 +147,7 @@ async function mergeClawXContextOnce(): Promise<number> {
   if (!(await fileExists(contextDir))) {
     // Avoid logging if the logger might be broken (e.g., during app shutdown)
     try {
-      logger.debug('ClawX context directory not found, skipping context merge');
+      logger.debug('RClaw context directory not found, skipping context merge');
     } catch {
       // ignore
     }
@@ -188,7 +188,7 @@ async function mergeClawXContextOnce(): Promise<number> {
       if (merged !== existing) {
         await writeFile(targetPath, merged, 'utf-8');
         try {
-          logger.info(`Merged ClawX context into ${targetName} (${workspaceDir})`);
+          logger.info(`Merged RClaw context into ${targetName} (${workspaceDir})`);
         } catch {
           // ignore logging errors during shutdown
         }
@@ -215,21 +215,21 @@ export async function ensureClawXContext(): Promise<void> {
     skipped = await mergeClawXContextOnce();
     if (skipped === 0) {
       try {
-        logger.info(`ClawX context merge completed after ${attempt} retry(ies)`);
+        logger.info(`RClaw context merge completed after ${attempt} retry(ies)`);
       } catch {
         // ignore logging errors during shutdown
       }
       return;
     }
     try {
-      logger.debug(`ClawX context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
+      logger.debug(`RClaw context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
     } catch {
       // ignore logging errors during shutdown
     }
   }
 
   try {
-    logger.warn(`ClawX context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
+    logger.warn(`RClaw context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
   } catch {
     // ignore logging errors during shutdown
   }

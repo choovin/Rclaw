@@ -45,7 +45,7 @@ export function writeDigitalEmployeeWorkspaceFiles(
 <!-- 记录常用的工具和命令 -->
 
 ---
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 `;
   writeFileSync(join(absWorkspaceDir, 'user.md'), userContent, 'utf-8');
 
@@ -64,7 +64,7 @@ export function writeDigitalEmployeeWorkspaceFiles(
 - [ ]
 
 ---
-*由 Rclaw 数字员工系统生成*
+*由 RClaw 数字员工系统生成*
 `;
   writeFileSync(join(absWorkspaceDir, 'todo.md'), todoContent, 'utf-8');
 }
