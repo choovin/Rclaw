@@ -370,7 +370,7 @@ export async function removeAgentWorkspaceDirectory(agent: { id: string; workspa
     candidates.add(normalize(trimTrailingSeparators(managed)));
   }
   const openclawDir = getOpenClawConfigDir();
-  candidates.add(normalize(trimTrailingSeparators(join(openclawDir, `workspace-${agent.id}`)))));
+  candidates.add(normalize(trimTrailingSeparators(join(openclawDir, `workspace-${agent.id}`))));
   candidates.add(
     normalize(
       trimTrailingSeparators(expandPath(agent.workspace || `~/.openclaw/workspace-${agent.id}`)),
