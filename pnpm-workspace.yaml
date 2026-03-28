@@ -4,3 +4,4 @@ packages:
 ignoredBuiltDependencies:
   - electron
   - esbuild
+onlyBuiltDependencies: '["keytar"]'

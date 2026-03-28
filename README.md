@@ -331,7 +331,7 @@ Chain multiple skills together to create sophisticated automation pipelines. Pro
 ```bash
 # Development
 pnpm run init             # Install dependencies + download uv
-pnpm dev                  # Start with hot reload (auto-prepares bundled skills if missing)
+pnpm dev                  # Start with hot reload (auto-prepares bundled skills if missing; on Windows switches console to UTF-8 to reduce garbled Chinese output)
 
 # Quality
 pnpm lint                 # Run ESLint

@@ -331,7 +331,7 @@ ClawX 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用
 ```bash
 # 开发
 pnpm run init             # 安装依赖并下载 uv
-pnpm dev                  # 以热重载模式启动（若缺失会自动准备预装技能包）
+pnpm dev                  # 以热重载模式启动（若缺失会自动准备预装技能包；Windows 下会先切换控制台为 UTF-8，减少中文乱码）
 
 # 代码质量
 pnpm lint                 # 运行 ESLint 检查
