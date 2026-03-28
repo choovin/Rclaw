@@ -33,9 +33,9 @@ export const cloudApi = {
     });
   },
 
-  // 发送短信验证码
+  // 发送短信验证码（Host 内部路径；RunNode 由 Main 转发至 `/app-api/member/auth/send-sms-code`）
   async sendSms(mobile: string): Promise<{ success: boolean; error?: string }> {
-    return hostApiFetch('/api/cloud/auth/send-sms', {
+    return hostApiFetch('/api/cloud/auth/send-sms-code', {
       method: 'POST',
       body: JSON.stringify({ mobile })
     });

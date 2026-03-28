@@ -21,6 +21,8 @@ interface AuthState {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   logout: () => Promise<void>;
+  /** 从 Host 拉取登录态与用户信息（优先 member/user/get，见 CloudAuthService） */
+  syncAuthFromHost: () => Promise<void>;
 
   // Gate 函数
   requireAuth: () => Promise<boolean>;
@@ -52,6 +54,22 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoggedIn: false, userInfo: null });
       },
 
+      syncAuthFromHost: async () => {
+        try {
+          const { cloudApi } = await import('@/lib/cloud-api');
+          const status = await cloudApi.getStatus();
+          if (status.isLoggedIn && status.userInfo) {
+            set({ isLoggedIn: true, userInfo: status.userInfo });
+          } else if (status.isLoggedIn) {
+            set({ isLoggedIn: true });
+          } else {
+            set({ isLoggedIn: false, userInfo: null });
+          }
+        } catch {
+          // 网络/Host 不可用时保留本地 persist，避免误登出
+        }
+      },
+
       // Gate 函数 - 检查登录状态，未登录则弹出登录框
       requireAuth: async () => {
         if (get().isLoggedIn) return true;
@@ -61,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ isLoggedIn: state.isLoggedIn })
+      partialize: (state) => ({ isLoggedIn: state.isLoggedIn, userInfo: state.userInfo })
     }
   )
 );

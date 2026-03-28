@@ -101,14 +101,14 @@ export function Chat() {
   const isEmpty = messages.length === 0 && !sending;
 
   return (
-    <div className={cn("relative flex flex-col -m-6 transition-colors duration-300")} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div className={cn("relative flex flex-col transition-colors duration-300")} style={{ height: 'calc(100vh - 2.5rem)' }}>
       {/* Toolbar */}
-      <div className="flex shrink-0 items-center justify-end px-5 py-3">
+      <div className="flex shrink-0 items-center justify-end px-6 py-3">
         <ChatToolbar />
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-4">
         <div ref={contentRef} className="max-w-[840px] mx-auto space-y-4">
           {isEmpty ? (
             <WelcomeScreen />
@@ -159,7 +159,7 @@ export function Chat() {
 
       {/* Error bar */}
       {error && (
-        <div className="px-5 py-2.5 bg-destructive/5 border-t border-destructive/10">
+        <div className="px-6 py-2.5 bg-destructive/5 border-t border-destructive/10">
           <div className="max-w-[840px] mx-auto flex items-center justify-between">
             <p className="text-sm text-destructive flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />

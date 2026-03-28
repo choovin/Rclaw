@@ -22,6 +22,7 @@ import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
 import { useProviderStore } from './stores/providers';
 import { applyGatewayTransportPreference } from './lib/api-client';
+import { useAuthStore } from './stores/auth';
 
 const Agents = lazy(() => import('./pages/Agents'));
 
@@ -111,10 +112,15 @@ function App() {
   const setupComplete = useSettingsStore((state) => state.setupComplete);
   const initGateway = useGatewayStore((state) => state.init);
   const initProviders = useProviderStore((state) => state.init);
+  const syncAuthFromHost = useAuthStore((state) => state.syncAuthFromHost);
 
   useEffect(() => {
     initSettings();
   }, [initSettings]);
+
+  useEffect(() => {
+    void syncAuthFromHost();
+  }, [syncAuthFromHost]);
 
   // Sync i18n language with persisted settings on mount
   useEffect(() => {

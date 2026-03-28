@@ -3,13 +3,14 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { parseJsonBody, sendJson } from '../route-utils';
 import { cloudAuthService } from '../../services/cloud-auth';
+import { getWechatOAuthRedirectUriFallback } from '../../utils/cloud-config';
 import type { HostApiContext } from '../context';
 
 export async function handleCloudAuthRoutes(
   req: IncomingMessage,
   res: ServerResponse,
   url: URL,
-  ctx: HostApiContext
+  _ctx: HostApiContext
 ): Promise<boolean> {
   const pathname = url.pathname;
 
@@ -29,8 +30,11 @@ export async function handleCloudAuthRoutes(
     return true;
   }
 
-  // POST /api/cloud/auth/send-sms
-  if (pathname === '/api/cloud/auth/send-sms' && req.method === 'POST') {
+  // POST /api/cloud/auth/send-sms-code（与 RunNode 一致；旧构建若仅有 send-sms 亦兼容）
+  if (
+    (pathname === '/api/cloud/auth/send-sms-code' || pathname === '/api/cloud/auth/send-sms') &&
+    req.method === 'POST'
+  ) {
     const body = await parseJsonBody<{ mobile: string }>(req);
     const result = await cloudAuthService.sendSmsCode(body.mobile);
     sendJson(res, result.success ? 200 : 400, result);
@@ -47,7 +51,7 @@ export async function handleCloudAuthRoutes(
 
   // GET /api/cloud/auth/wechat-qr
   if (pathname === '/api/cloud/auth/wechat-qr' && req.method === 'GET') {
-    const redirectUri = url.searchParams.get('redirectUri') || 'http://localhost:5173/cloud-callback';
+    const redirectUri = url.searchParams.get('redirectUri') || getWechatOAuthRedirectUriFallback();
     const result = await cloudAuthService.getWechatAuthParams(redirectUri);
     sendJson(res, result.success ? 200 : 400, result);
     return true;
