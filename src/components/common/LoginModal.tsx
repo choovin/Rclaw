@@ -82,6 +82,8 @@ export const LoginModal: React.FC = () => {
       // setWechatError('');
       // 不清空 smsCountdown，保持验证码倒计时继续
     }
+    // 仅在开关弹窗时重置；关闭瞬间读取 mobile / rememberMobile，不随输入变化重跑
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [loginModalOpen]);
 
   useEffect(() => {
@@ -268,6 +270,16 @@ export const LoginModal: React.FC = () => {
         }
         setLoggedIn(true, result.userInfo);
         closeLoginModal();
+        void (async () => {
+          const { toast } = await import('sonner');
+          const syncResult = await cloudApi.syncPlatformProvider();
+          if (!syncResult.success) {
+            toast.error('模型网关配置同步失败，可稍后重试');
+            return;
+          }
+          const { useProviderStore } = await import('@/stores/providers');
+          await useProviderStore.getState().refreshProviderSnapshot();
+        })();
       } else {
         setError(result.error || '登录失败');
       }

@@ -3,14 +3,19 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { parseJsonBody, sendJson } from '../route-utils';
 import { cloudAuthService } from '../../services/cloud-auth';
+import {
+  removeCloudPlatformProvider,
+  syncCloudPlatformProviderFromMemberApi,
+} from '../../services/cloud-platform-provider';
 import { getWechatOAuthRedirectUriFallback } from '../../utils/cloud-config';
+import { logger } from '../../utils/logger';
 import type { HostApiContext } from '../context';
 
 export async function handleCloudAuthRoutes(
   req: IncomingMessage,
   res: ServerResponse,
   url: URL,
-  _ctx: HostApiContext
+  ctx: HostApiContext
 ): Promise<boolean> {
   const pathname = url.pathname;
 
@@ -57,8 +62,30 @@ export async function handleCloudAuthRoutes(
     return true;
   }
 
+  // POST /api/cloud/platform-provider/sync
+  if (pathname === '/api/cloud/platform-provider/sync' && req.method === 'POST') {
+    const result = await syncCloudPlatformProviderFromMemberApi({
+      gatewayManager: ctx.gatewayManager,
+    });
+    if (result.ok) {
+      sendJson(res, 200, { success: true });
+      return true;
+    }
+    if (result.error === 'not_logged_in') {
+      sendJson(res, 401, { success: false, error: result.error });
+      return true;
+    }
+    sendJson(res, 502, { success: false, error: result.error });
+    return true;
+  }
+
   // POST /api/cloud/auth/logout
   if (pathname === '/api/cloud/auth/logout' && req.method === 'POST') {
+    try {
+      await removeCloudPlatformProvider(ctx.gatewayManager);
+    } catch (error) {
+      logger.error('[CloudAuth] removeCloudPlatformProvider on logout:', error);
+    }
     await cloudAuthService.logout();
     sendJson(res, 200, { success: true });
     return true;

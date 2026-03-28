@@ -29,7 +29,9 @@ function sanitizeForLog(obj: unknown, depth = 0): unknown {
       kl === 'refreshtoken' ||
       kl === 'accesstoken' ||
       kl === 'access_token' ||
-      kl === 'refresh_token'
+      kl === 'refresh_token' ||
+      kl === 'platformaccesstoken' ||
+      kl === 'apikey'
     ) {
       out[k] = '[redacted]';
       continue;
@@ -123,7 +125,7 @@ export async function cloudFetchLogged(
 
   const response = await proxyAwareFetch(url, init);
 
-  let rawText = '';
+  let rawText: string;
   try {
     rawText = await response.clone().text();
   } catch {

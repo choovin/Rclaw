@@ -1,16 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useGatewayStore } from '@/stores/gateway';
 
 export function VersionDisplay() {
-  const [appVersion, setAppVersion] = useState('');
+  const [appVersion] = useState(() => window.electron?.versions?.app ?? '');
   const gatewayVersion = useGatewayStore((s) => s.status.version);
-
-  useEffect(() => {
-    // Get app version from preload exposed versions
-    if (window.electron?.versions?.app) {
-      setAppVersion(window.electron.versions.app);
-    }
-  }, []);
 
   if (!appVersion) return null;
 

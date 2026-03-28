@@ -50,7 +50,7 @@ export const cloudApi = {
   },
 
   // 获取微信二维码参数
-  async getWechatQr(redirectUri: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  async getWechatQr(redirectUri: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     return hostApiFetch(`/api/cloud/auth/wechat-qr?redirectUri=${encodeURIComponent(redirectUri)}`);
   },
 
@@ -62,5 +62,10 @@ export const cloudApi = {
   // 获取登录状态
   async getStatus(): Promise<{ isLoggedIn: boolean; userInfo?: UserInfo }> {
     return hostApiFetch('/api/cloud/auth/status');
-  }
+  },
+
+  /** 已登录时拉取会员 new-api/config 并写入唯一 RunNode custom 供应商（Main） */
+  async syncPlatformProvider(): Promise<{ success: boolean; error?: string }> {
+    return hostApiFetch('/api/cloud/platform-provider/sync', { method: 'POST' });
+  },
 };

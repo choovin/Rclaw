@@ -3,6 +3,7 @@
  * Exposes safe APIs to the renderer process via contextBridge
  */
 import { contextBridge, ipcRenderer } from 'electron';
+import pkg from '../../package.json';
 
 /**
  * IPC renderer methods exposed to the renderer process
@@ -275,7 +276,7 @@ const electronAPI = {
    * App versions
    */
   versions: {
-    app: require('../../package.json').version,
+    app: pkg.version,
   },
 };
 

@@ -57,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
       syncAuthFromHost: async () => {
         try {
           const { cloudApi } = await import('@/lib/cloud-api');
+          const { toast } = await import('sonner');
           const status = await cloudApi.getStatus();
           if (status.isLoggedIn && status.userInfo) {
             set({ isLoggedIn: true, userInfo: status.userInfo });
@@ -64,6 +65,15 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoggedIn: true });
           } else {
             set({ isLoggedIn: false, userInfo: null });
+          }
+          if (status.isLoggedIn) {
+            const syncResult = await cloudApi.syncPlatformProvider();
+            if (!syncResult.success) {
+              toast.error('模型网关配置同步失败，可稍后重试');
+            } else {
+              const { useProviderStore } = await import('@/stores/providers');
+              await useProviderStore.getState().refreshProviderSnapshot();
+            }
           }
         } catch {
           // 网络/Host 不可用时保留本地 persist，避免误登出

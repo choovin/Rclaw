@@ -194,7 +194,11 @@ function App() {
             {/* Main application routes */}
             <Route element={<MainLayout />}>
               <Route path="/" element={<Chat />} />
-              <Route path="/models" element={<Models />} />
+              {import.meta.env.DEV ? (
+                <Route path="/models" element={<Models />} />
+              ) : (
+                <Route path="/models" element={<Navigate to="/" replace />} />
+              )}
               <Route
                 path="/employees"
                 element={
