@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 登录业务云后自动拉取 `GET /app-api/member/new-api/config`，将 `baseUrl` 与 `platformAccessToken` 写入**唯一**一条 `custom` 供应商账号（OpenAI Completions + 写死主模型与回退），并同步 OpenClaw 运行时；登出时清除该配置；生产环境隐藏「安全模型」路由与侧栏入口。
+**Goal:** 登录业务云后自动拉取 `GET /app-api/member/new-api/config`，将 `baseUrl`（或 `apiUrl`）与 `apiKey` 写入**唯一**一条 `custom` 供应商账号（密钥进密钥库，不明文进 `openclaw.json`），并同步 OpenClaw 运行时；登出时清除该配置；生产环境隐藏「安全模型」路由与侧栏入口。
 
 **Architecture:**
 - Main：`CloudAuthService` 用 `getValidToken()` + `cloudFetchLogged` 请求会员 config（与 `fetchMemberUser` 相同鉴权头：`Authorization: Bearer`、`tenant-id: 1`）。
@@ -81,7 +81,7 @@ git commit -m "feat: 业务云 custom 供应商常量（账号 id、模型与回
 
 - [ ] **Step 1: 实现 `parseMemberNewApiConfig(json: unknown): { baseUrl: string; apiKey: string } | null`**
 
-规则：HTTP 层由调用方处理；此处只解析 body。兼容常见 RunNode 包裹：`{ code: 0, data: { baseUrl, platformAccessToken } }`；若 `data` 扁平也可。`baseUrl` 与密钥（`platformAccessToken` 优先，其次 `apiKey`）非空字符串才算成功。
+规则：HTTP 层由调用方处理；此处只解析 body。兼容常见 RunNode 包裹：`{ code: 0, data: { baseUrl, apiKey } }`；若 `data` 扁平也可。密钥字段 **`apiKey` 优先**，`platformAccessToken` 仅兼容旧文档。`baseUrl`/`apiUrl` 与密钥非空字符串才算成功。
 
 - [ ] **Step 2: Vitest 用例**
 
@@ -93,7 +93,7 @@ describe('parseMemberNewApiConfig', () => {
   it('accepts code+data wrapper', () => {
     const r = parseMemberNewApiConfig({
       code: 0,
-      data: { baseUrl: 'https://api.example/v1', platformAccessToken: 'tok' },
+      data: { baseUrl: 'https://api.example/v1', apiKey: 'tok' },
     });
     expect(r).toEqual({ baseUrl: 'https://api.example/v1', apiKey: 'tok' });
   });
@@ -263,7 +263,7 @@ git commit -m "fix: 生产环境禁止手动新增 Custom 供应商"
 **Files:**
 - Modify: `docs/api-docs/04_Member_API.md`（若需补充响应示例）
 
-- [ ] **Step 1: 在 `AppConsumerApiController` 的 `new-api/config` 下增加响应字段说明：`baseUrl`、`platformAccessToken`（及 `code`/`data` 包裹）**
+- [ ] **Step 1: 在 `AppConsumerApiController` 的 `new-api/config` 下增加响应字段说明：`baseUrl`/`apiUrl`、`apiKey`（及 `code`/`data` 包裹）**
 
 - [ ] **Step 2: 全量校验**
 
@@ -286,7 +286,7 @@ git commit -m "docs: 补充 member new-api/config 响应字段"
 
 1. **`ProviderService.listAccounts` 与 openclaw.json**：列表展示依赖 OpenClaw 活跃供应商；同步逻辑必须调用与 HTTP 路由相同的 **runtime sync**，否则 UI 或 Gateway 仍显示旧配置。
 2. **默认模型字符串**：OpenClaw 可能使用 `custom-xxxx/modelId` 形式；依赖现有 `syncSavedProviderToRuntime` 内 `setOpenClawDefaultModel` 逻辑，若集成测试失败需对照 `provider-runtime-sync.ts`。
-3. **日志脱敏**：在 `cloud-fetch-log` 的 sanitize 中视需要把 `platformAccessToken` 列入 redact（若尚未覆盖）。
+3. **日志脱敏**：`cloud-fetch-log` 已对 `apiKey`/`platformAccessToken` 等字段脱敏。
 4. **`git add -f docs/...`**：仓库 `.gitignore` 忽略 `docs/`，与既有 superpowers 文档相同需 `-f`。
 
 ---

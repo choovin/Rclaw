@@ -60,9 +60,10 @@ export function parseMemberNewApiConfig(json: unknown): { baseUrl: string; apiKe
   const fromApiUrl = typeof obj.apiUrl === 'string' ? obj.apiUrl.trim() : '';
   const baseUrlRaw = fromBase || fromApiUrl;
   const baseUrl = baseUrlRaw ? ensureOpenAiCompatibleBaseUrlV1(baseUrlRaw) : '';
+  /** 后端契约字段为 `apiKey`；`platformAccessToken` 仅作旧文档/兼容兜底 */
   const token =
-    (typeof obj.platformAccessToken === 'string' && obj.platformAccessToken.trim())
-    || (typeof obj.apiKey === 'string' && obj.apiKey.trim())
+    (typeof obj.apiKey === 'string' && obj.apiKey.trim())
+    || (typeof obj.platformAccessToken === 'string' && obj.platformAccessToken.trim())
     || '';
 
   if (!baseUrl || !token) return null;

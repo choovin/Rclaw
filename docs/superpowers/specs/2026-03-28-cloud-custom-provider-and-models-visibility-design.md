@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-用户登录业务云成功后，由 Main 代理调用会员接口获取 `**baseUrl`** 与 **API 密钥**（后端字段名可为 `platformAccessToken`，客户端统一落入现有 API Key 存储），并写入 **唯一一条** `vendorId === custom` 的供应商账号；**主模型与回退模型列表在客户端常量写死**。协议固定为 **OpenAI Completions**（`openai-completions`），与当前「自定义 AI 模型提供商」手动配置一致。
+用户登录业务云成功后，由 Main 代理调用会员接口获取 `**baseUrl`**（或 `apiUrl`）与 **`apiKey`**（权威字段；密钥写入系统密钥库/OpenClaw 运行时，**不**明文写入 `openclaw.json`），并写入 **唯一一条** `vendorId === custom` 的供应商账号；**主模型与回退模型列表在客户端常量写死**。协议固定为 **OpenAI Completions**（`openai-completions`），与当前「自定义 AI 模型提供商」手动配置一致。
 
 登出时 **完整清除** 该云端下发的 custom 配置（账号记录 + 密钥，与需求一致）。
 
@@ -31,7 +31,7 @@
 
 - **路径**：与仓库文档一致，使用 `**GET /app-api/member/new-api/config`**（见 `docs/api-docs/04_Member_API.md` → `AppConsumerApiController`）。若后端实际路径不同，在实现时同步改文档与代码。
 - **鉴权**：使用当前登录会员会话（与现有 cloud auth 存 token、请求头转发方式一致；具体由 Main / `cloudAuthService` 与现有 `hostapi:fetch` 或网关代理路径对齐实现）。
-- **响应（逻辑字段）**：至少包含 `**baseUrl`**、**密钥** `platformAccessToken` ；其它模型相关字段由客户端忽略，以常量为准。
+- **响应（逻辑字段）**：至少包含地址（`baseUrl` 或 `apiUrl`）与 **`apiKey`**（写入密钥库，不明文进配置文件）；`platformAccessToken` 仅作兼容别名。其它模型相关字段由客户端忽略，以常量为准。
 
 ---
 
