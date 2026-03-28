@@ -15,7 +15,7 @@ export function VersionDisplay() {
   if (!appVersion) return null;
 
   return (
-    <div className="fixed bottom-2 left-2 z-50 flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="pointer-events-none absolute bottom-2 left-2 z-50 flex items-center gap-2 text-xs text-muted-foreground">
       <span>Rclaw v{appVersion}</span>
       {gatewayVersion && (
         <>

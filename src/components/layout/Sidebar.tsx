@@ -1,7 +1,7 @@
 /**
  * Sidebar Component
  * Navigation sidebar with menu items.
- * No longer fixed - sits inside the flex layout below the title bar.
+ * Sits in the left column of the main layout (full height, sibling to title bar + content).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -214,20 +214,34 @@ export function Sidebar() {
     { to: '/cron', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.cronTasks') },
   ];
 
+  const isMac = window.electron?.platform === 'darwin';
+
   return (
     <aside
       className={cn(
-        'flex shrink-0 flex-col border-r/0 dark:border-r/0 transition-all duration-300',
+        'flex h-full shrink-0 flex-col border-r/0 dark:border-r/0 transition-all duration-300',
         sidebarCollapsed ? 'w-[68px]' : 'w-[240px]'
       )}
       style={{ backgroundColor: 'hsl(var(--card))' }}
     >
-      {/* Top Header Toggle */}
-      <div className={cn("flex items-center px-3 h-14", sidebarCollapsed ? "justify-center" : "justify-between")}>
+      {/* Top Header Toggle — macOS: drag region aligns with right TitleBar (38px); traffic lights sit in inset */}
+      <div
+        className={cn(
+          'flex items-center px-3 shrink-0',
+          isMac ? 'drag-region h-[38px]' : 'h-14',
+          sidebarCollapsed ? 'justify-center' : 'justify-between'
+        )}
+      >
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-2.5 px-1 overflow-hidden">
-            <img src={logoSvg} alt="Rclaw" className="h-6 w-auto shrink-0" />
-            <span className="text-[15px] font-semibold truncate whitespace-nowrap text-foreground/90" style={{ letterSpacing: '-0.01em' }}>
+          <div className="flex items-center gap-2.5 overflow-hidden px-1">
+            <img src={logoSvg} alt="Rclaw" className={cn('w-auto shrink-0', isMac ? 'h-5' : 'h-6')} />
+            <span
+              className={cn(
+                'truncate font-semibold whitespace-nowrap text-foreground/90',
+                isMac ? 'text-[14px]' : 'text-[15px]'
+              )}
+              style={{ letterSpacing: '-0.01em' }}
+            >
               Rclaw
             </span>
           </div>
@@ -235,7 +249,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
+          className="no-drag h-8 w-8 shrink-0 rounded-lg text-muted-foreground transition-colors hover:bg-secondary"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? (

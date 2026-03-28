@@ -1,6 +1,6 @@
 /**
  * Main Layout Component
- * TitleBar at top, then sidebar + content below.
+ * Left: sidebar (full window height). Right: TitleBar + scrollable content.
  */
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
@@ -12,22 +12,20 @@ export function MainLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* Title bar: drag region on macOS, icon + controls on Windows */}
-      <TitleBar />
+    <div className="flex h-screen flex-row overflow-hidden bg-background">
+      <Sidebar />
 
-      {/* Below the title bar: sidebar + content */}
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-auto" style={{ backgroundColor: 'hsl(var(--background))' }}>
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Title bar: drag region on macOS, icon + controls on Windows */}
+        <TitleBar />
+        <main className="min-h-0 flex-1 overflow-auto" style={{ backgroundColor: 'hsl(var(--background))' }}>
           <div key={location.pathname} className="animate-fade-in min-h-full">
             <Outlet />
           </div>
         </main>
+        {/* Bottom-left of content column only (not under sidebar) */}
+        <VersionDisplay />
       </div>
-
-      {/* Version display at bottom left */}
-      <VersionDisplay />
 
       {/* Login modal overlay */}
       <LoginModal />
