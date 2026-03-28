@@ -52,7 +52,7 @@
 - **`data.baseUrl`**（string，优先）：OpenAI 兼容网关根地址。
 - **`data.apiUrl`**（string，可选）：与 `baseUrl` 二选一；仅当 `baseUrl` 为空时使用。
 - RClaw 会规范化地址：**若末尾不是 `/v1`（忽略大小写）则自动追加 `/v1`**，以便与 OpenAI Completions 路径对齐。
-- **`data.apiKey`**（string）：OpenAI 兼容网关的 API Key（**权威字段**）。客户端写入系统密钥库并同步 OpenClaw，**不会**明文写入 `openclaw.json`。
+- **`data.apiKey`**（string）：OpenAI 兼容网关的 API Key（**权威字段**）。客户端写入系统密钥库（ClawX 存储），并同步到 **`~/.openclaw/openclaw.json`** 的 `models.providers.<runtimeKey>.apiKey`，供 Gateway 直接读取生效。
 - **`data.platformAccessToken`**（string，可选）：历史/错误文档中的命名；若存在且无 `apiKey`，客户端仍会当作密钥使用。
 
 ## `AppMemberCommentController`

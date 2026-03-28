@@ -291,11 +291,19 @@ async function resolveRuntimeSyncContext(config: ProviderConfig): Promise<Runtim
 async function syncRuntimeProviderConfig(
   config: ProviderConfig,
   context: RuntimeProviderSyncContext,
+  apiKeyParam?: string,
 ): Promise<void> {
+  const resolvedKey =
+    apiKeyParam !== undefined
+      ? (apiKeyParam.trim() || undefined)
+      : (config.type === 'custom' ? (await getApiKey(config.id)) || undefined : undefined);
+  const useInlineCustomKey = config.type === 'custom' && Boolean(resolvedKey);
+
   await syncProviderConfigToOpenClaw(context.runtimeProviderKey, config.model, {
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl || context.meta?.baseUrl, context.api),
     api: context.api,
-    apiKeyEnv: context.meta?.apiKeyEnv,
+    apiKeyEnv: useInlineCustomKey ? undefined : context.meta?.apiKeyEnv,
+    inlineApiKey: useInlineCustomKey ? resolvedKey : undefined,
     headers: config.headers ?? context.meta?.headers,
   });
 }
@@ -333,7 +341,7 @@ async function syncProviderToRuntime(
   }
 
   await syncProviderSecretToRuntime(config, context.runtimeProviderKey, apiKey);
-  await syncRuntimeProviderConfig(config, context);
+  await syncRuntimeProviderConfig(config, context, apiKey);
   await syncCustomProviderAgentModel(config, context.runtimeProviderKey, apiKey);
   return context;
 }
@@ -498,9 +506,12 @@ export async function syncUpdatedProviderToRuntime(
         await setOpenClawDefaultModel(ock, modelOverride, fallbackModels);
       }
     } else {
+      const inlineKey =
+        (apiKey !== undefined ? apiKey.trim() : '') || (await getApiKey(config.id)) || '';
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(config, config.baseUrl, config.apiProtocol || 'openai-completions'),
         api: config.apiProtocol || 'openai-completions',
+        inlineApiKey: inlineKey || undefined,
         headers: config.headers,
       }, fallbackModels);
     }
@@ -576,6 +587,7 @@ export async function syncDefaultProviderToRuntime(
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(provider, provider.baseUrl, provider.apiProtocol || 'openai-completions'),
         api: provider.apiProtocol || 'openai-completions',
+        inlineApiKey: providerKey || undefined,
         headers: provider.headers,
       }, fallbackModels);
     } else if (shouldUseExplicitDefaultOverride(provider, ock)) {

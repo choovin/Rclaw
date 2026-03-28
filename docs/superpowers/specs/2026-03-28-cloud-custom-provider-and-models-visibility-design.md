@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-用户登录业务云成功后，由 Main 代理调用会员接口获取 `**baseUrl`**（或 `apiUrl`）与 **`apiKey`**（权威字段；密钥写入系统密钥库/OpenClaw 运行时，**不**明文写入 `openclaw.json`），并写入 **唯一一条** `vendorId === custom` 的供应商账号；**主模型与回退模型列表在客户端常量写死**。协议固定为 **OpenAI Completions**（`openai-completions`），与当前「自定义 AI 模型提供商」手动配置一致。
+用户登录业务云成功后，由 Main 代理调用会员接口获取 `**baseUrl`**（或 `apiUrl`）与 **`apiKey`**（权威字段；密钥写入 ClawX 密钥库，并同步至 **`openclaw.json`** 的 `models.providers` 条目，供 Gateway 生效），并写入 **唯一一条** `vendorId === custom` 的供应商账号；**主模型与回退模型列表在客户端常量写死**。协议固定为 **OpenAI Completions**（`openai-completions`），与当前「自定义 AI 模型提供商」手动配置一致。
 
 登出时 **完整清除** 该云端下发的 custom 配置（账号记录 + 密钥，与需求一致）。
 

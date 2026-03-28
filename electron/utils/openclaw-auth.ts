@@ -479,7 +479,10 @@ export async function setOpenClawDefaultModel(
 interface RuntimeProviderConfigOverride {
   baseUrl?: string;
   api?: string;
+  /** 环境变量名（如 OPENAI_API_KEY），写入 models.providers.*.apiKey 供 Gateway 从 env 解析 */
   apiKeyEnv?: string;
+  /** 明文 API Key，写入 models.providers.*.apiKey（custom 等需直接落盘时） */
+  inlineApiKey?: string;
   headers?: Record<string, string>;
   authHeader?: boolean;
 }
@@ -488,6 +491,7 @@ type ProviderEntryBuildOptions = {
   baseUrl: string;
   api: string;
   apiKeyEnv?: string;
+  inlineApiKey?: string;
   headers?: Record<string, string>;
   authHeader?: boolean;
   modelIds?: string[];
@@ -556,7 +560,11 @@ function upsertOpenClawProviderEntry(
     api: options.api,
     models: mergeProviderModels(registryModels, existingModels, runtimeModels),
   };
-  if (options.apiKeyEnv) nextProvider.apiKey = options.apiKeyEnv;
+  if (options.inlineApiKey) {
+    nextProvider.apiKey = options.inlineApiKey;
+  } else if (options.apiKeyEnv) {
+    nextProvider.apiKey = options.apiKeyEnv;
+  }
   if (options.headers !== undefined) {
     if (Object.keys(options.headers).length > 0) {
       nextProvider.headers = options.headers;
@@ -623,7 +631,9 @@ export async function syncProviderConfigToOpenClaw(
         baseUrl: override.baseUrl,
         api: override.api,
         apiKeyEnv: override.apiKeyEnv,
+        inlineApiKey: override.inlineApiKey,
         headers: override.headers,
+        authHeader: override.authHeader,
         modelIds: modelId ? [modelId] : [],
       });
     }
@@ -683,6 +693,7 @@ export async function setOpenClawDefaultModelWithOverride(
         baseUrl: override.baseUrl,
         api: override.api,
         apiKeyEnv: override.apiKeyEnv,
+        inlineApiKey: override.inlineApiKey,
         headers: override.headers,
         authHeader: override.authHeader,
         modelIds: [modelId, ...fallbackModelIds],
