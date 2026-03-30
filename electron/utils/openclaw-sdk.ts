@@ -49,7 +49,7 @@ const _slackSdk = requireOpenClawSdk('openclaw/plugin-sdk/slack') as {
   normalizeSlackMessagingTarget: (target: string) => string | undefined;
 };
 
-const _whatsappSdk = requireOpenClawSdk('openclaw/plugin-sdk/whatsapp-shared') as {
+const _whatsappSdk = requireOpenClawSdk('openclaw/plugin-sdk/whatsapp') as {
   normalizeWhatsAppMessagingTarget: (target: string) => string | undefined;
 };
 

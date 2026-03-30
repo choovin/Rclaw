@@ -15,6 +15,12 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   platform: NodeJS.Platform;
   isDev: boolean;
+  versions?: {
+    app?: string;
+    electron?: string;
+    node?: string;
+    chrome?: string;
+  };
 }
 
 declare global {
