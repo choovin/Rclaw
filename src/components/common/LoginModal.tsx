@@ -36,7 +36,7 @@ import { cloudApi } from '@/lib/cloud-api';
 type LoginTab = 'password' | 'sms';
 
 export const LoginModal: React.FC = () => {
-  const { loginModalOpen, closeLoginModal, setLoggedIn } = useAuthStore();
+  const { loginModalOpen, closeLoginModal, setLoggedIn, syncUserInfoFromHost } = useAuthStore();
   const [activeTab, setActiveTab] = useState<LoginTab>('password');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
@@ -270,6 +270,7 @@ export const LoginModal: React.FC = () => {
         }
         setLoggedIn(true, result.userInfo);
         closeLoginModal();
+        void syncUserInfoFromHost();
         void (async () => {
           const { toast } = await import('sonner');
           const syncResult = await cloudApi.syncPlatformProvider();

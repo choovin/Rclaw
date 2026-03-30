@@ -3,7 +3,7 @@
  * Handles routing and global providers
  */
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Component, lazy, Suspense, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect, useRef } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -113,6 +113,8 @@ function App() {
   const initGateway = useGatewayStore((state) => state.init);
   const initProviders = useProviderStore((state) => state.init);
   const syncAuthFromHost = useAuthStore((state) => state.syncAuthFromHost);
+  const syncUserInfoFromHost = useAuthStore((state) => state.syncUserInfoFromHost);
+  const prevPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
     initSettings();
@@ -121,6 +123,15 @@ function App() {
   useEffect(() => {
     void syncAuthFromHost();
   }, [syncAuthFromHost]);
+
+  /** 切换路由时重新拉取 member/user/get，更新 coin 等用户信息（首屏由 syncAuthFromHost 已拉取） */
+  useEffect(() => {
+    const prev = prevPathnameRef.current;
+    prevPathnameRef.current = location.pathname;
+    if (prev !== null && prev !== location.pathname) {
+      void syncUserInfoFromHost();
+    }
+  }, [location.pathname, syncUserInfoFromHost]);
 
   // Sync i18n language with persisted settings on mount
   useEffect(() => {

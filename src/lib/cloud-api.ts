@@ -8,6 +8,10 @@ export interface UserInfo {
   nickname?: string;
   mobile?: string;
   avatar?: string;
+  /** 当前会员套餐名称（如 FREE / Plus），来自 vip/get 与 user */
+  subscriptionPlan?: string;
+  /** 积分（算力币等），来自用户接口 `coin` 字段（member/user/get） */
+  coin?: number;
 }
 
 export interface LoginResult {

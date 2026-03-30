@@ -13,6 +13,7 @@ import {
 const MEMBER_AUTH_BASE = '/app-api/member/auth';
 /** 会员用户路径：`GET .../user/get` 获取用户信息 */
 const MEMBER_USER_BASE = '/app-api/member/user';
+const MEMBER_VIP_GET = '/app-api/member/vip/get';
 
 /** 与 runnode-user-front-end `request` 拦截器一致：带 query 的 GET 需带 `cloud_type`，否则云端可能不返回微信授权 URL */
 const MEMBER_CLOUD_TYPE = 'SAILFISH';
@@ -52,6 +53,10 @@ interface UserInfo {
   nickname?: string;
   mobile?: string;
   avatar?: string;
+  /** 当前会员套餐名称（如 FREE / Plus），来自 vip/get 或 user 字段 */
+  subscriptionPlan?: string;
+  /** 积分（算力币等），来自用户接口 `coin` 字段 */
+  coin?: number;
 }
 
 interface LoginResult {
@@ -403,6 +408,70 @@ export class CloudAuthService {
     }
   }
 
+  private numFromUnknown(v: unknown): number | undefined {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string' && v.trim() && !Number.isNaN(Number(v))) return Number(v);
+    return undefined;
+  }
+
+  private pickVipPlanLabelFromPayload(raw: unknown): string | undefined {
+    if (raw == null) return undefined;
+    if (typeof raw === 'string' && raw.trim()) return raw.trim();
+    if (typeof raw !== 'object') return undefined;
+    const o = raw as Record<string, unknown>;
+    for (const k of ['vipName', 'packageName', 'planName', 'name', 'levelName', 'title', 'vipLevelName']) {
+      const v = o[k];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    if (typeof o.vipLevel === 'number') return `VIP${o.vipLevel}`;
+    return undefined;
+  }
+
+  private async cloudMemberGet(
+    accessToken: string,
+    path: string,
+    logLabel: string
+  ): Promise<unknown | null> {
+    try {
+      const baseUrl = getCloudApiBaseUrl();
+      const response = await cloudFetchLogged(logLabel, `${baseUrl}${path}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'tenant-id': '1',
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+
+      const text = await response.text();
+      let json: unknown;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        return null;
+      }
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const obj = json as { code?: number; data?: unknown };
+      if (obj.code !== undefined && !memberAuthApiSuccess(obj.code)) {
+        return null;
+      }
+
+      return obj.data !== undefined ? obj.data : json;
+    } catch (error) {
+      logger.error(`${logLabel} failed:`, error);
+      return null;
+    }
+  }
+
+  private async fetchMemberVipPlanLabel(accessToken: string): Promise<string | undefined> {
+    const data = await this.cloudMemberGet(accessToken, MEMBER_VIP_GET, 'member:vip-get');
+    return this.pickVipPlanLabelFromPayload(data);
+  }
+
   private normalizeMemberUserPayload(raw: unknown): UserInfo | null {
     if (raw == null || typeof raw !== 'object') return null;
     const o = raw as Record<string, unknown>;
@@ -438,12 +507,26 @@ export class CloudAuthService {
       return null;
     }
 
+    const subscriptionPlanRaw =
+      typeof r.subscriptionPlan === 'string'
+        ? r.subscriptionPlan.trim()
+        : typeof r.vipName === 'string'
+          ? r.vipName.trim()
+          : typeof r.memberLevelName === 'string'
+            ? r.memberLevelName.trim()
+            : undefined;
+    const subscriptionPlan = subscriptionPlanRaw || undefined;
+
+    const coin = this.numFromUnknown(r.coin);
+
     return {
       id: id ?? username,
       username,
       nickname,
       mobile,
-      avatar
+      avatar,
+      ...(subscriptionPlan ? { subscriptionPlan } : {}),
+      ...(coin != null ? { coin } : {})
     };
   }
 
@@ -452,16 +535,31 @@ export class CloudAuthService {
     const tokenData = await this.getValidToken();
     if (!tokenData) return { isLoggedIn: false };
 
-    let userInfo = await this.resolveUserInfoForToken(tokenData.accessToken);
+    let accessToken = tokenData.accessToken;
+    let userInfo = await this.resolveUserInfoForToken(accessToken);
     if (!userInfo) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         const td = await this.getStoredTokenData();
-        if (td) userInfo = await this.resolveUserInfoForToken(td.accessToken);
+        if (td) {
+          accessToken = td.accessToken;
+          userInfo = await this.resolveUserInfoForToken(td.accessToken);
+        }
       }
     }
 
-    return { isLoggedIn: true, ...(userInfo ? { userInfo } : {}) };
+    if (!userInfo) {
+      return { isLoggedIn: true };
+    }
+
+    const vipPlan = await this.fetchMemberVipPlanLabel(accessToken);
+
+    const merged: UserInfo = {
+      ...userInfo,
+      subscriptionPlan: vipPlan ?? userInfo.subscriptionPlan
+    };
+
+    return { isLoggedIn: true, userInfo: merged };
   }
 
   // 存储 Token 到 Keychain

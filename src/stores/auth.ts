@@ -2,14 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-interface UserInfo {
-  id: string | number;
-  username: string;
-  nickname?: string;
-  mobile?: string;
-  avatar?: string;
-}
+import type { UserInfo } from '@/lib/cloud-api';
 
 interface AuthState {
   isLoggedIn: boolean;
@@ -23,6 +16,8 @@ interface AuthState {
   logout: () => Promise<void>;
   /** 从 Host 拉取登录态与用户信息（优先 member/user/get，见 CloudAuthService） */
   syncAuthFromHost: () => Promise<void>;
+  /** 仅拉取登录态与用户信息（含 coin），不触发模型网关同步；用于路由切换、登录后刷新积分等 */
+  syncUserInfoFromHost: () => Promise<void>;
 
   // Gate 函数
   requireAuth: () => Promise<boolean>;
@@ -77,6 +72,22 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch {
           // 网络/Host 不可用时保留本地 persist，避免误登出
+        }
+      },
+
+      syncUserInfoFromHost: async () => {
+        try {
+          const { cloudApi } = await import('@/lib/cloud-api');
+          const status = await cloudApi.getStatus();
+          if (status.isLoggedIn && status.userInfo) {
+            set({ isLoggedIn: true, userInfo: status.userInfo });
+          } else if (status.isLoggedIn) {
+            set({ isLoggedIn: true });
+          } else {
+            set({ isLoggedIn: false, userInfo: null });
+          }
+        } catch {
+          // 网络/Host 不可用时保留本地 persist
         }
       },
 
