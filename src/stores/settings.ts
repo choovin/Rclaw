@@ -37,6 +37,8 @@ interface SettingsState {
   // UI State
   sidebarCollapsed: boolean;
   devModeUnlocked: boolean;
+  /** Dev build only: show Models page and /models route */
+  devShowModelsPage: boolean;
 
   // Setup
   setupComplete: boolean;
@@ -61,6 +63,7 @@ interface SettingsState {
   setAutoDownloadUpdate: (value: boolean) => void;
   setSidebarCollapsed: (value: boolean) => void;
   setDevModeUnlocked: (value: boolean) => void;
+  setDevShowModelsPage: (value: boolean) => void;
   markSetupComplete: () => void;
   resetSettings: () => void;
 }
@@ -84,6 +87,7 @@ const defaultSettings = {
   autoDownloadUpdate: false,
   sidebarCollapsed: false,
   devModeUnlocked: false,
+  devShowModelsPage: false,
   setupComplete: false,
 };
 
@@ -172,6 +176,13 @@ export const useSettingsStore = create<SettingsState>()(
         void hostApiFetch('/api/settings/devModeUnlocked', {
           method: 'PUT',
           body: JSON.stringify({ value: devModeUnlocked }),
+        }).catch(() => { });
+      },
+      setDevShowModelsPage: (devShowModelsPage) => {
+        set({ devShowModelsPage });
+        void hostApiFetch('/api/settings/devShowModelsPage', {
+          method: 'PUT',
+          body: JSON.stringify({ value: devShowModelsPage }),
         }).catch(() => { });
       },
       markSetupComplete: () => set({ setupComplete: true }),

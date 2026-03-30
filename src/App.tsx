@@ -26,6 +26,18 @@ import { useAuthStore } from './stores/auth';
 
 const Agents = lazy(() => import('./pages/Agents'));
 
+/** Production: always redirect. Dev: only when Settings > dev show Models is enabled. */
+function ModelsRoute() {
+  const devShowModelsPage = useSettingsStore((s) => s.devShowModelsPage);
+  if (!import.meta.env.DEV) {
+    return <Navigate to="/" replace />;
+  }
+  if (!devShowModelsPage) {
+    return <Navigate to="/" replace />;
+  }
+  return <Models />;
+}
+
 function EmployeesRouteFallback() {
   const { t } = useTranslation('common');
   return (
@@ -205,11 +217,7 @@ function App() {
             {/* Main application routes */}
             <Route element={<MainLayout />}>
               <Route path="/" element={<Chat />} />
-              {import.meta.env.DEV ? (
-                <Route path="/models" element={<Models />} />
-              ) : (
-                <Route path="/models" element={<Navigate to="/" replace />} />
-              )}
+              <Route path="/models" element={<ModelsRoute />} />
               <Route
                 path="/employees"
                 element={

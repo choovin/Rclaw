@@ -51,6 +51,8 @@ export interface AppSettings {
   // UI State
   sidebarCollapsed: boolean;
   devModeUnlocked: boolean;
+  /** Dev build only: show Models page in sidebar and allow /models route */
+  devShowModelsPage: boolean;
 
   // Presets
   selectedBundles: string[];
@@ -102,6 +104,7 @@ function createDefaultSettings(): AppSettings {
     // UI State
     sidebarCollapsed: false,
     devModeUnlocked: false,
+    devShowModelsPage: false,
 
     // Presets
     selectedBundles: ['productivity', 'developer'],

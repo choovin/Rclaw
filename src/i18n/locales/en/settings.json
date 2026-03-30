@@ -208,6 +208,8 @@
     },
     "devMode": "Developer Mode",
     "devModeDesc": "Show developer tools and shortcuts",
+    "devShowModelsPage": "Models page (dev only)",
+    "devShowModelsPageDesc": "Show the Models entry in the sidebar and allow opening /models. Production builds are unchanged.",
     "telemetry": "Anonymous Usage Data",
     "telemetryDesc": "Allow providing anonymous basic usage data to improve RClaw"
   },

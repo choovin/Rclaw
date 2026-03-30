@@ -206,7 +206,11 @@
       }
     },
     "devMode": "開発者モード",
-    "devModeDesc": "開発者ツールとショートカットを表示"
+    "devModeDesc": "開発者ツールとショートカットを表示",
+    "devShowModelsPage": "モデルページ（開発環境のみ）",
+    "devShowModelsPageDesc": "サイドバーに「モデル」を表示し /models を開けるようにします。本番ビルドの挙動は変わりません。",
+    "telemetry": "匿名の利用データ",
+    "telemetryDesc": "RClaw の改善のため、匿名の基本的な利用データの提供を許可します"
   },
   "developer": {
     "title": "開発者",

@@ -75,6 +75,8 @@ export function Settings() {
     setAutoDownloadUpdate,
     devModeUnlocked,
     setDevModeUnlocked,
+    devShowModelsPage,
+    setDevShowModelsPage,
     telemetryEnabled,
     setTelemetryEnabled,
   } = useSettingsStore();
@@ -616,6 +618,21 @@ export function Settings() {
                   onCheckedChange={setDevModeUnlocked}
                 />
               </div>
+
+              {import.meta.env.DEV && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-[15px] font-medium text-foreground">{t('advanced.devShowModelsPage')}</Label>
+                    <p className="text-[13px] text-muted-foreground mt-1">
+                      {t('advanced.devShowModelsPageDesc')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={devShowModelsPage}
+                    onCheckedChange={setDevShowModelsPage}
+                  />
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div>

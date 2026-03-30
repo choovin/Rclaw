@@ -114,6 +114,7 @@ function getAgentIdFromSessionKey(sessionKey: string): string {
 export function Sidebar() {
   const sidebarCollapsed = useSettingsStore((state) => state.sidebarCollapsed);
   const setSidebarCollapsed = useSettingsStore((state) => state.setSidebarCollapsed);
+  const devShowModelsPage = useSettingsStore((state) => state.devShowModelsPage);
 
   const sessions = useChatStore((s) => s.sessions);
   const currentSessionKey = useChatStore((s) => s.currentSessionKey);
@@ -207,7 +208,7 @@ export function Sidebar() {
   }
 
   const navItems = [
-    ...(import.meta.env.DEV
+    ...(import.meta.env.DEV && devShowModelsPage
       ? [{ to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.models') }]
       : []),
     { to: '/employees', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.employees') },
