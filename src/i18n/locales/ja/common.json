@@ -1,16 +1,15 @@
 {
     "sidebar": {
         "chat": "チャット",
-        "newChat": "新規チャット",
+        "newChat": "新しいチャット",
         "cronTasks": "定期タスク",
-        "skills": "スキルストア",
-        "agents": "デジタル従業員",
-        "employees": "デジタル従業員",
-        "channels": "IM接続",
+        "skills": "スキル",
+        "agents": "Agents",
+        "channels": "チャンネル",
         "dashboard": "ダッシュボード",
         "settings": "設定",
         "devConsole": "開発者コンソール",
-        "models": "セキュリティモデル",
+        "models": "モデル",
         "deleteSessionConfirm": "セッション \"{{label}}\" を削除してもよろしいですか？",
         "openClawPage": "OpenClaw ページ"
     },

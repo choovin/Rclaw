@@ -126,9 +126,9 @@ export async function repairClawXOnlyBootstrapFiles(): Promise<void> {
       if (before === '' && after === '') {
         try {
           await unlink(filePath);
-          logger.info(`Removed RClaw-only bootstrap file for re-seeding: ${file} (${workspaceDir})`);
+          logger.info(`Removed ClawX-only bootstrap file for re-seeding: ${file} (${workspaceDir})`);
         } catch {
-          logger.warn(`Failed to remove RClaw-only bootstrap file: ${filePath}`);
+          logger.warn(`Failed to remove ClawX-only bootstrap file: ${filePath}`);
         }
       }
     }
@@ -145,12 +145,7 @@ export async function repairClawXOnlyBootstrapFiles(): Promise<void> {
 async function mergeClawXContextOnce(): Promise<number> {
   const contextDir = join(getResourcesDir(), 'context');
   if (!(await fileExists(contextDir))) {
-    // Avoid logging if the logger might be broken (e.g., during app shutdown)
-    try {
-      logger.debug('RClaw context directory not found, skipping context merge');
-    } catch {
-      // ignore
-    }
+    logger.debug('ClawX context directory not found, skipping context merge');
     return 0;
   }
 
@@ -172,11 +167,7 @@ async function mergeClawXContextOnce(): Promise<number> {
       const targetPath = join(workspaceDir, targetName);
 
       if (!(await fileExists(targetPath))) {
-        try {
-          logger.debug(`Skipping ${targetName} in ${workspaceDir} (file does not exist yet, will be seeded by gateway)`);
-        } catch {
-          // ignore logging errors during shutdown
-        }
+        logger.debug(`Skipping ${targetName} in ${workspaceDir} (file does not exist yet, will be seeded by gateway)`);
         skipped++;
         continue;
       }
@@ -187,11 +178,7 @@ async function mergeClawXContextOnce(): Promise<number> {
       const merged = mergeClawXSection(existing, section);
       if (merged !== existing) {
         await writeFile(targetPath, merged, 'utf-8');
-        try {
-          logger.info(`Merged RClaw context into ${targetName} (${workspaceDir})`);
-        } catch {
-          // ignore logging errors during shutdown
-        }
+        logger.info(`Merged ClawX context into ${targetName} (${workspaceDir})`);
       }
     }
   }
@@ -214,23 +201,11 @@ export async function ensureClawXContext(): Promise<void> {
     await new Promise((r) => setTimeout(r, RETRY_INTERVAL_MS));
     skipped = await mergeClawXContextOnce();
     if (skipped === 0) {
-      try {
-        logger.info(`RClaw context merge completed after ${attempt} retry(ies)`);
-      } catch {
-        // ignore logging errors during shutdown
-      }
+      logger.info(`ClawX context merge completed after ${attempt} retry(ies)`);
       return;
     }
-    try {
-      logger.debug(`RClaw context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
-    } catch {
-      // ignore logging errors during shutdown
-    }
+    logger.debug(`ClawX context merge: ${skipped} file(s) still missing (retry ${attempt}/${MAX_RETRIES})`);
   }
 
-  try {
-    logger.warn(`RClaw context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
-  } catch {
-    // ignore logging errors during shutdown
-  }
+  logger.warn(`ClawX context merge: ${skipped} file(s) still missing after ${MAX_RETRIES} retries`);
 }

@@ -9,11 +9,9 @@ import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { useChatStore, type RawMessage } from '@/stores/chat';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
-import { useAuthStore } from '@/stores/auth';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
-import type { FileAttachment } from './ChatInput';
 import { ChatToolbar } from './ChatToolbar';
 import { extractImages, extractText, extractThinking, extractToolUse } from './message-utils';
 import { useTranslation } from 'react-i18next';
@@ -41,14 +39,6 @@ export function Chat() {
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
 
   const cleanupEmptySession = useChatStore((s) => s.cleanupEmptySession);
-
-  // Gate: 检查登录状态，未登录则弹出登录框
-  const handleSend = async (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {
-    if (!(await useAuthStore.getState().requireAuth())) {
-      return; // 未登录，登录框已弹出
-    }
-    sendMessage(text, attachments, targetAgentId);
-  };
 
   const [streamingTimestamp, setStreamingTimestamp] = useState<number>(0);
   const minLoading = useMinLoading(loading && messages.length > 0);
@@ -101,15 +91,15 @@ export function Chat() {
   const isEmpty = messages.length === 0 && !sending;
 
   return (
-    <div className={cn("relative flex flex-col transition-colors duration-300")} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div className={cn("relative flex flex-col -m-6 transition-colors duration-500 dark:bg-background")} style={{ height: 'calc(100vh - 2.5rem)' }}>
       {/* Toolbar */}
-      <div className="flex shrink-0 items-center justify-end px-6 py-3">
+      <div className="flex shrink-0 items-center justify-end px-4 py-2">
         <ChatToolbar />
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-4">
-        <div ref={contentRef} className="max-w-[840px] mx-auto space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+        <div ref={contentRef} className="max-w-4xl mx-auto space-y-4">
           {isEmpty ? (
             <WelcomeScreen />
           ) : (
@@ -159,8 +149,8 @@ export function Chat() {
 
       {/* Error bar */}
       {error && (
-        <div className="px-6 py-2.5 bg-destructive/5 border-t border-destructive/10">
-          <div className="max-w-[840px] mx-auto flex items-center justify-between">
+        <div className="px-4 py-2 bg-destructive/10 border-t border-destructive/20">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
             <p className="text-sm text-destructive flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               {error}
@@ -177,7 +167,7 @@ export function Chat() {
 
       {/* Input Area */}
       <ChatInput
-        onSend={handleSend}
+        onSend={sendMessage}
         onStop={abortRun}
         disabled={!isGatewayRunning}
         sending={sending}
@@ -208,15 +198,15 @@ function WelcomeScreen() {
 
   return (
     <div className="flex flex-col items-center justify-center text-center h-[60vh]">
-      <h1 className="text-[28px] md:text-[32px] font-normal text-foreground/80 mb-6 tracking-tight" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Georgia, serif', letterSpacing: '-0.02em' }}>
+      <h1 className="text-4xl md:text-5xl font-serif text-foreground/80 mb-8 font-normal tracking-tight" style={{ fontFamily: 'Georgia, Cambria, "Times New Roman", Times, serif' }}>
         {t('welcome.subtitle')}
       </h1>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg w-full">
+      <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-lg w-full">
         {quickActions.map(({ key, label }) => (
-          <button
+          <button 
             key={key}
-            className="px-4 py-2 rounded-full border border-border/60 text-[13px] font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all"
+            className="px-4 py-1.5 rounded-full border border-black/10 dark:border-white/10 text-[13px] font-medium text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors bg-black/[0.02]"
           >
             {label}
           </button>
@@ -231,14 +221,14 @@ function WelcomeScreen() {
 function TypingIndicator() {
   return (
     <div className="flex gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full mt-0.5 bg-secondary text-foreground">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-1 bg-black/5 dark:bg-white/5 text-foreground">
         <Sparkles className="h-4 w-4" />
       </div>
-      <div className="bg-secondary text-foreground rounded-2xl px-5 py-3">
+      <div className="bg-black/5 dark:bg-white/5 text-foreground rounded-2xl px-4 py-3">
         <div className="flex gap-1">
-          <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
       </div>
     </div>
@@ -251,12 +241,12 @@ function ActivityIndicator({ phase }: { phase: 'tool_processing' }) {
   void phase;
   return (
     <div className="flex gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full mt-0.5 bg-secondary text-foreground">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-1 bg-black/5 dark:bg-white/5 text-foreground">
         <Sparkles className="h-4 w-4" />
       </div>
-      <div className="bg-secondary text-foreground rounded-2xl px-5 py-3">
+      <div className="bg-black/5 dark:bg-white/5 text-foreground rounded-2xl px-4 py-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground/70" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           <span>Processing tool results…</span>
         </div>
       </div>

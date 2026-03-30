@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Post-removal script for RClaw on Linux
+# Post-removal script for ClawX on Linux
 
 set -e
 
@@ -24,4 +24,4 @@ if [ -f "$APPARMOR_PROFILE_TARGET" ]; then
     rm -f "$APPARMOR_PROFILE_TARGET"
 fi
 
-echo "RClaw has been removed."
+echo "ClawX has been removed."

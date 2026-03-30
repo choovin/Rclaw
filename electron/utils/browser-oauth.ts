@@ -12,7 +12,7 @@ export type BrowserOAuthProviderType = 'google' | 'openai';
 const GOOGLE_RUNTIME_PROVIDER_ID = 'google-gemini-cli';
 const GOOGLE_OAUTH_DEFAULT_MODEL = 'gemini-3-pro-preview';
 const OPENAI_RUNTIME_PROVIDER_ID = 'openai-codex';
-const OPENAI_OAUTH_DEFAULT_MODEL = 'gpt-5.3-codex';
+const OPENAI_OAUTH_DEFAULT_MODEL = 'gpt-5.4';
 
 class BrowserOAuthManager extends EventEmitter {
   private activeProvider: BrowserOAuthProviderType | null = null;
@@ -64,7 +64,7 @@ class BrowserOAuthManager extends EventEmitter {
             logger.info(`[BrowserOAuth] ${title || 'OAuth note'}: ${message}`);
           },
           prompt: async () => {
-            throw new Error('Manual browser OAuth fallback is not implemented in RClaw yet.');
+            throw new Error('Manual browser OAuth fallback is not implemented in ClawX yet.');
           },
           progress: {
             update: (message) => logger.info(`[BrowserOAuth] ${message}`),

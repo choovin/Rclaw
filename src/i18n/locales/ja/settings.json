@@ -1,6 +1,6 @@
 {
   "title": "設定",
-  "subtitle": "RClaw の体験をカスタマイズ",
+  "subtitle": "ClawX の体験をカスタマイズ",
   "appearance": {
     "title": "通用",
     "description": "外観とスタイルをカスタマイズ",
@@ -10,7 +10,7 @@
     "system": "システム",
     "language": "言語",
     "launchAtStartup": "システム起動時に自動起動",
-    "launchAtStartupDesc": "ログイン時に RClaw を自動的に起動します"
+    "launchAtStartupDesc": "ログイン時に ClawX を自動的に起動します"
   },
   "aiProviders": {
     "title": "AI プロバイダー",
@@ -37,7 +37,7 @@
     "notRequired": "不要",
     "empty": {
       "title": "プロバイダーが構成されていません",
-      "desc": "RClaw の使用を開始するには AI プロバイダーを追加してください",
+      "desc": "ClawX の使用を開始するには AI プロバイダーを追加してください",
       "cta": "最初のプロバイダーを追加"
     },
     "dialog": {
@@ -60,7 +60,7 @@
       "protocol": "プロトコル",
       "advancedConfig": "詳細設定",
       "userAgent": "User-Agent",
-      "userAgentPlaceholder": "RClaw/1.0",
+      "userAgentPlaceholder": "ClawX/1.0",
       "fallbackModels": "フォールバックモデル",
       "fallbackProviders": "別プロバイダーへのフォールバック",
       "fallbackModelIds": "同一プロバイダーのフォールバックモデル ID",
@@ -133,7 +133,7 @@
     "appLogs": "アプリケーションログ",
     "openFolder": "フォルダーを開く",
     "autoStart": "ゲートウェイ自動起動",
-    "autoStartDesc": "RClaw 起動時にゲートウェイを自動起動",
+    "autoStartDesc": "ClawX 起動時にゲートウェイを自動起動",
     "proxyTitle": "プロキシ",
     "proxyDesc": "Electron と Gateway の通信をローカルプロキシ経由にします。",
     "proxyServer": "プロキシサーバー",
@@ -154,7 +154,7 @@
   },
   "updates": {
     "title": "アップデート",
-    "description": "RClaw を最新に保つ",
+    "description": "ClawX を最新に保つ",
     "autoCheck": "自動更新チェック",
     "autoCheckDesc": "起動時に更新を確認",
     "autoDownload": "自動アップデート",
@@ -206,11 +206,7 @@
       }
     },
     "devMode": "開発者モード",
-    "devModeDesc": "開発者ツールとショートカットを表示",
-    "devShowModelsPage": "モデルページ（開発環境のみ）",
-    "devShowModelsPageDesc": "サイドバーに「モデル」を表示し /models を開けるようにします。本番ビルドの挙動は変わりません。",
-    "telemetry": "匿名の利用データ",
-    "telemetryDesc": "RClaw の改善のため、匿名の基本的な利用データの提供を許可します"
+    "devModeDesc": "開発者ツールとショートカットを表示"
   },
   "developer": {
     "title": "開発者",
@@ -272,7 +268,7 @@
   },
   "about": {
     "title": "バージョン情報",
-    "appName": "RClaw",
+    "appName": "ClawX",
     "tagline": "グラフィカル AI アシスタント",
     "basedOn": "OpenClaw ベース",
     "version": "バージョン {{version}}",

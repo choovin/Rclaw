@@ -2,14 +2,13 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import {
   assignChannelToAgent,
   clearChannelBinding,
+  createAgent,
   deleteAgentConfig,
   listAgentsSnapshot,
-  provisionDigitalEmployeeAgent,
   removeAgentWorkspaceDirectory,
   resolveAccountIdForAgent,
   updateAgentModel,
   updateAgentName,
-  type ProvisionWorkspaceStage,
 } from '../../utils/agent-config';
 import { deleteChannelAccountConfig } from '../../utils/channel-config';
 import { syncAgentModelOverrideToRuntime, syncAllProviderAuthToRuntime } from '../../services/providers/provider-runtime-sync';
@@ -22,16 +21,6 @@ function scheduleGatewayReload(ctx: HostApiContext, reason: string): void {
     return;
   }
   void reason;
-}
-
-type ProvisionEmitStage = ProvisionWorkspaceStage | 'sync_reload';
-
-function emitProvisionStage(ctx: HostApiContext, stage: ProvisionEmitStage): void {
-  try {
-    ctx.mainWindow?.webContents.send('employee-provision:stage', { stage });
-  } catch (err) {
-    console.warn('[agents] employee-provision:stage emit failed:', err);
-  }
 }
 
 import { exec } from 'child_process';
@@ -127,6 +116,25 @@ export async function handleAgentRoutes(
     return true;
   }
 
+  if (url.pathname === '/api/agents' && req.method === 'POST') {
+    try {
+      const body = await parseJsonBody<{ name: string; inheritWorkspace?: boolean }>(req);
+      const snapshot = await createAgent(body.name, { inheritWorkspace: body.inheritWorkspace });
+      // Sync provider API keys to the new agent's auth-profiles.json so the
+      // embedded runner can authenticate with LLM providers when messages
+      // arrive via channel bots (e.g. Feishu). Without this, the copied
+      // auth-profiles.json may contain a stale key → 401 from the LLM.
+      syncAllProviderAuthToRuntime().catch((err) => {
+        console.warn('[agents] Failed to sync provider auth after agent creation:', err);
+      });
+      scheduleGatewayReload(ctx, 'create-agent');
+      sendJson(res, 200, { success: true, ...snapshot });
+    } catch (error) {
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
+    return true;
+  }
+
   if (url.pathname.startsWith('/api/agents/') && req.method === 'PUT') {
     const suffix = url.pathname.slice('/api/agents/'.length);
     const parts = suffix.split('/').filter(Boolean);
@@ -194,9 +202,6 @@ export async function handleAgentRoutes(
         await removeAgentWorkspaceDirectory(removedEntry).catch((err) => {
           console.warn('[agents] Failed to remove workspace after agent deletion:', err);
         });
-        // Extra in-process reload hint so any attached supervisor picks up openclaw.json
-        // without relying solely on the kill+respawn path above.
-        scheduleGatewayReload(ctx, 'delete-agent');
         sendJson(res, 200, { success: true, ...snapshot });
       } catch (error) {
         sendJson(res, 500, { success: false, error: String(error) });
@@ -236,58 +241,6 @@ export async function handleAgentRoutes(
       }
       return true;
     }
-  }
-
-  // POST /api/employees/provision — create Agent, write MD into real workspace, sync + reload
-  if (url.pathname === '/api/employees/provision' && req.method === 'POST') {
-    try {
-      const body = await parseJsonBody<{
-        employeeId: string;
-        nameZh: string;
-        nameEn: string;
-        soulContent: string;
-        agentsContent: string;
-        identityContent: string;
-      }>(req);
-
-      if (typeof body.nameZh !== 'string') {
-        sendJson(res, 400, { success: false, error: 'nameZh is required (string)' });
-        return true;
-      }
-
-      const result = await provisionDigitalEmployeeAgent(
-        {
-          nameZh: body.nameZh,
-          nameEn: body.nameEn,
-          soulContent: body.soulContent || '',
-          agentsContent: body.agentsContent || '',
-          identityContent: body.identityContent || '',
-        },
-        (stage) => emitProvisionStage(ctx, stage),
-      );
-
-      emitProvisionStage(ctx, 'sync_reload');
-      syncAllProviderAuthToRuntime().catch((err) => {
-        console.warn('[agents] Failed to sync provider auth after employee provision:', err);
-      });
-      scheduleGatewayReload(ctx, 'provision-employee');
-
-      sendJson(res, 200, {
-        success: true,
-        agentId: result.agentId,
-        workspacePath: result.workspacePath,
-        employeeId: body.employeeId,
-      });
-    } catch (error) {
-      const err = error as Error & { agentId?: string };
-      console.error('[agents] POST /api/employees/provision failed:', error);
-      sendJson(res, 500, {
-        success: false,
-        error: String(error),
-        agentId: err.agentId,
-      });
-    }
-    return true;
   }
 
   return false;

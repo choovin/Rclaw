@@ -7,14 +7,13 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
 import { invokeIpc } from '@/lib/api-client';
-import { HeaderAuth } from './HeaderAuth';
 
 export function TitleBar() {
   const platform = window.electron?.platform;
 
   if (platform === 'darwin') {
     // macOS: just a drag region, traffic lights are native
-    return <div className="drag-region h-[38px] shrink-0 border-b/0" style={{ backgroundColor: 'hsl(var(--background))' }} />;
+    return <div className="drag-region h-10 shrink-0 border-b bg-background" />;
   }
 
   // Linux keeps the native frame/title bar for better IME compatibility.
@@ -52,37 +51,31 @@ function WindowsTitleBar() {
   };
 
   return (
-    <div className="drag-region flex h-[38px] shrink-0 items-center border-b/0 relative z-50" style={{ backgroundColor: 'hsl(var(--background))' }}>
-      {/* Spacer - creates drag area on left */}
-      <div className="flex-1" />
+    <div className="drag-region flex h-10 shrink-0 items-center justify-end border-b bg-background">
 
-      {/* Right side - no-drag so clickable */}
-      <div className="no-drag flex h-full items-center">
-        <HeaderAuth />
-        {/* Window Controls */}
-        <div className="flex h-full">
-          <button
-            onClick={handleMinimize}
-            className="flex h-full w-12 items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
-            title="Minimize"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleMaximize}
-            className="flex h-full w-12 items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"
-            title={maximized ? 'Restore' : 'Maximize'}
-          >
-            {maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            onClick={handleClose}
-            className="flex h-full w-12 items-center justify-center text-muted-foreground hover:bg-destructive hover:text-white transition-colors"
-            title="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Right: Window Controls */}
+      <div className="no-drag flex h-full">
+        <button
+          onClick={handleMinimize}
+          className="flex h-full w-11 items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
+          title="Minimize"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleMaximize}
+          className="flex h-full w-11 items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
+          title={maximized ? 'Restore' : 'Maximize'}
+        >
+          {maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+        </button>
+        <button
+          onClick={handleClose}
+          className="flex h-full w-11 items-center justify-center text-muted-foreground hover:bg-red-500 hover:text-white transition-colors"
+          title="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

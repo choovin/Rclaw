@@ -1,10 +1,9 @@
-import { constants } from 'fs';
 import { access, copyFile, mkdir, readdir, rm } from 'fs/promises';
+import { constants } from 'fs';
 import { join, normalize } from 'path';
 import { deleteAgentChannelAccounts, listConfiguredChannels, readOpenClawConfig, writeOpenClawConfig } from './channel-config';
 import { withConfigLock } from './config-mutex';
 import { expandPath, getOpenClawConfigDir } from './paths';
-import { writeDigitalEmployeeWorkspaceFiles } from './digital-employee-workspace';
 import * as logger from './logger';
 import { toUiChannelType } from './channel-alias';
 
@@ -126,12 +125,8 @@ function formatModelLabel(model: unknown): string | null {
   return null;
 }
 
-function normalizeAgentName(name: string | undefined): string {
-  if (name == null || typeof name !== 'string') {
-    return 'Agent';
-  }
-  const t = name.trim();
-  return t || 'Agent';
+function normalizeAgentName(name: string): string {
+  return name.trim() || 'Agent';
 }
 
 function slugifyAgentId(name: string): string {
@@ -360,34 +355,23 @@ function getManagedWorkspaceDirectory(agent: AgentListEntry): string | null {
 }
 
 export async function removeAgentWorkspaceDirectory(agent: { id: string; workspace?: string }): Promise<void> {
-  if (agent.id === MAIN_AGENT_ID) {
+  const workspaceDir = getManagedWorkspaceDirectory(agent as AgentListEntry);
+  if (!workspaceDir) {
+    logger.warn('Skipping agent workspace deletion for unmanaged path', {
+      agentId: agent.id,
+      workspace: agent.workspace,
+    });
     return;
   }
 
-  const candidates = new Set<string>();
-  const managed = getManagedWorkspaceDirectory(agent as AgentListEntry);
-  if (managed) {
-    candidates.add(normalize(trimTrailingSeparators(managed)));
-  }
-  const openclawDir = getOpenClawConfigDir();
-  candidates.add(normalize(trimTrailingSeparators(join(openclawDir, `workspace-${agent.id}`))));
-  candidates.add(
-    normalize(
-      trimTrailingSeparators(expandPath(agent.workspace || `~/.openclaw/workspace-${agent.id}`)),
-    ),
-  );
-
-  for (const workspaceDir of candidates) {
-    try {
-      await rm(workspaceDir, { recursive: true, force: true });
-      logger.info('Removed agent workspace directory', { agentId: agent.id, workspaceDir });
-    } catch (error) {
-      logger.warn('Failed to remove agent workspace directory', {
-        agentId: agent.id,
-        workspaceDir,
-        error: String(error),
-      });
-    }
+  try {
+    await rm(workspaceDir, { recursive: true, force: true });
+  } catch (error) {
+    logger.warn('Failed to remove agent workspace directory', {
+      agentId: agent.id,
+      workspaceDir,
+      error: String(error),
+    });
   }
 }
 
@@ -566,17 +550,6 @@ export async function createAgent(
   name: string,
   options?: { inheritWorkspace?: boolean },
 ): Promise<AgentsSnapshot> {
-  const { snapshot } = await createAgentWithResult(name, options);
-  return snapshot;
-}
-
-/**
- * Same as createAgent but returns the new agent id (slug) for reliable provisioning.
- */
-export async function createAgentWithResult(
-  name: string,
-  options?: { inheritWorkspace?: boolean },
-): Promise<{ snapshot: AgentsSnapshot; agentId: string }> {
   return withConfigLock(async () => {
     const config = await readOpenClawConfig() as AgentConfigDocument;
     const { agentsConfig, entries, syntheticMain } = normalizeAgentsConfig(config);
@@ -612,61 +585,8 @@ export async function createAgentWithResult(
     await provisionAgentFilesystem(config, newAgent, { inheritWorkspace: options?.inheritWorkspace });
     await writeOpenClawConfig(config);
     logger.info('Created agent config entry', { agentId: nextId, inheritWorkspace: !!options?.inheritWorkspace });
-    const snapshot = await buildSnapshotFromConfig(config);
-    return { snapshot, agentId: nextId };
+    return buildSnapshotFromConfig(config);
   });
-}
-
-export type ProvisionWorkspaceStage = 'create_agent' | 'write_files' | 'verify';
-
-export interface ProvisionDigitalEmployeePayload {
-  nameZh: string;
-  nameEn: string;
-  soulContent: string;
-  agentsContent: string;
-  identityContent: string;
-}
-
-export interface ProvisionDigitalEmployeeResult {
-  agentId: string;
-  workspacePath: string;
-}
-
-export async function provisionDigitalEmployeeAgent(
-  payload: ProvisionDigitalEmployeePayload,
-  onStage?: (stage: ProvisionWorkspaceStage) => void,
-): Promise<ProvisionDigitalEmployeeResult> {
-  onStage?.('create_agent');
-  const { agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
-
-  // Must match createAgent's workspace pattern (~/.openclaw/workspace-${agentId}); do not rely on
-  // snapshot lookup — buildSnapshotFromConfig can differ from in-memory config in edge cases.
-  const workspacePath = expandPath(`~/.openclaw/workspace-${agentId}`);
-
-  onStage?.('write_files');
-  try {
-    writeDigitalEmployeeWorkspaceFiles(workspacePath, {
-      nameZh: payload.nameZh,
-      nameEn: payload.nameEn,
-      soulContent: payload.soulContent,
-      agentsContent: payload.agentsContent,
-      identityContent: payload.identityContent,
-    });
-  } catch (err) {
-    const e = new Error(String(err)) as Error & { agentId?: string };
-    e.agentId = agentId;
-    throw e;
-  }
-
-  onStage?.('verify');
-  const existsSoul = await fileExists(join(workspacePath, 'SOUL.md'));
-  if (payload.soulContent && !existsSoul) {
-    const e = new Error('provisionDigitalEmployeeAgent: SOUL.md missing after write') as Error & { agentId?: string };
-    e.agentId = agentId;
-    throw e;
-  }
-
-  return { agentId, workspacePath };
 }
 
 export async function updateAgentName(agentId: string, name: string): Promise<AgentsSnapshot> {
@@ -735,51 +655,40 @@ export async function updateAgentModel(agentId: string, modelRef: string | null)
 
 export async function deleteAgentConfig(agentId: string): Promise<{ snapshot: AgentsSnapshot; removedEntry: AgentListEntry }> {
   return withConfigLock(async () => {
-    const input = agentId.trim();
-    if (!input) {
-      throw new Error('Agent id is required');
-    }
-    if (input.toLowerCase() === MAIN_AGENT_ID.toLowerCase()) {
+    if (agentId === MAIN_AGENT_ID) {
       throw new Error('The main agent cannot be deleted');
     }
 
     const config = await readOpenClawConfig() as AgentConfigDocument;
     const { agentsConfig, entries, defaultAgentId } = normalizeAgentsConfig(config);
     const snapshotBeforeDeletion = await buildSnapshotFromConfig(config);
-    const inputLower = input.toLowerCase();
-    const removeIndex = entries.findIndex((entry) => entry.id.trim().toLowerCase() === inputLower);
-    if (removeIndex === -1) {
+    const removedEntry = entries.find((entry) => entry.id === agentId);
+    const nextEntries = entries.filter((entry) => entry.id !== agentId);
+    if (!removedEntry || nextEntries.length === entries.length) {
       throw new Error(`Agent "${agentId}" not found`);
     }
-
-    const removedEntry = entries[removeIndex];
-    const canonicalId = removedEntry.id.trim();
-    const nextEntries = entries.filter((_, i) => i !== removeIndex);
 
     config.agents = {
       ...agentsConfig,
       list: nextEntries,
     };
-    const canonicalNorm = normalizeAgentIdForBinding(canonicalId);
     config.bindings = Array.isArray(config.bindings)
-      ? config.bindings.filter((binding) => {
-          if (!isChannelBinding(binding)) return true;
-          return normalizeAgentIdForBinding(binding.agentId!) !== canonicalNorm;
-        })
+      ? config.bindings.filter((binding) => !(isChannelBinding(binding) && binding.agentId === agentId))
       : undefined;
 
-    if (defaultAgentId === canonicalId && nextEntries.length > 0) {
+    if (defaultAgentId === agentId && nextEntries.length > 0) {
       nextEntries[0] = {
         ...nextEntries[0],
         default: true,
       };
     }
 
-    const legacyAccountId = resolveAccountIdForAgent(canonicalId);
+    const normalizedAgentId = normalizeAgentIdForBinding(agentId);
+    const legacyAccountId = resolveAccountIdForAgent(agentId);
     const ownedLegacyAccounts = new Set(
       Object.entries(snapshotBeforeDeletion.channelAccountOwners)
         .filter(([channelAccountKey, owner]) => {
-          if (owner !== canonicalNorm) return false;
+          if (owner !== normalizedAgentId) return false;
           const accountId = channelAccountKey.slice(channelAccountKey.indexOf(':') + 1);
           return accountId === legacyAccountId;
         })
@@ -787,15 +696,15 @@ export async function deleteAgentConfig(agentId: string): Promise<{ snapshot: Ag
     );
 
     await writeOpenClawConfig(config);
-    await deleteAgentChannelAccounts(canonicalId, ownedLegacyAccounts);
-    await removeAgentRuntimeDirectory(canonicalId);
+    await deleteAgentChannelAccounts(agentId, ownedLegacyAccounts);
+    await removeAgentRuntimeDirectory(agentId);
     // NOTE: workspace directory is NOT deleted here intentionally.
     // The caller (route handler) defers workspace removal until after
     // the Gateway process has fully restarted, so that any in-flight
     // process.chdir(workspace) calls complete before the directory
     // disappears (otherwise process.cwd() throws ENOENT for the rest
     // of the Gateway's lifetime).
-    logger.info('Deleted agent config entry', { agentId: canonicalId, requestedAs: agentId });
+    logger.info('Deleted agent config entry', { agentId });
     return { snapshot: await buildSnapshotFromConfig(config), removedEntry };
   });
 }
@@ -862,47 +771,4 @@ export async function clearAllBindingsForChannel(channelType: string): Promise<v
     await writeOpenClawConfig(config);
     logger.info('Cleared all bindings for channel', { channelType });
   });
-}
-
-export interface CreateEmployeeWorkspaceOptions {
-  employeeId: string;
-  nameZh: string;
-  nameEn: string;
-  soulContent: string;
-  agentsContent: string;
-  identityContent: string;
-}
-
-export interface CreateEmployeeWorkspaceResult {
-  success: boolean;
-  agentId: string;
-  workspacePath: string;
-}
-
-export async function createEmployeeWorkspace(
-  options: CreateEmployeeWorkspaceOptions,
-): Promise<CreateEmployeeWorkspaceResult> {
-  const openclawDir = getOpenClawConfigDir();
-  const workspaceDir = join(openclawDir, `workspace-${options.employeeId}`);
-
-  try {
-    writeDigitalEmployeeWorkspaceFiles(workspaceDir, {
-      nameZh: options.nameZh,
-      nameEn: options.nameEn,
-      soulContent: options.soulContent,
-      agentsContent: options.agentsContent,
-      identityContent: options.identityContent,
-    });
-
-    logger.info(`[createEmployeeWorkspace] Created workspace for ${options.nameZh} at ${workspaceDir}`);
-
-    return {
-      success: true,
-      agentId: options.employeeId,
-      workspacePath: workspaceDir,
-    };
-  } catch (error) {
-    logger.error('[createEmployeeWorkspace] Failed:', error);
-    throw error;
-  }
 }

@@ -3,7 +3,6 @@
  * Exposes safe APIs to the renderer process via contextBridge
  */
 import { contextBridge, ipcRenderer } from 'electron';
-import pkg from '../../package.json';
 
 /**
  * IPC renderer methods exposed to the renderer process
@@ -24,6 +23,7 @@ const electronAPI = {
         'gateway:rpc',
         'gateway:httpProxy',
         'hostapi:fetch',
+        'hostapi:token',
         'gateway:health',
         'gateway:getControlUiUrl',
         // OpenClaw
@@ -133,8 +133,6 @@ const electronAPI = {
         'chat:sendWithMedia',
         // Session management
         'session:delete',
-        // Agents
-        'agents:create-employee',
         // OpenClaw extras
         'openclaw:getDir',
         'openclaw:getConfigDir',
@@ -165,11 +163,8 @@ const electronAPI = {
         'channel:wechat-qr',
         'channel:wechat-success',
         'channel:wechat-error',
-        'cloud:token-refreshed',   // Token 刷新成功事件
-        'cloud:logged-out',        // 登出事件
         'gateway:exit',
         'gateway:error',
-        'employee-provision:stage',
         'navigate',
         'update:status-changed',
         'update:checking',
@@ -271,13 +266,6 @@ const electronAPI = {
    * Check if running in development
    */
   isDev: process.env.NODE_ENV === 'development' || !!process.env.VITE_DEV_SERVER_URL,
-
-  /**
-   * App versions
-   */
-  versions: {
-    app: pkg.version,
-  },
 };
 
 // Expose the API to the renderer process

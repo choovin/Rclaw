@@ -2,17 +2,16 @@
  * Root Application Component
  * Handles routing and global providers
  */
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Component, lazy, Suspense, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Component, useEffect } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
 import { MainLayout } from './components/layout/MainLayout';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Models } from './pages/Models';
 import { Chat } from './pages/Chat';
+import { Agents } from './pages/Agents';
 import { Channels } from './pages/Channels';
 import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
@@ -22,34 +21,7 @@ import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
 import { useProviderStore } from './stores/providers';
 import { applyGatewayTransportPreference } from './lib/api-client';
-import { useAuthStore } from './stores/auth';
 
-const Agents = lazy(() => import('./pages/Agents'));
-
-/** Production: always redirect. Dev: only when Settings > dev show Models is enabled. */
-function ModelsRoute() {
-  const devShowModelsPage = useSettingsStore((s) => s.devShowModelsPage);
-  if (!import.meta.env.DEV) {
-    return <Navigate to="/" replace />;
-  }
-  if (!devShowModelsPage) {
-    return <Navigate to="/" replace />;
-  }
-  return <Models />;
-}
-
-function EmployeesRouteFallback() {
-  const { t } = useTranslation('common');
-  return (
-    <div
-      className="flex min-h-[calc(100vh-2.5rem)] w-full flex-col items-center justify-center"
-      style={{ backgroundColor: 'hsl(var(--background))' }}
-    >
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
-      <p className="mt-3 text-sm text-muted-foreground">{t('status.loading')}</p>
-    </div>
-  );
-}
 
 /**
  * Error Boundary to catch and display React rendering errors
@@ -124,26 +96,10 @@ function App() {
   const setupComplete = useSettingsStore((state) => state.setupComplete);
   const initGateway = useGatewayStore((state) => state.init);
   const initProviders = useProviderStore((state) => state.init);
-  const syncAuthFromHost = useAuthStore((state) => state.syncAuthFromHost);
-  const syncUserInfoFromHost = useAuthStore((state) => state.syncUserInfoFromHost);
-  const prevPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
     initSettings();
   }, [initSettings]);
-
-  useEffect(() => {
-    void syncAuthFromHost();
-  }, [syncAuthFromHost]);
-
-  /** 切换路由时重新拉取 member/user/get，更新 coin 等用户信息（首屏由 syncAuthFromHost 已拉取） */
-  useEffect(() => {
-    const prev = prevPathnameRef.current;
-    prevPathnameRef.current = location.pathname;
-    if (prev !== null && prev !== location.pathname) {
-      void syncUserInfoFromHost();
-    }
-  }, [location.pathname, syncUserInfoFromHost]);
 
   // Sync i18n language with persisted settings on mount
   useEffect(() => {
@@ -209,31 +165,21 @@ function App() {
   return (
     <ErrorBoundary>
       <TooltipProvider delayDuration={300}>
-        <div className="min-h-full flex-1">
-          <Routes>
-            {/* Setup wizard (shown on first launch) */}
-            <Route path="/setup/*" element={<Setup />} />
+        <Routes>
+          {/* Setup wizard (shown on first launch) */}
+          <Route path="/setup/*" element={<Setup />} />
 
-            {/* Main application routes */}
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Chat />} />
-              <Route path="/models" element={<ModelsRoute />} />
-              <Route
-                path="/employees"
-                element={
-                  <Suspense fallback={<EmployeesRouteFallback />}>
-                    <Agents />
-                  </Suspense>
-                }
-              />
-              <Route path="/agents" element={<Navigate to="/employees" replace />} />
-              <Route path="/channels" element={<Channels />} />
-              <Route path="/skills" element={<Skills />} />
-              <Route path="/cron" element={<Cron />} />
-              <Route path="/settings/*" element={<Settings />} />
-            </Route>
-          </Routes>
-        </div>
+          {/* Main application routes */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Chat />} />
+            <Route path="/models" element={<Models />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/channels" element={<Channels />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/cron" element={<Cron />} />
+            <Route path="/settings/*" element={<Settings />} />
+          </Route>
+        </Routes>
 
         {/* Global toast notifications */}
         <Toaster

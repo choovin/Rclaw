@@ -1,6 +1,7 @@
 {
-    "title": "Digital Employees",
-    "subtitle": "When adding a new Agent, RClaw will copy the main Agent's workspace files and runtime auth setup. The configuration can be modified through a dialog.",
+    "title": "Agents",
+    "subtitle": "Create a new Agent to route specific channels to a separate personality or workspace.",
+    "refresh": "Refresh",
     "addAgent": "Add Agent",
     "gatewayWarning": "Gateway service is not running. Agent/channel changes may take a moment to apply.",
     "defaultBadge": "default",
@@ -13,14 +14,15 @@
     "creating": "Creating...",
     "createDialog": {
         "title": "Add Agent",
-        "description": "Create a new agent by name. RClaw will copy the main agent's workspace bootstrap files and runtime auth setup.",
+        "description": "Create a new agent by name. You can optionally inherit the main agent's workspace bootstrap files.",
+        "nameLabel": "Agent Name",
         "namePlaceholder": "Coding Helper",
         "inheritWorkspaceLabel": "Inherit main agent workspace",
         "inheritWorkspaceDescription": "Copy SOUL.md, AGENTS.md, etc. from the main agent"
     },
     "deleteDialog": {
         "title": "Delete Agent",
-        "message": "Delete \"{{name}}\" from RClaw? This permanently deletes the agent and its RClaw-managed workspace, runtime, and session files from disk."
+        "message": "Delete \"{{name}}\" from ClawX? This permanently deletes the agent and its ClawX-managed workspace, runtime, and session files from disk."
     },
     "settingsDialog": {
         "title": "{{name}} Settings",
@@ -37,6 +39,9 @@
         "modelPreview": "Preview",
         "modelOverridePlaceholder": "provider/model (for example: openrouter/openai/gpt-5.4)",
         "modelOverrideDescription": "Select provider and model ID for this agent.",
+        "unsavedChangesTitle": "Unsaved changes",
+        "unsavedChangesMessage": "You have unsaved changes. If you close now, your changes will be discarded.",
+        "closeWithoutSaving": "Close without saving",
         "saveModelOverride": "Save model",
         "useDefaultModel": "Use default model",
         "channelsTitle": "Channels",
@@ -48,7 +53,7 @@
     },
     "removeChannelDialog": {
         "title": "Remove Channel",
-        "message": "Remove {{name}} from RClaw? This deletes the current channel configuration."
+        "message": "Remove {{name}} from ClawX? This deletes the current channel configuration."
     },
     "toast": {
         "agentCreated": "Agent created",

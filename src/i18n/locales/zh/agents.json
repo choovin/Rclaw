@@ -1,6 +1,7 @@
 {
-    "title": "数字员工",
-    "subtitle": "添加新的 Agent 时，RClaw 会复制主 Agent 的工作区引导文件和运行时认证配置， 配置可以通过以对话的形式进行修改",
+    "title": "Agents",
+    "subtitle": "创建新的 Agent，可以将特定频道路由到不同的人格配置或工作区。",
+    "refresh": "刷新",
     "addAgent": "添加 Agent",
     "gatewayWarning": "Gateway 服务未运行。Agent 或频道变更可能需要一点时间生效。",
     "defaultBadge": "默认",
@@ -13,14 +14,15 @@
     "creating": "创建中...",
     "createDialog": {
         "title": "添加 Agent",
-        "description": "只需输入名称即可创建新 Agent。RClaw 会复制主 Agent 的工作区引导文件和运行时认证配置。",
+        "description": "输入名称即可创建新 Agent，可选择是否继承主 Agent 的工作区引导文件。",
+        "nameLabel": "Agent 名称",
         "namePlaceholder": "Coding Helper",
         "inheritWorkspaceLabel": "继承主 Agent 工作区",
         "inheritWorkspaceDescription": "从主 Agent 复制 SOUL.md、AGENTS.md 等引导文件"
     },
     "deleteDialog": {
         "title": "删除 Agent",
-        "message": "确认从 RClaw 删除 “{{name}}”？这会永久删除该 Agent 及其由 RClaw 管理的工作区、运行时和会话文件。"
+        "message": "确认从 ClawX 删除 “{{name}}”？这会永久删除该 Agent 及其由 ClawX 管理的工作区、运行时和会话文件。"
     },
     "settingsDialog": {
         "title": "{{name}} 设置",
@@ -37,6 +39,9 @@
         "modelPreview": "预览",
         "modelOverridePlaceholder": "provider/model（例如：openrouter/openai/gpt-5.4）",
         "modelOverrideDescription": "为该 Agent 选择 Provider 和模型 ID。",
+        "unsavedChangesTitle": "未保存的修改",
+        "unsavedChangesMessage": "你有未保存的修改。关闭后这些修改将被丢弃。",
+        "closeWithoutSaving": "不保存并关闭",
         "saveModelOverride": "保存模型",
         "useDefaultModel": "使用默认模型",
         "channelsTitle": "频道",

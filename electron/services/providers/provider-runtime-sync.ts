@@ -6,6 +6,7 @@ import { getAllProviders, getApiKey, getDefaultProvider, getProvider } from '../
 import { getProviderConfig, getProviderDefaultModel } from '../../utils/provider-registry';
 import {
   removeProviderFromOpenClaw,
+  removeProviderKeyFromOpenClaw,
   saveOAuthTokenToOpenClaw,
   saveProviderKeyToOpenClaw,
   setOpenClawDefaultModel,
@@ -20,7 +21,7 @@ import { listAgentsSnapshot } from '../../utils/agent-config';
 const GOOGLE_OAUTH_RUNTIME_PROVIDER = 'google-gemini-cli';
 const GOOGLE_OAUTH_DEFAULT_MODEL_REF = `${GOOGLE_OAUTH_RUNTIME_PROVIDER}/gemini-3-pro-preview`;
 const OPENAI_OAUTH_RUNTIME_PROVIDER = 'openai-codex';
-const OPENAI_OAUTH_DEFAULT_MODEL_REF = `${OPENAI_OAUTH_RUNTIME_PROVIDER}/gpt-5.3-codex`;
+const OPENAI_OAUTH_DEFAULT_MODEL_REF = `${OPENAI_OAUTH_RUNTIME_PROVIDER}/gpt-5.4`;
 
 type RuntimeProviderSyncContext = {
   runtimeProviderKey: string;
@@ -65,6 +66,15 @@ function shouldUseExplicitDefaultOverride(config: ProviderConfig, runtimeProvide
 
 export function getOpenClawProviderKey(type: string, providerId: string): string {
   if (type === 'custom' || type === 'ollama') {
+    // If the providerId is already a runtime key (e.g. re-seeded from openclaw.json
+    // as "custom-XXXXXXXX"), return it directly to avoid double-hashing.
+    const prefix = `${type}-`;
+    if (providerId.startsWith(prefix)) {
+      const tail = providerId.slice(prefix.length);
+      if (tail.length === 8 && !tail.includes('-')) {
+        return providerId;
+      }
+    }
     const suffix = providerId.replace(/-/g, '').slice(0, 8);
     return `${type}-${suffix}`;
   }
@@ -291,19 +301,11 @@ async function resolveRuntimeSyncContext(config: ProviderConfig): Promise<Runtim
 async function syncRuntimeProviderConfig(
   config: ProviderConfig,
   context: RuntimeProviderSyncContext,
-  apiKeyParam?: string,
 ): Promise<void> {
-  const resolvedKey =
-    apiKeyParam !== undefined
-      ? (apiKeyParam.trim() || undefined)
-      : (config.type === 'custom' ? (await getApiKey(config.id)) || undefined : undefined);
-  const useInlineCustomKey = config.type === 'custom' && Boolean(resolvedKey);
-
   await syncProviderConfigToOpenClaw(context.runtimeProviderKey, config.model, {
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl || context.meta?.baseUrl, context.api),
     api: context.api,
-    apiKeyEnv: useInlineCustomKey ? undefined : context.meta?.apiKeyEnv,
-    inlineApiKey: useInlineCustomKey ? resolvedKey : undefined,
+    apiKeyEnv: context.meta?.apiKeyEnv,
     headers: config.headers ?? context.meta?.headers,
   });
 }
@@ -341,9 +343,27 @@ async function syncProviderToRuntime(
   }
 
   await syncProviderSecretToRuntime(config, context.runtimeProviderKey, apiKey);
-  await syncRuntimeProviderConfig(config, context, apiKey);
+  await syncRuntimeProviderConfig(config, context);
   await syncCustomProviderAgentModel(config, context.runtimeProviderKey, apiKey);
   return context;
+}
+
+async function removeDeletedProviderFromOpenClaw(
+  provider: ProviderConfig,
+  providerId: string,
+  runtimeProviderKey?: string,
+): Promise<void> {
+  const keys = new Set<string>();
+  if (runtimeProviderKey) {
+    keys.add(runtimeProviderKey);
+  } else {
+    keys.add(await resolveRuntimeProviderKey({ ...provider, id: providerId }));
+  }
+  keys.add(providerId);
+
+  for (const key of keys) {
+    await removeProviderFromOpenClaw(key);
+  }
 }
 
 function parseModelRef(modelRef: string): { providerKey: string; modelId: string } | null {
@@ -506,12 +526,9 @@ export async function syncUpdatedProviderToRuntime(
         await setOpenClawDefaultModel(ock, modelOverride, fallbackModels);
       }
     } else {
-      const inlineKey =
-        (apiKey !== undefined ? apiKey.trim() : '') || (await getApiKey(config.id)) || '';
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(config, config.baseUrl, config.apiProtocol || 'openai-completions'),
         api: config.apiProtocol || 'openai-completions',
-        inlineApiKey: inlineKey || undefined,
         headers: config.headers,
       }, fallbackModels);
     }
@@ -540,7 +557,7 @@ export async function syncDeletedProviderToRuntime(
   }
 
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
-  await removeProviderFromOpenClaw(ock);
+  await removeDeletedProviderFromOpenClaw(provider, providerId, ock);
 
   scheduleGatewayRefresh(
     gatewayManager,
@@ -559,7 +576,7 @@ export async function syncDeletedProviderApiKeyToRuntime(
   }
 
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
-  await removeProviderFromOpenClaw(ock);
+  await removeProviderKeyFromOpenClaw(ock);
 }
 
 export async function syncDefaultProviderToRuntime(
@@ -587,7 +604,6 @@ export async function syncDefaultProviderToRuntime(
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(provider, provider.baseUrl, provider.apiProtocol || 'openai-completions'),
         api: provider.apiProtocol || 'openai-completions',
-        inlineApiKey: providerKey || undefined,
         headers: provider.headers,
       }, fallbackModels);
     } else if (shouldUseExplicitDefaultOverride(provider, ock)) {

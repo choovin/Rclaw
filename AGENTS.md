@@ -4,7 +4,7 @@
 
 ### Overview
 
-RClaw is a cross-platform **Electron desktop app** (React 19 + Vite + TypeScript) providing a GUI for the OpenClaw AI agent runtime. It uses pnpm as its package manager (pinned version in `package.json`'s `packageManager` field).
+ClawX is a cross-platform **Electron desktop app** (React 19 + Vite + TypeScript) providing a GUI for the OpenClaw AI agent runtime. It uses pnpm as its package manager (pinned version in `package.json`'s `packageManager` field).
 
 ### Quick reference
 
@@ -23,11 +23,6 @@ Standard dev commands are in `package.json` scripts and `README.md`. Key ones:
 | E2E tests (Playwright) | `pnpm run test:e2e` |
 | Build frontend only | `pnpm run build:vite` |
 
-### Git 提交信息
-
-- **提交说明（标题与正文）请使用中文**，便于阅读历史与协作；专有名词、文件路径、API、命令等可保留英文。
-- 多行正文时，首行概括改动，空行后分条说明要点即可。
-
 ### Non-obvious caveats
 
 - **pnpm version**: The exact pnpm version is pinned via `packageManager` in `package.json`. Use `corepack enable && corepack prepare` to activate the correct version before installing.
@@ -41,11 +36,11 @@ Standard dev commands are in `package.json` scripts and `README.md`. Key ones:
 - **Token usage history implementation**: Dashboard token usage history is not parsed from console logs. It reads OpenClaw session transcript `.jsonl` files under the local OpenClaw config directory, scans both configured agents and any runtime agent directories found on disk, and treats normal, `.deleted.jsonl`, and `.jsonl.reset.*` transcripts as valid history sources. It extracts assistant/tool usage records with `message.usage` and aggregates fields such as input/output/cache/total tokens and cost from those structured records.
 - **Models page aggregation**: The 7-day/30-day filters are relative rolling windows, not calendar-month buckets. When grouped by time, the chart should keep all day buckets in the selected window; only model grouping is intentionally capped to the top entries.
 - **OpenClaw Doctor in UI**: In Settings > Advanced > Developer, the app exposes both `Run Doctor` (`openclaw doctor --json`) and `Run Doctor Fix` (`openclaw doctor --fix --yes --non-interactive`) through the host-api. Renderer code should call the host route, not spawn CLI processes directly.
+- **UI change validation**: Any user-visible UI change should include or update an Electron E2E spec in the same PR so the interaction is covered by Playwright.
 - **Renderer/Main API boundary (important)**:
   - Renderer must use `src/lib/host-api.ts` and `src/lib/api-client.ts` as the single entry for backend calls.
   - Do not add new direct `window.electron.ipcRenderer.invoke(...)` calls in pages/components; expose them through host-api/api-client instead.
   - Do not call Gateway HTTP endpoints directly from renderer (`fetch('http://127.0.0.1:18789/...')` etc.). Use Main-process proxy channels (`hostapi:fetch`, `gateway:httpProxy`) to avoid CORS/env drift.
   - Transport policy is Main-owned and fixed as `WS -> HTTP -> IPC fallback`; renderer should not implement protocol switching UI/business logic.
-- **业务云后台（RunNode）HTTP API 文档**：仓库内权威说明在 `docs/api-docs/`（索引见 `docs/api-docs/00_README.md`）。按模块拆分：`01_Claw_API.md`（`/claw/*`，Agent/Skill/Device/Quota）、`02_AI_API.md`（`/ai/*`，聊天/绘画/知识库/模型）、`03_Business_API.md`（ComfyUI、商品、订单等）、`04_Member_API.md`（`/app-api/member/*`）、`05_System_API.md`（`/admin-api/system/*`）。实现或修改云端鉴权、会员、订单、Claw/AI 等业务对接时，以该目录为准并与后台契约保持一致；若接口路径或字段变更，同步更新对应 Markdown。
 - **Comms-change checklist**: If your change touches communication paths (gateway events, runtime send/receive, delivery, or fallback), run `pnpm run comms:replay` and `pnpm run comms:compare` before pushing.
-- **Doc sync rule**: After any functional or architecture change, review `README.md`, `README.zh-CN.md`, and `README.ja-JP.md` for required updates; if behavior/flows/interfaces changed, update docs in the same PR/commit. If RunNode / business cloud HTTP contracts change, update `docs/api-docs/` in the same change set.
+- **Doc sync rule**: After any functional or architecture change, review `README.md`, `README.zh-CN.md`, and `README.ja-JP.md` for required updates; if behavior/flows/interfaces changed, update docs in the same PR/commit.

@@ -386,8 +386,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   return (
     <div
       className={cn(
-        "p-5 pb-6 w-full mx-auto transition-all duration-300",
-        isEmpty ? "max-w-[720px]" : "max-w-[840px]"
+        "p-4 pb-6 w-full mx-auto transition-all duration-300",
+        isEmpty ? "max-w-3xl" : "max-w-4xl"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -396,7 +396,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
       <div className="w-full">
         {/* Attachment Previews */}
         {attachments.length > 0 && (
-          <div className="flex gap-2.5 mb-3 flex-wrap">
+          <div className="flex gap-2 mb-3 flex-wrap">
             {attachments.map((att) => (
               <AttachmentPreview
                 key={att.id}
@@ -408,13 +408,13 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         )}
 
         {/* Input Row */}
-        <div className={`relative bg-card rounded-2xl shadow-sm border transition-all ${dragOver ? 'border-foreground/20 ring-1 ring-foreground/10' : 'border-border/60'}`}>
+        <div className={`relative bg-white dark:bg-card rounded-[28px] shadow-sm border p-1.5 transition-all ${dragOver ? 'border-primary ring-1 ring-primary' : 'border-black/10 dark:border-white/10'}`}>
           {selectedTarget && (
-            <div className="px-4 pt-3.5 pb-1">
+            <div className="px-2.5 pt-2 pb-1">
               <button
                 type="button"
                 onClick={() => setTargetAgentId(null)}
-                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-secondary px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary/80"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[13px] font-medium text-foreground transition-colors hover:bg-primary/10"
                 title={t('composer.clearTarget')}
               >
                 <span>{t('composer.targetChip', { agent: selectedTarget.name })}</span>
@@ -423,17 +423,17 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
             </div>
           )}
 
-          <div className="flex items-end gap-1.5 px-2 py-2">
+          <div className="flex items-end gap-1.5">
             {/* Attach Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 h-11 w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="shrink-0 h-10 w-10 rounded-full text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground transition-colors"
               onClick={pickFiles}
               disabled={disabled || sending}
               title={t('composer.attachFiles')}
             >
-              <Paperclip className="h-4.5 w-4.5" />
+              <Paperclip className="h-4 w-4" />
             </Button>
 
             {showAgentPicker && (
@@ -442,18 +442,18 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    'h-11 w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors',
-                    (pickerOpen || selectedTarget) && 'bg-secondary text-foreground'
+                    'h-10 w-10 rounded-full text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground transition-colors',
+                    (pickerOpen || selectedTarget) && 'bg-primary/10 text-primary hover:bg-primary/20'
                   )}
                   onClick={() => setPickerOpen((open) => !open)}
                   disabled={disabled || sending}
                   title={t('composer.pickAgent')}
                 >
-                  <AtSign className="h-4.5 w-4.5" />
+                  <AtSign className="h-4 w-4" />
                 </Button>
                 {pickerOpen && (
-                  <div className="absolute left-0 bottom-full z-20 mb-2.5 w-80 overflow-hidden rounded-2xl border border-border/60 bg-card p-2 shadow-lg">
-                    <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground/80" style={{ letterSpacing: '0.02em' }}>
+                  <div className="absolute left-0 bottom-full z-20 mb-2 w-72 overflow-hidden rounded-2xl border border-black/10 bg-white p-1.5 shadow-xl dark:border-white/10 dark:bg-card">
+                    <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground/80">
                       {t('composer.agentPickerTitle', { currentAgent: currentAgentName })}
                     </div>
                     <div className="max-h-64 overflow-y-auto">
@@ -491,7 +491,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                 onPaste={handlePaste}
                 placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
                 disabled={disabled}
-                className="min-h-[44px] max-h-[200px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent py-3 px-2 text-[15px] placeholder:text-muted-foreground/50 leading-relaxed"
+                className="min-h-[40px] max-h-[200px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent py-2.5 px-2 text-[15px] placeholder:text-muted-foreground/60 leading-relaxed"
                 rows={1}
               />
             </div>
@@ -501,10 +501,10 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               onClick={sending ? handleStop : handleSend}
               disabled={sending ? !canStop : !canSend}
               size="icon"
-              className={`shrink-0 h-11 w-11 rounded-xl transition-all ${
+              className={`shrink-0 h-10 w-10 rounded-full transition-colors ${
                 (sending || canSend)
-                  ? 'bg-foreground text-background hover:bg-foreground/90'
-                  : 'text-muted-foreground/40 hover:bg-transparent bg-transparent'
+                  ? 'bg-black/5 dark:bg-white/10 text-foreground hover:bg-black/10 dark:hover:bg-white/20'
+                  : 'text-muted-foreground/50 hover:bg-transparent bg-transparent'
               }`}
               variant="ghost"
               title={sending ? t('composer.stop') : t('composer.send')}
@@ -512,15 +512,15 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               {sending ? (
                 <Square className="h-4 w-4" fill="currentColor" />
               ) : (
-                <SendHorizontal className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                <SendHorizontal className="h-[18px] w-[18px]" strokeWidth={2} />
               )}
             </Button>
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground/60 px-4">
-          <div className="flex items-center gap-2">
-            <div className={cn("w-2 h-2 rounded-full", gatewayStatus.state === 'running' ? "bg-green-500/80" : "bg-red-500/80")} />
-            <span style={{ letterSpacing: '0.01em' }}>
+        <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground/60 px-4">
+          <div className="flex items-center gap-1.5">
+            <div className={cn("w-1.5 h-1.5 rounded-full", gatewayStatus.state === 'running' ? "bg-green-500/80" : "bg-red-500/80")} />
+            <span>
               {t('composer.gatewayStatus', {
                 state: gatewayStatus.state === 'running'
                   ? t('composer.gatewayConnected')
@@ -561,7 +561,7 @@ function AttachmentPreview({
   const isImage = attachment.mimeType.startsWith('image/') && attachment.preview;
 
   return (
-    <div className="relative group rounded-xl overflow-hidden border border-border/40 bg-secondary/30">
+    <div className="relative group rounded-lg overflow-hidden border border-border">
       {isImage ? (
         // Image thumbnail
         <div className="w-16 h-16">
@@ -573,7 +573,7 @@ function AttachmentPreview({
         </div>
       ) : (
         // Generic file card
-        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-secondary/30 max-w-[200px]">
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 max-w-[200px]">
           <FileIcon mimeType={attachment.mimeType} className="h-5 w-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0 overflow-hidden">
             <p className="text-xs font-medium truncate">{attachment.fileName}</p>
@@ -586,14 +586,14 @@ function AttachmentPreview({
 
       {/* Staging overlay */}
       {attachment.status === 'staging' && (
-        <div className="absolute inset-0 bg-foreground/20 flex items-center justify-center">
-          <Loader2 className="h-4 w-4 text-foreground animate-spin" />
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+          <Loader2 className="h-4 w-4 text-white animate-spin" />
         </div>
       )}
 
       {/* Error overlay */}
       {attachment.status === 'error' && (
-        <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center">
+        <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
           <span className="text-[10px] text-destructive font-medium px-1">Error</span>
         </div>
       )}
@@ -601,9 +601,9 @@ function AttachmentPreview({
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="absolute -top-1.5 -right-1.5 bg-card border border-border rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
       >
-        <X className="h-3 w-3 text-foreground" />
+        <X className="h-3 w-3" />
       </button>
     </div>
   );

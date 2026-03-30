@@ -6,6 +6,7 @@ import {
   enrichWithToolResultFiles,
   getMessageText,
   hasNonToolAssistantContent,
+  isInternalMessage,
   isToolResultRole,
   loadMissingPreviews,
   toMs,
@@ -39,7 +40,7 @@ export function createHistoryActions(
       const applyLoadedMessages = (rawMessages: RawMessage[], thinkingLevel: string | null) => {
         // Before filtering: attach images/files from tool_result messages to the next assistant message
         const messagesWithToolImages = enrichWithToolResultFiles(rawMessages);
-        const filteredMessages = messagesWithToolImages.filter((msg) => !isToolResultRole(msg.role));
+        const filteredMessages = messagesWithToolImages.filter((msg) => !isToolResultRole(msg.role) && !isInternalMessage(msg));
         // Restore file attachments for user/assistant messages (from cache + text patterns)
         const enrichedMessages = enrichWithCachedImages(filteredMessages);
 
@@ -68,7 +69,7 @@ export function createHistoryActions(
 
         // Extract first user message text as a session label for display in the toolbar.
         // Skip main sessions (key ends with ":main") — they rely on the Gateway-provided
-        // displayName (e.g. the configured agent name "RClaw") instead.
+        // displayName (e.g. the configured agent name "ClawX") instead.
         const isMainSession = currentSessionKey.endsWith(':main');
         if (!isMainSession) {
           const firstUserMsg = finalMessages.find((m) => m.role === 'user');

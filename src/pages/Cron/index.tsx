@@ -515,7 +515,7 @@ function TaskDialog({ job, configuredChannels, onClose, onSave }: TaskDialogProp
                 size="sm"
                 onClick={() => setDeliveryMode('none')}
                 className={cn(
-                  'justify-start h-auto min-h-12 rounded-xl px-4 py-3 text-left',
+                  'justify-start h-auto min-h-12 rounded-xl px-4 py-3 text-left whitespace-normal',
                   deliveryMode === 'none'
                     ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-transparent'
                     : 'bg-[#eeece3] dark:bg-muted border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80 hover:text-foreground',
@@ -532,7 +532,7 @@ function TaskDialog({ job, configuredChannels, onClose, onSave }: TaskDialogProp
                 size="sm"
                 onClick={() => setDeliveryMode('announce')}
                 className={cn(
-                  'justify-start h-auto min-h-12 rounded-xl px-4 py-3 text-left',
+                  'justify-start h-auto min-h-12 rounded-xl px-4 py-3 text-left whitespace-normal',
                   deliveryMode === 'announce'
                     ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-transparent'
                     : 'bg-[#eeece3] dark:bg-muted border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80 hover:text-foreground',
@@ -892,14 +892,14 @@ export function Cron() {
 
   if (loading) {
     return (
-      <div className={cn('relative flex flex-col transition-colors duration-300 items-center justify-center')} style={{ minHeight: 'calc(100vh - 2.5rem)' }}>
+      <div className="flex flex-col -m-6 dark:bg-background min-h-[calc(100vh-2.5rem)] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div className="flex flex-col -m-6 dark:bg-background h-[calc(100vh-2.5rem)] overflow-hidden">
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between mb-12 shrink-0 gap-4">

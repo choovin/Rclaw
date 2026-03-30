@@ -1,5 +1,5 @@
 {
-    "title": "连接IM",
+    "title": "消息频道",
     "subtitle": "统一管理消息频道、账号、账号与智能体的绑定关系，以及频道默认账号",
     "refresh": "刷新",
     "addChannel": "添加频道",
@@ -163,7 +163,7 @@
             "description": "通过腾讯官方 OpenClaw 插件扫码连接个人微信",
             "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/GHYZwuPCriF0gWkXwkFcJ9zon3b",
             "instructions": [
-                "点击生成二维码，RClaw 会在 OpenClaw 中安装并启用官方微信插件",
+                "点击生成二维码，ClawX 会在 OpenClaw 中安装并启用官方微信插件",
                 "使用微信扫描下方二维码，并在手机上确认连接",
                 "连接成功后，微信里会自动出现新的「微信 ClawBot」对话",
                 "之后可再次通过扫码流程添加更多微信账号，或重新连接已有账号"
@@ -369,7 +369,7 @@
             ]
         },
         "qqbot": {
-            "description": "通过 @sliverp/qqbot 插件连接 QQ 机器人",
+            "description": "通过 @tencent-connect/openclaw-qqbot 插件连接 QQ 机器人",
             "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/KPIJwlyiGiupMrkiS9ice39Zn2c",
             "fields": {
                 "appId": {

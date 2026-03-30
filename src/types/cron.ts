@@ -62,8 +62,6 @@ export interface CronJob {
 
 /**
  * Input for creating a cron job from the UI.
- * No target/delivery — UI-created tasks push results to the RClaw chat page.
- * Tasks created via external channels are handled directly by the Gateway.
  */
 export interface CronJobCreateInput {
   name: string;
