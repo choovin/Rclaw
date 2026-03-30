@@ -7,6 +7,9 @@ node_modules/
 dist/
 dist-electron/
 release/
+release-v2/
+Rclaw-resimg/
+temp/
 *.local
 
 # IDE
@@ -68,3 +71,4 @@ docs/pr-session-notes-*.md
 .cursor/
 .pnpm-store/
 package-lock.json
+.gstack/
