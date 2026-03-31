@@ -46,13 +46,15 @@ interface NavItemProps {
   badge?: string;
   collapsed?: boolean;
   onClick?: () => void;
+  testId?: string;
 }
 
-function NavItem({ to, icon, label, badge, collapsed, onClick }: NavItemProps) {
+function NavItem({ to, icon, label, badge, collapsed, onClick, testId }: NavItemProps) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
+      data-testid={testId}
       className={({ isActive }) =>
         cn(
           'flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-[14px] font-medium transition-all',
@@ -209,18 +211,20 @@ export function Sidebar() {
 
   const navItems = [
     ...(import.meta.env.DEV && devShowModelsPage
-      ? [{ to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.models') }]
+      ? [{ to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.models'), testId: 'sidebar-nav-models' }]
       : []),
-    { to: '/employees', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.employees') },
-    { to: '/channels', icon: <Network className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.channels') },
-    { to: '/skills', icon: <Puzzle className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.skills') },
-    { to: '/cron', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.cronTasks') },
+    { to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.models'), testId: 'sidebar-nav-models' },
+    { to: '/employees', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.employees'), testId: 'sidebar-nav-employees' },
+    { to: '/channels', icon: <Network className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.channels'), testId: 'sidebar-nav-channels' },
+    { to: '/skills', icon: <Puzzle className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.skills'), testId: 'sidebar-nav-skills' },
+    { to: '/cron', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.cronTasks'), testId: 'sidebar-nav-cron' },
   ];
 
   const isMac = window.electron?.platform === 'darwin';
 
   return (
     <aside
+      data-testid="sidebar"
       className={cn(
         'flex h-full shrink-0 flex-col border-r/0 dark:border-r/0 transition-all duration-300',
         sidebarCollapsed ? 'w-[68px]' : 'w-[240px]'
@@ -266,6 +270,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex flex-col px-2.5 gap-0.5">
         <button
+          data-testid="sidebar-new-chat"
           onClick={() => {
             const { messages } = useChatStore.getState();
             if (messages.length > 0) newSession();
@@ -355,6 +360,7 @@ export function Sidebar() {
       <div className="p-2.5 mt-auto">
         <NavLink
             to="/settings"
+            data-testid="sidebar-nav-settings"
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors',
@@ -376,6 +382,7 @@ export function Sidebar() {
         </NavLink>
 
         <Button
+          data-testid="sidebar-open-dev-console"
           variant="ghost"
           className={cn(
             'flex items-center gap-2.5 rounded-xl px-3 py-2 h-auto text-[14px] font-medium transition-colors w-full mt-1',

@@ -40,6 +40,8 @@ desktop.ini
 
 # Test coverage
 coverage/
+playwright-report/
+test-results/
 
 # Cache
 .cache/
@@ -78,3 +80,4 @@ docs/
 agency-agents-zh
 
 temp/
+package-lock.json
