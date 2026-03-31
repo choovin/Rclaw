@@ -6,6 +6,7 @@ import { withConfigLock } from './config-mutex';
 import { expandPath, getOpenClawConfigDir } from './paths';
 import * as logger from './logger';
 import { toUiChannelType } from './channel-alias';
+import { writeDigitalEmployeeWorkspaceFiles } from './digital-employee-workspace';
 
 const MAIN_AGENT_ID = 'main';
 const MAIN_AGENT_NAME = 'Main Agent';
@@ -550,6 +551,17 @@ export async function createAgent(
   name: string,
   options?: { inheritWorkspace?: boolean },
 ): Promise<AgentsSnapshot> {
+  const { snapshot } = await createAgentWithResult(name, options);
+  return snapshot;
+}
+
+/**
+ * Same as createAgent but returns the new agent id (slug) for reliable provisioning.
+ */
+export async function createAgentWithResult(
+  name: string,
+  options?: { inheritWorkspace?: boolean },
+): Promise<{ snapshot: AgentsSnapshot; agentId: string }> {
   return withConfigLock(async () => {
     const config = await readOpenClawConfig() as AgentConfigDocument;
     const { agentsConfig, entries, syntheticMain } = normalizeAgentsConfig(config);
@@ -585,8 +597,61 @@ export async function createAgent(
     await provisionAgentFilesystem(config, newAgent, { inheritWorkspace: options?.inheritWorkspace });
     await writeOpenClawConfig(config);
     logger.info('Created agent config entry', { agentId: nextId, inheritWorkspace: !!options?.inheritWorkspace });
-    return buildSnapshotFromConfig(config);
+    const snapshot = await buildSnapshotFromConfig(config);
+    return { snapshot, agentId: nextId };
   });
+}
+
+export type ProvisionWorkspaceStage = 'create_agent' | 'write_files' | 'verify';
+
+export interface ProvisionDigitalEmployeePayload {
+  nameZh: string;
+  nameEn: string;
+  soulContent: string;
+  agentsContent: string;
+  identityContent: string;
+}
+
+export interface ProvisionDigitalEmployeeResult {
+  agentId: string;
+  workspacePath: string;
+}
+
+export async function provisionDigitalEmployeeAgent(
+  payload: ProvisionDigitalEmployeePayload,
+  onStage?: (stage: ProvisionWorkspaceStage) => void,
+): Promise<ProvisionDigitalEmployeeResult> {
+  onStage?.('create_agent');
+  const { agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
+
+  // Must match createAgent's workspace pattern (~/.openclaw/workspace-${agentId}); do not rely on
+  // snapshot lookup — buildSnapshotFromConfig can differ from in-memory config in edge cases.
+  const workspacePath = expandPath(`~/.openclaw/workspace-${agentId}`);
+
+  onStage?.('write_files');
+  try {
+    writeDigitalEmployeeWorkspaceFiles(workspacePath, {
+      nameZh: payload.nameZh,
+      nameEn: payload.nameEn,
+      soulContent: payload.soulContent,
+      agentsContent: payload.agentsContent,
+      identityContent: payload.identityContent,
+    });
+  } catch (err) {
+    const e = new Error(String(err)) as Error & { agentId?: string };
+    e.agentId = agentId;
+    throw e;
+  }
+
+  onStage?.('verify');
+  const existsSoul = await fileExists(join(workspacePath, 'SOUL.md'));
+  if (payload.soulContent && !existsSoul) {
+    const e = new Error('provisionDigitalEmployeeAgent: SOUL.md missing after write') as Error & { agentId?: string };
+    e.agentId = agentId;
+    throw e;
+  }
+
+  return { agentId, workspacePath };
 }
 
 export async function updateAgentName(agentId: string, name: string): Promise<AgentsSnapshot> {
