@@ -49,9 +49,15 @@ const _slackSdk = requireOpenClawSdk('openclaw/plugin-sdk/slack') as {
   normalizeSlackMessagingTarget: (target: string) => string | undefined;
 };
 
-const _whatsappSdk = requireOpenClawSdk('openclaw/plugin-sdk/whatsapp') as {
-  normalizeWhatsAppMessagingTarget: (target: string) => string | undefined;
-};
+const _whatsappSdk = (() => {
+  try {
+    return requireOpenClawSdk('openclaw/plugin-sdk/whatsapp') as {
+      normalizeWhatsAppMessagingTarget: (target: string) => string | undefined;
+    };
+  } catch {
+    return { normalizeWhatsAppMessagingTarget: undefined };
+  }
+})();
 
 export const {
   listDiscordDirectoryGroupsFromConfig,
