@@ -13,6 +13,7 @@ import enDashboard from './locales/en/dashboard.json';
 import enChat from './locales/en/chat.json';
 import enChannels from './locales/en/channels.json';
 import enAgents from './locales/en/agents.json';
+import enEmployees from './locales/en/employees.json';
 import enSkills from './locales/en/skills.json';
 import enCron from './locales/en/cron.json';
 import enSetup from './locales/en/setup.json';
@@ -24,6 +25,7 @@ import zhDashboard from './locales/zh/dashboard.json';
 import zhChat from './locales/zh/chat.json';
 import zhChannels from './locales/zh/channels.json';
 import zhAgents from './locales/zh/agents.json';
+import zhEmployees from './locales/zh/employees.json';
 import zhSkills from './locales/zh/skills.json';
 import zhCron from './locales/zh/cron.json';
 import zhSetup from './locales/zh/setup.json';
@@ -35,6 +37,7 @@ import jaDashboard from './locales/ja/dashboard.json';
 import jaChat from './locales/ja/chat.json';
 import jaChannels from './locales/ja/channels.json';
 import jaAgents from './locales/ja/agents.json';
+import jaEmployees from './locales/ja/employees.json';
 import jaSkills from './locales/ja/skills.json';
 import jaCron from './locales/ja/cron.json';
 import jaSetup from './locales/ja/setup.json';
@@ -53,6 +56,7 @@ const resources = {
         chat: enChat,
         channels: enChannels,
         agents: enAgents,
+        employees: enEmployees,
         skills: enSkills,
         cron: enCron,
         setup: enSetup,
@@ -64,6 +68,7 @@ const resources = {
         chat: zhChat,
         channels: zhChannels,
         agents: zhAgents,
+        employees: zhEmployees,
         skills: zhSkills,
         cron: zhCron,
         setup: zhSetup,
@@ -75,6 +80,7 @@ const resources = {
         chat: jaChat,
         channels: jaChannels,
         agents: jaAgents,
+        employees: jaEmployees,
         skills: jaSkills,
         cron: jaCron,
         setup: jaSetup,
@@ -85,11 +91,11 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        lng: resolveSupportedLanguage(typeof navigator !== 'undefined' ? navigator.language : undefined),
+        lng: resolveSupportedLanguage(typeof navigator !== 'undefined' ? navigator.language : undefined, 'zh'),
         fallbackLng: 'en',
         supportedLngs: [...SUPPORTED_LANGUAGE_CODES],
         defaultNS: 'common',
-        ns: ['common', 'settings', 'dashboard', 'chat', 'channels', 'agents', 'skills', 'cron', 'setup'],
+        ns: ['common', 'settings', 'dashboard', 'chat', 'channels', 'agents', 'employees', 'skills', 'cron', 'setup'],
         interpolation: {
             escapeValue: false, // React already escapes
         },
