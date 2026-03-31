@@ -51,7 +51,7 @@ interface PreinstalledLockFile {
 }
 
 interface PreinstalledMarker {
-    source: 'clawx-preinstalled';
+    source: 'rclaw-preinstalled';
     slug: string;
     version: string;
     installedAt: string;
@@ -230,7 +230,7 @@ export async function ensureBuiltinSkillsInstalled(): Promise<void> {
 }
 
 const PREINSTALLED_MANIFEST_NAME = 'preinstalled-manifest.json';
-const PREINSTALLED_MARKER_NAME = '.clawx-preinstalled.json';
+const PREINSTALLED_MARKER_NAME = '.rclaw-preinstalled.json';
 
 async function readPreinstalledManifest(): Promise<PreinstalledSkillSpec[]> {
     const candidates = [

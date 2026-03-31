@@ -36,11 +36,11 @@ export const APP_PATHS = {
   /** OpenClaw configuration directory */
   OPENCLAW_CONFIG: '~/.openclaw',
   
-  /** ClawX configuration directory */
-  CLAWX_CONFIG: '~/.clawx',
-  
+  /** RClaw configuration directory */
+  RCLAW_CONFIG: '~/.rclaw',
+
   /** Log files directory */
-  LOGS: '~/.clawx/logs',
+  LOGS: '~/.rclaw/logs',
 } as const;
 
 /**
