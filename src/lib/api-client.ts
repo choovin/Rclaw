@@ -313,6 +313,10 @@ function toUnifiedRequest(channel: string, args: unknown[]): UnifiedRequest {
 }
 
 async function invokeViaIpc<T>(channel: string, args: unknown[]): Promise<T> {
+  if (!window.electron?.ipcRenderer) {
+    return Promise.reject(new AppError('GATEWAY', 'window.electron.ipcRenderer is not available (not in Electron?)', { channel }));
+  }
+
   if (channel !== 'app:request' && UNIFIED_CHANNELS.has(channel)) {
     const request = toUnifiedRequest(channel, args);
 

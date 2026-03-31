@@ -1,11 +1,13 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/auth';
 import { LogOut, User, Coins, ChevronRight, HelpCircle } from 'lucide-react';
 
 const MENU_CLOSE_DELAY_MS = 300;
 
 export const HeaderAuth: React.FC = () => {
+  const { t } = useTranslation('common');
   const { isLoggedIn, userInfo, openLoginModal, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,8 +62,8 @@ export const HeaderAuth: React.FC = () => {
       <button
         type="button"
         onClick={openLoginModal}
-        aria-label="登录"
-        title="未登录，点击登录"
+        aria-label={t('headerAuth.login')}
+        title={t('headerAuth.loginTooltip')}
         className="flex h-full items-center justify-center px-2.5 text-muted-foreground transition-colors hover:text-foreground"
       >
         <span
@@ -74,7 +76,7 @@ export const HeaderAuth: React.FC = () => {
     );
   }
 
-  const displayName = userInfo?.nickname?.trim() || userInfo?.username?.trim() || '用户';
+  const displayName = userInfo?.nickname?.trim() || userInfo?.username?.trim() || t('headerAuth.defaultUser');
   const planLabel = userInfo?.subscriptionPlan?.trim() || 'FREE';
   const coinLabel =
     userInfo?.coin != null && Number.isFinite(userInfo.coin) ? String(userInfo.coin) : '—';
@@ -145,8 +147,8 @@ export const HeaderAuth: React.FC = () => {
                 <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
                     <Coins className="h-4 w-4 shrink-0" aria-hidden />
-                    <span>积分</span>
-                    <span className="inline-flex shrink-0 opacity-70" title="积分说明">
+                    <span>{t('headerAuth.credits')}</span>
+                    <span className="inline-flex shrink-0 opacity-70" title={t('headerAuth.creditsTooltip')}>
                       <HelpCircle className="h-3.5 w-3.5" aria-hidden />
                     </span>
                   </span>
@@ -165,7 +167,7 @@ export const HeaderAuth: React.FC = () => {
               className="flex w-full items-center justify-center gap-2 border-t px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10"
             >
               <LogOut className="h-4 w-4" />
-              退出登录
+              {t('headerAuth.logout')}
             </button>
             </div>
           </motion.div>

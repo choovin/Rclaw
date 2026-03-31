@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
 import { invokeIpc } from '@/lib/api-client';
+import { HeaderAuth } from './HeaderAuth';
 
 export function TitleBar() {
   const platform = window.electron?.platform;
@@ -52,6 +53,11 @@ function WindowsTitleBar() {
 
   return (
     <div className="drag-region flex h-10 shrink-0 items-center justify-end border-b bg-background">
+
+      {/* Left: Auth */}
+      <div className="flex h-full">
+        <HeaderAuth />
+      </div>
 
       {/* Right: Window Controls */}
       <div className="no-drag flex h-full">

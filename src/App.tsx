@@ -17,6 +17,7 @@ import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
 import { Settings } from './pages/Settings';
 import { Setup } from './pages/Setup';
+import { LoginModal } from './components/common/LoginModal';
 import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
 import { useProviderStore } from './stores/providers';
@@ -127,6 +128,10 @@ function App() {
 
   // Listen for navigation events from main process
   useEffect(() => {
+    if (!window.electron?.ipcRenderer) {
+      return;
+    }
+
     const handleNavigate = (...args: unknown[]) => {
       const path = args[0];
       if (typeof path === 'string') {
@@ -188,6 +193,9 @@ function App() {
           closeButton
           style={{ zIndex: 99999 }}
         />
+
+        {/* Login Modal */}
+        <LoginModal />
       </TooltipProvider>
     </ErrorBoundary>
   );

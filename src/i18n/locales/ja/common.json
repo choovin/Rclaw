@@ -3,13 +3,13 @@
         "chat": "チャット",
         "newChat": "新しいチャット",
         "cronTasks": "定期タスク",
-        "skills": "スキル",
-        "agents": "Agents",
-        "channels": "チャンネル",
+        "skills": "スキルストア",
+        "agents": "デジタル従業員",
+        "channels": "接続IM",
         "dashboard": "ダッシュボード",
         "settings": "設定",
         "devConsole": "開発者コンソール",
-        "models": "モデル",
+        "models": "セキュリティモデル",
         "deleteSessionConfirm": "セッション \"{{label}}\" を削除してもよろしいですか？",
         "openClawPage": "OpenClaw ページ"
     },
@@ -55,5 +55,13 @@
         "notRunning": "ゲートウェイが停止中",
         "notRunningDesc": "この機能を使用するには OpenClaw ゲートウェイが実行されている必要があります。自動的に起動するか、設定から起動できます。",
         "warning": "ゲートウェイが停止中です。"
+    },
+    "headerAuth": {
+        "login": "ログイン",
+        "loginTooltip": "未ログイン、クリックしてログイン",
+        "defaultUser": "ユーザー",
+        "credits": "クレジット",
+        "creditsTooltip": "クレジットの説明",
+        "logout": "ログアウト"
     }
 }
