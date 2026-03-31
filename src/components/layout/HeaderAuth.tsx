@@ -1,7 +1,8 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth';
-import { LogOut, User, Coins, ChevronRight, HelpCircle } from 'lucide-react';
+import { LogOut, User, ChevronRight, HelpCircle } from 'lucide-react';
+import { CoinStackIcon } from '@/components/icons/CoinStackIcon';
 
 const MENU_CLOSE_DELAY_MS = 300;
 
@@ -82,7 +83,7 @@ export const HeaderAuth: React.FC = () => {
 
   return (
     <div
-      className="relative inline-flex h-full items-center"
+      className="relative inline-flex h-full items-center gap-2 px-2.5"
       onMouseEnter={handleMenuHoverEnter}
       onMouseLeave={scheduleMenuClose}
     >
@@ -91,7 +92,7 @@ export const HeaderAuth: React.FC = () => {
         aria-expanded={menuOpen}
         aria-haspopup="menu"
         aria-label="账户菜单"
-        className="flex h-full items-center justify-center px-2.5 rounded-md transition-colors hover:bg-accent/60"
+        className="flex h-full shrink-0 items-center justify-center transition-colors"
       >
         {userInfo?.avatar ? (
           <img src={userInfo.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
@@ -104,6 +105,16 @@ export const HeaderAuth: React.FC = () => {
           </span>
         )}
       </button>
+
+      <div
+        className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 tabular-nums text-[13px] font-medium text-foreground/85"
+        role="status"
+        aria-label={`积分 ${coinLabel}`}
+        title="积分"
+      >
+        <CoinStackIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span>{coinLabel}</span>
+      </div>
 
       <AnimatePresence>
         {menuOpen && (
@@ -144,7 +155,7 @@ export const HeaderAuth: React.FC = () => {
                 <div className="h-px bg-border" />
                 <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-                    <Coins className="h-4 w-4 shrink-0" aria-hidden />
+                    <CoinStackIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span>积分</span>
                     <span className="inline-flex shrink-0 opacity-70" title="积分说明">
                       <HelpCircle className="h-3.5 w-3.5" aria-hidden />
