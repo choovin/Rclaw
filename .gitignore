@@ -72,3 +72,15 @@ docs/pr-session-notes-*.md
 .pnpm-store/
 package-lock.json
 .gstack/
+
+# Worktrees
+.worktrees/
+
+# Local documentation
+agency-agents-zh/
+docs/Rclaw-*.md
+docs/Rclaw-*.pdf
+docs/Rclaw*.docx
+docs/*.md
+docs/*.pdf
+docs/*.docx
