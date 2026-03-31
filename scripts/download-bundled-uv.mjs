@@ -4,7 +4,7 @@ import 'zx/globals';
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const UV_VERSION = '0.10.0';
-const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
+const BASE_URL = `https://ghproxy.com/https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
 const OUTPUT_BASE = path.join(ROOT_DIR, 'resources', 'bin');
 
 // Mapping Node platforms/archs to uv release naming
