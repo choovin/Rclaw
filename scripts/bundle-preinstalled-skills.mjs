@@ -1,6 +1,7 @@
 #!/usr/bin/env zx
 
 import 'zx/globals';
+import { spawnSync } from 'node:child_process';
 import { readFileSync, existsSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,10 +44,25 @@ function createRepoDirName(repo, ref) {
   return `${repo.replace(/[\\/]/g, '__')}__${ref.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 }
 
-function toGitPath(inputPath) {
-  if (process.platform !== 'win32') return inputPath;
-  // Git on Windows accepts forward slashes and avoids backslash escape quirks.
-  return inputPath.replace(/\\/g, '/');
+/**
+ * Run git with argv only (no shell). On Windows, zx's default shell is Git Bash;
+ * paths like E:/foo are mangled by MSYS, so nested init lands in the wrong place and
+ * `git -C` then discovers the parent repo (remote origin already exists).
+ */
+function runGit(args) {
+  const result = spawnSync('git', args, {
+    encoding: 'utf8',
+    windowsHide: true,
+    stdio: ['inherit', 'pipe', 'pipe'],
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    const msg = (result.stderr || result.stdout || '').trim();
+    throw new Error(msg || `git ${args[0]} failed (exit ${result.status})`);
+  }
+  return (result.stdout || '').trim();
 }
 
 function normalizeRepoPath(repoPath) {
@@ -82,23 +98,22 @@ async function extractArchive(archiveFileName, cwd) {
 
 async function fetchSparseRepo(repo, ref, paths, checkoutDir) {
   const remote = `https://github.com/${repo}.git`;
+  rmSync(checkoutDir, { recursive: true, force: true });
   mkdirSync(checkoutDir, { recursive: true });
-  const gitCheckoutDir = toGitPath(checkoutDir);
   const archiveFileName = '.subset.tar';
   const archivePath = join(checkoutDir, archiveFileName);
   const archivePaths = [...new Set(paths.map(normalizeRepoPath))];
 
-  await $`git init ${gitCheckoutDir}`;
-  await $`git -C ${gitCheckoutDir} remote add origin ${remote}`;
-  await $`git -C ${gitCheckoutDir} fetch --depth 1 origin ${ref}`;
+  runGit(['init', checkoutDir]);
+  runGit(['-C', checkoutDir, 'remote', 'add', 'origin', remote]);
+  runGit(['-C', checkoutDir, 'fetch', '--depth', '1', 'origin', ref]);
   // Do not checkout working tree on Windows: upstream repos may contain
   // Windows-invalid paths. Export only requested directories via git archive.
-  await $`git -C ${gitCheckoutDir} archive --format=tar --output ${archiveFileName} FETCH_HEAD ${archivePaths}`;
+  runGit(['-C', checkoutDir, 'archive', '--format=tar', '--output', archiveFileName, 'FETCH_HEAD', ...archivePaths]);
   await extractArchive(archiveFileName, checkoutDir);
   rmSync(archivePath, { force: true });
 
-  const commit = (await $`git -C ${gitCheckoutDir} rev-parse FETCH_HEAD`).stdout.trim();
-  return commit;
+  return runGit(['-C', checkoutDir, 'rev-parse', 'FETCH_HEAD']);
 }
 
 echo`Bundling preinstalled skills...`;
