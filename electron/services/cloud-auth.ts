@@ -1,7 +1,7 @@
 // electron/services/cloud-auth.ts
 
-import keytar from 'keytar';
 import { logger } from '../utils/logger';
+import { getCloudAuthTokenStore } from './cloud-auth-token-store';
 import { cloudFetchLogged } from '../utils/cloud-fetch-log';
 import { getCloudApiBaseUrl } from '../utils/cloud-config';
 import {
@@ -38,8 +38,6 @@ function normalizeSocialAuthRedirectPayload(data: unknown): string | undefined {
   }
   return undefined;
 }
-
-const SERVICE_NAME = 'ClawX-CloudAuth';
 
 interface TokenData {
   accessToken: string;
@@ -88,7 +86,7 @@ export class CloudAuthService {
   }
 
   /**
-   * 登录成功并已写入 Keychain 后，优先 GET /app-api/member/user/get 获取用户信息；
+   * 登录成功并已持久化 token 后，优先 GET /app-api/member/user/get 获取用户信息；
    * 失败时再尝试 GET /app-api/member/auth/get-login-user；仍失败则用登录接口解析的 fallback。
    */
   private async resolveUserProfileAfterLogin(accessToken: string, fallback: UserInfo): Promise<UserInfo> {
@@ -562,32 +560,30 @@ export class CloudAuthService {
     return { isLoggedIn: true, userInfo: merged };
   }
 
-  // 存储 Token 到 Keychain
+  // 存储 Token（加密 electron-store）
   private async storeTokenData(data: TokenData): Promise<void> {
     try {
-      await keytar.setPassword(SERVICE_NAME, 'accessToken', data.accessToken);
-      await keytar.setPassword(SERVICE_NAME, 'refreshToken', data.refreshToken);
-      await keytar.setPassword(SERVICE_NAME, 'expiresAt', String(data.expiresAt));
+      const store = await getCloudAuthTokenStore();
+      store.set('tokens', {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresAt: data.expiresAt,
+      });
     } catch (error) {
       logger.error('Failed to store token:', error);
     }
   }
 
-  // 从 Keychain 获取 Token（异步）
+  // 读取已存 Token
   private async getStoredTokenData(): Promise<TokenData | null> {
     try {
-      const [accessToken, refreshToken, expiresAt] = await Promise.all([
-        keytar.getPassword(SERVICE_NAME, 'accessToken'),
-        keytar.getPassword(SERVICE_NAME, 'refreshToken'),
-        keytar.getPassword(SERVICE_NAME, 'expiresAt')
-      ]);
-
-      if (!accessToken || !refreshToken) return null;
-
+      const store = await getCloudAuthTokenStore();
+      const t = store.get('tokens');
+      if (!t?.accessToken || !t?.refreshToken) return null;
       return {
-        accessToken,
-        refreshToken,
-        expiresAt: expiresAt ? Number(expiresAt) : 0
+        accessToken: t.accessToken,
+        refreshToken: t.refreshToken,
+        expiresAt: typeof t.expiresAt === 'number' ? t.expiresAt : Number(t.expiresAt) || 0,
       };
     } catch (error) {
       logger.error('Failed to get stored token:', error);
@@ -598,9 +594,8 @@ export class CloudAuthService {
   // 清除 Token
   private async clearTokens(): Promise<void> {
     try {
-      await keytar.deletePassword(SERVICE_NAME, 'accessToken');
-      await keytar.deletePassword(SERVICE_NAME, 'refreshToken');
-      await keytar.deletePassword(SERVICE_NAME, 'expiresAt');
+      const store = await getCloudAuthTokenStore();
+      store.set('tokens', null);
     } catch (error) {
       logger.error('Failed to clear tokens:', error);
     }

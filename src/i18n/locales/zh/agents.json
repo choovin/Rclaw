@@ -1,6 +1,6 @@
 {
     "title": "数字员工",
-    "subtitle": "创建新的 Agent，可以将特定频道路由到不同的人格配置或工作区。",
+    "subtitle": "创建新的 数字员工(Agent)，可以将特定频道路由到不同的员工配置或工作区。",
     "refresh": "刷新",
     "addAgent": "添加 Agent",
     "gatewayWarning": "Gateway 服务未运行。Agent 或频道变更可能需要一点时间生效。",

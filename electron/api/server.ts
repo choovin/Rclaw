@@ -15,6 +15,7 @@ import { handleSkillRoutes } from './routes/skills';
 import { handleFileRoutes } from './routes/files';
 import { handleSessionRoutes } from './routes/sessions';
 import { handleCronRoutes } from './routes/cron';
+import { handleCloudAuthRoutes } from './routes/cloud-auth';
 import { sendJson, setCorsHeaders, requireJsonContentType } from './route-utils';
 
 type RouteHandler = (
@@ -37,6 +38,7 @@ const routeHandlers: RouteHandler[] = [
   handleCronRoutes,
   handleLogRoutes,
   handleUsageRoutes,
+  handleCloudAuthRoutes,
 ];
 
 /**
