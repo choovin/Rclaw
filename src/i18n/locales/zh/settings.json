@@ -182,7 +182,16 @@
     "currentVersion": "当前版本",
     "whatsNew": "更新内容：",
     "errorDetails": "错误详情：",
-    "help": "开启自动更新后，更新将自动下载并安装。"
+    "help": "开启自动更新后，更新将自动下载并安装。",
+    "toast": {
+      "title": "新版本可用",
+      "versionLine": "版本 {{version}}",
+      "upgradeNow": "立即升级",
+      "skip": "跳过",
+      "closeAria": "关闭",
+      "percent": "{{percent}}%",
+      "preparingDownload": "正在准备下载…"
+    }
   },
   "advanced": {
     "title": "高级",

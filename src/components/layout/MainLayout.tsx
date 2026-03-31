@@ -7,6 +7,7 @@ import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { LoginModal } from '@/components/common/LoginModal';
 import { VersionDisplay } from './VersionDisplay';
+import { UpdateAvailableToast } from './UpdateAvailableToast';
 
 export function MainLayout() {
   const location = useLocation();
@@ -29,6 +30,7 @@ export function MainLayout() {
 
       {/* Login modal overlay */}
       <LoginModal />
+      <UpdateAvailableToast />
     </div>
   );
 }

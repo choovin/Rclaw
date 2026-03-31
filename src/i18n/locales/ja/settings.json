@@ -181,7 +181,16 @@
     "currentVersion": "現在のバージョン",
     "whatsNew": "更新内容：",
     "errorDetails": "エラー詳細：",
-    "help": "自動アップデートが有効な場合、更新は自動的にダウンロードされインストールされます。"
+    "help": "自動アップデートが有効な場合、更新は自動的にダウンロードされインストールされます。",
+    "toast": {
+      "title": "新しいバージョンがあります",
+      "versionLine": "バージョン {{version}}",
+      "upgradeNow": "すぐにアップグレード",
+      "skip": "スキップ",
+      "closeAria": "閉じる",
+      "percent": "{{percent}}%",
+      "preparingDownload": "ダウンロードを準備中…"
+    }
   },
   "advanced": {
     "title": "詳細設定",

@@ -182,7 +182,16 @@
     "currentVersion": "Current Version",
     "whatsNew": "What's New:",
     "errorDetails": "Error Details:",
-    "help": "When auto-update is enabled, updates are downloaded and installed automatically."
+    "help": "When auto-update is enabled, updates are downloaded and installed automatically.",
+    "toast": {
+      "title": "New version available",
+      "versionLine": "Version {{version}}",
+      "upgradeNow": "Upgrade now",
+      "skip": "Skip",
+      "closeAria": "Close",
+      "percent": "{{percent}}%",
+      "preparingDownload": "Preparing download…"
+    }
   },
   "advanced": {
     "title": "Advanced",
