@@ -211,9 +211,8 @@ export function Sidebar() {
 
   const navItems = [
     ...(import.meta.env.DEV && devShowModelsPage
-      ? [{ to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={1.75} />, label: t('sidebar.models'), testId: 'sidebar-nav-models' }]
+      ? [{ to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.models'), testId: 'sidebar-nav-models' }]
       : []),
-    { to: '/models', icon: <Cpu className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.models'), testId: 'sidebar-nav-models' },
     { to: '/employees', icon: <Bot className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.employees'), testId: 'sidebar-nav-employees' },
     { to: '/channels', icon: <Network className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.channels'), testId: 'sidebar-nav-channels' },
     { to: '/skills', icon: <Puzzle className="h-[18px] w-[18px]" strokeWidth={2} />, label: t('sidebar.skills'), testId: 'sidebar-nav-skills' },
