@@ -4,27 +4,36 @@ import { tmpdir } from 'os';
 import { describe, expect, it } from 'vitest';
 
 describe('writeDigitalEmployeeWorkspaceFiles', () => {
-  it('writes SOUL, AGENTS, IDENTITY, user, todo under absDir', async () => {
+  it('writes SOUL, AGENTS, IDENTITY, USER.md, todo under absDir', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'emp-ws-'));
     try {
-      const { writeDigitalEmployeeWorkspaceFiles } = await import(
+      const { writeDigitalEmployeeWorkspaceFiles, OPENCLAW_USER_FILENAME } = await import(
         '@electron/utils/digital-employee-workspace'
       );
 
       writeDigitalEmployeeWorkspaceFiles(dir, {
         nameZh: '张三',
-        nameEn: 'Agent',
+        roleTitle: '人类学家',
         soulContent: 'SOUL-BODY',
         agentsContent: 'AGENTS-BODY',
         identityContent: 'IDENTITY-BODY',
+        emoji: '🌍',
+        vibe: '沉稳',
       });
 
       expect(await readFile(join(dir, 'SOUL.md'), 'utf8')).toBe('SOUL-BODY');
       expect(await readFile(join(dir, 'AGENTS.md'), 'utf8')).toBe('AGENTS-BODY');
-      expect(await readFile(join(dir, 'IDENTITY.md'), 'utf8')).toBe('IDENTITY-BODY');
-      const user = await readFile(join(dir, 'user.md'), 'utf8');
-      expect(user).toContain('张三');
-      expect(user).toContain('Agent');
+      const identity = await readFile(join(dir, 'IDENTITY.md'), 'utf8');
+      expect(identity).toContain('Name: 张三');
+      expect(identity).toContain('职能角色：人类学家');
+      expect(identity).toContain('🌍');
+      expect(identity).toContain('沉稳');
+      expect(identity).toContain('IDENTITY-BODY');
+
+      const user = await readFile(join(dir, OPENCLAW_USER_FILENAME), 'utf8');
+      expect(user).toContain('关于使用本工作区的人类');
+      expect(user).not.toContain('张三');
+
       expect(await readFile(join(dir, 'todo.md'), 'utf8')).toContain('待办事项');
     } finally {
       await rm(dir, { recursive: true, force: true });

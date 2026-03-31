@@ -621,10 +621,13 @@ export type ProvisionWorkspaceStage = 'create_agent' | 'write_files' | 'verify';
 
 export interface ProvisionDigitalEmployeePayload {
   nameZh: string;
+  /** 职能/岗位标签（员工数据里的 `name`，如「人类学家」）；请求体仍用字段名 `nameEn` 兼容前端 */
   nameEn: string;
   soulContent: string;
   agentsContent: string;
   identityContent: string;
+  emoji?: string;
+  vibe?: string;
 }
 
 export interface ProvisionDigitalEmployeeResult {
@@ -647,10 +650,12 @@ export async function provisionDigitalEmployeeAgent(
   try {
     writeDigitalEmployeeWorkspaceFiles(workspacePath, {
       nameZh: payload.nameZh,
-      nameEn: payload.nameEn,
+      roleTitle: payload.nameEn,
       soulContent: payload.soulContent,
       agentsContent: payload.agentsContent,
       identityContent: payload.identityContent,
+      emoji: payload.emoji,
+      vibe: payload.vibe,
     });
   } catch (err) {
     const e = new Error(String(err)) as Error & { agentId?: string };
@@ -867,10 +872,13 @@ export async function clearAllBindingsForChannel(channelType: string): Promise<v
 export interface CreateEmployeeWorkspaceOptions {
   employeeId: string;
   nameZh: string;
+  /** 职能/岗位标签（与员工 `name` 一致） */
   nameEn: string;
   soulContent: string;
   agentsContent: string;
   identityContent: string;
+  emoji?: string;
+  vibe?: string;
 }
 
 export interface CreateEmployeeWorkspaceResult {
@@ -888,10 +896,12 @@ export async function createEmployeeWorkspace(
   try {
     writeDigitalEmployeeWorkspaceFiles(workspaceDir, {
       nameZh: options.nameZh,
-      nameEn: options.nameEn,
+      roleTitle: options.nameEn,
       soulContent: options.soulContent,
       agentsContent: options.agentsContent,
       identityContent: options.identityContent,
+      emoji: options.emoji,
+      vibe: options.vibe,
     });
 
     logger.info(`[createEmployeeWorkspace] Created workspace for ${options.nameZh} at ${workspaceDir}`);

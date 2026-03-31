@@ -48,6 +48,7 @@ import { browserOAuthManager, type BrowserOAuthProviderType } from '../utils/bro
 import { applyProxySettings } from './proxy';
 import { syncLaunchAtStartupSettingFromStore } from './launch-at-startup';
 import { proxyAwareFetch } from '../utils/proxy-fetch';
+import { writeDigitalEmployeeWorkspaceFiles } from '../utils/digital-employee-workspace';
 import { getRecentTokenUsageHistory } from '../utils/token-usage';
 import { getProviderService } from '../services/providers/provider-service';
 import {
@@ -2465,70 +2466,23 @@ ipcMain.handle('agents:create-employee', async (_, options: {
   soulContent: string;
   agentsContent: string;
   identityContent: string;
+  emoji?: string;
+  vibe?: string;
 }) => {
   try {
     // Generate workspace path (must match OpenClaw's expected path: ~/.openclaw/workspace-{id})
     const openclawDir = join(homedir(), '.openclaw');
     const workspaceDir = join(openclawDir, `workspace-${options.employeeId}`);
 
-    // Create workspace directory
-    mkdirSync(workspaceDir, { recursive: true });
-
-    // Write workspace files
-    if (options.soulContent) {
-      writeFileSync(join(workspaceDir, 'SOUL.md'), options.soulContent, 'utf-8');
-    }
-    if (options.agentsContent) {
-      writeFileSync(join(workspaceDir, 'AGENTS.md'), options.agentsContent, 'utf-8');
-    }
-    if (options.identityContent) {
-      writeFileSync(join(workspaceDir, 'IDENTITY.md'), options.identityContent, 'utf-8');
-    }
-
-    // Write user.md template
-    const userContent = `# 👤 我的资料
-
-## 基本信息
-- **名字**：${options.nameZh}
-- **英文名**：${options.nameEn}
-- **角色**：数字员工
-
-## 我擅长的
-<!-- 从员工技能中提取 -->
-
-## 我的工作风格
-<!-- 从员工人设中提取 -->
-
-## 当前项目
-<!-- 记录当前正在处理的项目 -->
-
-## 常用工具
-<!-- 记录常用的工具和命令 -->
-
----
-*由 RClaw 数字员工系统生成*
-`;
-    writeFileSync(join(workspaceDir, 'user.md'), userContent, 'utf-8');
-
-    // Write todo.md template
-    const todoContent = `# 📋 待办事项
-
-## 今日任务
-- [ ]
-
-## 本周目标
-- [ ]
-
-## 进行中的项目
-<!-- 记录正在进行的项目 -->
-
-## 已完成
-- [ ]
-
----
-*由 RClaw 数字员工系统生成*
-`;
-    writeFileSync(join(workspaceDir, 'todo.md'), todoContent, 'utf-8');
+    writeDigitalEmployeeWorkspaceFiles(workspaceDir, {
+      nameZh: options.nameZh,
+      roleTitle: options.nameEn,
+      soulContent: options.soulContent,
+      agentsContent: options.agentsContent,
+      identityContent: options.identityContent,
+      emoji: options.emoji,
+      vibe: options.vibe,
+    });
 
     logger.info(`[agents:create-employee] Created workspace for ${options.nameZh} at ${workspaceDir}`);
 

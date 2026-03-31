@@ -248,6 +248,8 @@ export async function handleAgentRoutes(
         soulContent: string;
         agentsContent: string;
         identityContent: string;
+        emoji?: string;
+        vibe?: string;
       }>(req);
 
       if (typeof body.nameZh !== 'string') {
@@ -262,6 +264,8 @@ export async function handleAgentRoutes(
           soulContent: body.soulContent || '',
           agentsContent: body.agentsContent || '',
           identityContent: body.identityContent || '',
+          emoji: typeof body.emoji === 'string' ? body.emoji : undefined,
+          vibe: typeof body.vibe === 'string' ? body.vibe : undefined,
         },
         (stage) => emitProvisionStage(ctx, stage),
       );

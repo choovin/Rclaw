@@ -84,6 +84,8 @@ export const useEmployeesStore = create<EmployeesState>()(
               soulContent: (employee as EmployeeWithStatus).soulContent || '',
               agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
               identityContent: (employee as EmployeeWithStatus).identityContent || '',
+              emoji: employee.emoji,
+              vibe: employee.vibeZh ?? employee.vibe,
             }),
           })) as {
             success?: boolean;
