@@ -13,7 +13,7 @@ import { EventEmitter } from 'events';
 import { setQuitting } from './app-state';
 
 /** Base CDN URL (without trailing channel path) */
-const OSS_BASE_URL = 'https://oss.intelli-spectrum.com';
+const OSS_BASE_URL = 'https://rn-oss-cn-guangzhou.runnode.cn/rclaw-release';
 
 export interface UpdateStatus {
   status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
