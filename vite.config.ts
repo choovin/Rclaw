@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
@@ -12,7 +12,19 @@ function isMainProcessExternal(id: string): boolean {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const cloudApiBase =
+    env.VITE_CLOUD_API_BASE_URL?.trim() ||
+    (mode === 'production' ? 'https://www.runnode.cn' : 'https://staging-www.runnode.cn');
+  const wechatAppId = env.VITE_CLOUD_WECHAT_APP_ID?.trim() || '';
+
+  const electronMainDefine = {
+    __RCLAW_BUILD_CLOUD_API_BASE__: JSON.stringify(cloudApiBase),
+    __RCLAW_BUILD_CLOUD_WECHAT_APP_ID__: JSON.stringify(wechatAppId),
+  } as const;
+
+  return {
   // Required for Electron: all asset URLs must be relative because the renderer
   // loads via file:// in production. vite-plugin-electron-renderer sets this
   // automatically, but we declare it explicitly so the intent is clear and the
@@ -28,6 +40,7 @@ export default defineConfig({
           options.startup();
         },
         vite: {
+          define: electronMainDefine,
           build: {
             outDir: 'dist-electron/main',
             rollupOptions: {
@@ -67,4 +80,5 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+};
 });

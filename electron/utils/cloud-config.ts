@@ -5,11 +5,22 @@ import { join } from 'path';
 
 let dotEnvMerged = false;
 
-/** Main 进程默认不加载 Vite 注入的 .env，从仓库根 `.env` / `.env.local` 合并 `VITE_CLOUD_*`。 */
+/**
+ * Main 进程从仓库根目录按 Vite 相近顺序合并 `VITE_CLOUD_*`（后者覆盖前者）。
+ * 另见构建期注入：`vite.config.ts` → `__RCLAW_BUILD_CLOUD_*__`（打包后 cwd 常无 .env）。
+ */
 function mergeCloudKeysFromDotEnvFiles(): void {
   if (dotEnvMerged) return;
   dotEnvMerged = true;
-  const files = [join(process.cwd(), '.env'), join(process.cwd(), '.env.local')];
+  const root = process.cwd();
+  const isProd = process.env.NODE_ENV === 'production';
+  const files = [
+    join(root, '.env'),
+    join(root, '.env.local'),
+    ...(isProd
+      ? [join(root, '.env.production'), join(root, '.env.production.local')]
+      : [join(root, '.env.development'), join(root, '.env.development.local')]),
+  ];
   for (const file of files) {
     if (!existsSync(file)) continue;
     try {
@@ -40,18 +51,21 @@ function mergeCloudKeysFromDotEnvFiles(): void {
 
 /**
  * 业务云 HTTP 根地址（不含路径）。
- * 在仓库根目录 `.env` / `.env.production` 等中配置 `VITE_CLOUD_API_BASE_URL`；
+ * 优先级：`process.env`（含合并后的 .env*）→ 构建期注入 → 预发默认。
  * 与 `docs/api-docs` 中的路径拼接为完整 URL，例如 `${base}/app-api/member/auth/login`。
  */
 export function getCloudApiBaseUrl(): string {
   mergeCloudKeysFromDotEnvFiles();
-  const raw = process.env.VITE_CLOUD_API_BASE_URL || 'https://staging-www.runnode.cn';
+  const raw =
+    process.env.VITE_CLOUD_API_BASE_URL ||
+    __RCLAW_BUILD_CLOUD_API_BASE__ ||
+    'https://staging-www.runnode.cn';
   return raw.replace(/\/+$/, '');
 }
 
 export function getWechatAppId(): string {
   mergeCloudKeysFromDotEnvFiles();
-  return process.env.VITE_CLOUD_WECHAT_APP_ID || '';
+  return process.env.VITE_CLOUD_WECHAT_APP_ID || __RCLAW_BUILD_CLOUD_WECHAT_APP_ID__ || '';
 }
 
 /** Main 侧 fallback：与渲染进程一致，取 `VITE_CLOUD_API_BASE_URL` 的 origin（同 RunNode 站点与 API 同源） */

@@ -1,6 +1,7 @@
 {
     "name": "rclaw",
-    "version": "0.3.3",
+    "version": "0.3.4",
+    "upstreamVersion": "0.3.3",
     "pnpm": {
         "onlyBuiltDependencies": [
             "@discordjs/opus",
