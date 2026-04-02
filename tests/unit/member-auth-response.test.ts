@@ -90,4 +90,30 @@ describe('parseMemberAuthRefreshBody', () => {
       expect(r.expiresIn).toBeLessThanOrEqual(300);
     }
   });
+
+  it('accepts code 200 and rotated refreshToken in data', () => {
+    const r = parseMemberAuthRefreshBody({
+      code: 200,
+      data: { accessToken: 'a2', refreshToken: 'r2', expiresIn: 3600 },
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.accessToken).toBe('a2');
+      expect(r.refreshToken).toBe('r2');
+      expect(r.expiresIn).toBe(3600);
+    }
+  });
+
+  it('parses expiresTime as ISO-like date string', () => {
+    const future = new Date(Date.now() + 400_000).toISOString();
+    const r = parseMemberAuthRefreshBody({
+      code: 0,
+      data: { accessToken: 'new', expiresTime: future },
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.expiresIn).toBeGreaterThan(350);
+      expect(r.expiresIn).toBeLessThanOrEqual(400);
+    }
+  });
 });

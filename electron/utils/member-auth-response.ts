@@ -69,11 +69,21 @@ function normalizeUserInfo(raw: unknown): MemberLoginUserInfo | null {
   };
 }
 
-/** 从 accessToken 所在对象推导过期秒数：支持 expiresTime（绝对时间 ms）或 expiresIn（秒） */
+/** 从 accessToken 所在对象推导过期秒数：支持 expiresTime（绝对时间 ms）、ISO/LocalDateTime 字符串，或 expiresIn（秒） */
 function resolveExpiresInSeconds(p: Record<string, unknown>): number {
-  const expiresTime = pickNum(p, ['expiresTime', 'expires_time']);
-  if (expiresTime != null && expiresTime > Date.now()) {
-    return Math.max(60, Math.floor((expiresTime - Date.now()) / 1000));
+  const expiresTimeNum = pickNum(p, ['expiresTime', 'expires_time']);
+  if (expiresTimeNum != null && expiresTimeNum > Date.now()) {
+    return Math.max(60, Math.floor((expiresTimeNum - Date.now()) / 1000));
+  }
+  for (const k of ['expiresTime', 'expires_time'] as const) {
+    const v = p[k];
+    if (typeof v === 'string' && v.trim()) {
+      const normalized = /^\d{4}-\d{2}-\d{2} \d/.test(v.trim()) ? v.trim().replace(' ', 'T') : v.trim();
+      const t = Date.parse(normalized);
+      if (!Number.isNaN(t) && t > Date.now()) {
+        return Math.max(60, Math.floor((t - Date.now()) / 1000));
+      }
+    }
   }
   const expiresIn = pickNum(p, ['expiresIn', 'expires_in']);
   if (expiresIn != null && expiresIn > 0) return expiresIn;
@@ -147,14 +157,20 @@ export function parseMemberAuthLoginBody(
   };
 }
 
+/**
+ * 解析 `POST /app-api/member/auth/refresh-token` 响应：`{ code: 0|200, data: AppAuthLoginRespVO }`。
+ * 若 `data.refreshToken` 存在则客户端应持久化（刷新令牌轮换）。
+ */
 export function parseMemberAuthRefreshBody(
   raw: unknown,
-): { ok: true; accessToken: string; expiresIn: number } | { ok: false } {
+):
+  | { ok: true; accessToken: string; expiresIn: number; refreshToken?: string }
+  | { ok: false } {
   const root = asRecord(raw);
   if (!root) return { ok: false };
 
   const code = root.code;
-  if (typeof code === 'number' && code !== 0) return { ok: false };
+  if (typeof code === 'number' && code !== 0 && code !== 200) return { ok: false };
 
   let p = root;
   const data = root.data;
@@ -167,6 +183,7 @@ export function parseMemberAuthRefreshBody(
 
   const accessToken = pickStr(p, ['accessToken', 'access_token']);
   if (!accessToken) return { ok: false };
+  const refreshToken = pickStr(p, ['refreshToken', 'refresh_token']);
   const expiresIn = resolveExpiresInSeconds(p);
-  return { ok: true, accessToken, expiresIn };
+  return { ok: true, accessToken, expiresIn, ...(refreshToken ? { refreshToken } : {}) };
 }

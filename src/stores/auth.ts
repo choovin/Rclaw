@@ -23,6 +23,17 @@ interface AuthState {
   requireAuth: () => Promise<boolean>;
 }
 
+/** Main 在 refresh 失败清 token 后广播 `cloud:logged-out`，同步清除 persist 中的登录 UI 状态 */
+export function subscribeCloudSessionIpc(): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const ipc = window.electron?.ipcRenderer;
+  if (!ipc?.on) return () => {};
+  const unsub = ipc.on('cloud:logged-out', () => {
+    useAuthStore.setState({ isLoggedIn: false, userInfo: null });
+  });
+  return typeof unsub === 'function' ? unsub : () => {};
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({

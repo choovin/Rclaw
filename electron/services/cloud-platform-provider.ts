@@ -25,7 +25,6 @@ import {
   providerAccountToConfig,
 } from './providers/provider-store';
 import { getCloudApiBaseUrl } from '../utils/cloud-config';
-import { cloudFetchLogged } from '../utils/cloud-fetch-log';
 import { logger } from '../utils/logger';
 import { getApiKey, getDefaultProvider } from '../utils/secure-storage';
 
@@ -94,7 +93,7 @@ export async function syncCloudPlatformProviderFromMemberApi(options: {
 
   try {
     const apiRoot = getCloudApiBaseUrl();
-    const response = await cloudFetchLogged(
+    const response = await cloudAuthService.fetchMemberAuthorized(
       'member:new-api-config',
       `${apiRoot}${CLOUD_PLATFORM_API_PATH}`,
       {
@@ -102,7 +101,6 @@ export async function syncCloudPlatformProviderFromMemberApi(options: {
         headers: {
           'Content-Type': 'application/json',
           'tenant-id': '1',
-          Authorization: `Bearer ${tokenData.accessToken}`,
         },
       },
     );

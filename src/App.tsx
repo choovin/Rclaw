@@ -22,7 +22,7 @@ import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
 import { useProviderStore } from './stores/providers';
 import { applyGatewayTransportPreference } from './lib/api-client';
-import { useAuthStore } from './stores/auth';
+import { subscribeCloudSessionIpc, useAuthStore } from './stores/auth';
 
 const Agents = lazy(() => import('./pages/Agents'));
 
@@ -135,6 +135,8 @@ function App() {
   useEffect(() => {
     void syncAuthFromHost();
   }, [syncAuthFromHost]);
+
+  useEffect(() => subscribeCloudSessionIpc(), []);
 
   /** 切换路由时重新拉取 member/user/get，更新 coin 等用户信息（首屏由 syncAuthFromHost 已拉取） */
   useEffect(() => {

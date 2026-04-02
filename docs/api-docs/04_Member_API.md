@@ -31,6 +31,12 @@
 | POST | `/app-api/member/auth/login` | 使用手机 + 密码登录 |
 | POST | `/app-api/member/auth/logout` | 登出系统 |
 | POST | `/app-api/member/auth/refresh-token` | 刷新令牌 |
+
+**`POST /app-api/member/auth/refresh-token`（RClaw 调用约定）**
+
+- **Query**：`refreshToken`（必填），登录或上次刷新下发的刷新令牌。
+- **Body**：无（仅 `POST` + query）。
+- **成功体**：`{ code: 0 \| 200, data: AppAuthLoginRespVO }`；`data` 含 `accessToken`、**`refreshToken`（若服务端轮换则必存新值）**、`expiresTime`（常见为毫秒时间戳或 `LocalDateTime` 的 JSON 字符串）、`userId` 等，与登录响应同类字段一致。
 | POST | `/app-api/member/auth/register` | 使用手机 + 密码注册 |
 | POST | `/app-api/member/auth/send-sms-code` | 发送手机验证码 |
 | POST | `/app-api/member/auth/sms-login` | 使用手机 + 验证码登录 |

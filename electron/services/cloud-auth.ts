@@ -1,6 +1,7 @@
 // electron/services/cloud-auth.ts
 
 import { logger } from '../utils/logger';
+import { broadcastCloudLoggedOut } from '../utils/cloud-session-broadcast';
 import { getCloudAuthTokenStore } from './cloud-auth-token-store';
 import { cloudFetchLogged } from '../utils/cloud-fetch-log';
 import { getCloudApiBaseUrl } from '../utils/cloud-config';
@@ -20,6 +21,13 @@ const MEMBER_CLOUD_TYPE = 'SAILFISH';
 
 function memberAuthApiSuccess(code: unknown): boolean {
   return code === 0 || code === 200;
+}
+
+function flattenRequestHeaders(h: RequestInit['headers'] | undefined): Record<string, string> {
+  if (h == null) return {};
+  if (h instanceof Headers) return Object.fromEntries(h.entries());
+  if (Array.isArray(h)) return Object.fromEntries(h);
+  return { ...(h as Record<string, string>) };
 }
 
 /** 后端 `social-auth-redirect` 的 `data` 多为完整授权 URL 字符串，少数为对象 */
@@ -66,6 +74,9 @@ interface LoginResult {
 const ACCESS_TOKEN_EXPIRE_BUFFER_MS = 5 * 60 * 1000; // 提前5分钟刷新
 
 export class CloudAuthService {
+  /** 并发 refresh 合并为单次，避免轮换 refreshToken 时重复请求 */
+  private refreshInFlight: Promise<boolean> | null = null;
+
   // 获取有效 Token（自动刷新如果即将过期）
   async getValidToken(): Promise<TokenData | null> {
     const tokenData = await this.getStoredTokenData();
@@ -89,8 +100,8 @@ export class CloudAuthService {
    * 登录成功并已持久化 token 后，优先 GET /app-api/member/user/get 获取用户信息；
    * 失败时再尝试 GET /app-api/member/auth/get-login-user；仍失败则用登录接口解析的 fallback。
    */
-  private async resolveUserProfileAfterLogin(accessToken: string, fallback: UserInfo): Promise<UserInfo> {
-    const profile = await this.resolveUserInfoForToken(accessToken);
+  private async resolveUserProfileAfterLogin(fallback: UserInfo): Promise<UserInfo> {
+    const profile = await this.resolveUserInfoForToken();
     if (profile) {
       return profile;
     }
@@ -99,10 +110,60 @@ export class CloudAuthService {
   }
 
   /** 优先 member/user/get，失败则 auth/get-login-user */
-  private async resolveUserInfoForToken(accessToken: string): Promise<UserInfo | null> {
-    const fromUserApi = await this.fetchMemberUser(accessToken);
+  private async resolveUserInfoForToken(): Promise<UserInfo | null> {
+    const fromUserApi = await this.fetchMemberUser();
     if (fromUserApi) return fromUserApi;
-    return this.fetchLoginUser(accessToken);
+    return this.fetchLoginUser();
+  }
+
+  /**
+   * 已登录会员域请求（非登录、非 refresh-token）：自动带 Bearer；
+   * 若 HTTP 401，调用 refresh-token 一次并用新 accessToken 重试（仅重试一次）。
+   */
+  async fetchMemberAuthorized(logContext: string, url: string, init?: RequestInit): Promise<Response> {
+    const tokenData = await this.getValidToken();
+    if (!tokenData) {
+      return new Response(null, { status: 401, statusText: 'Unauthorized' });
+    }
+    const baseHeaders = flattenRequestHeaders(init?.headers);
+    const merged: RequestInit = {
+      ...init,
+      headers: {
+        ...baseHeaders,
+        Authorization: `Bearer ${tokenData.accessToken}`,
+      },
+    };
+
+    let response = await cloudFetchLogged(logContext, url, merged);
+    // #region agent log
+    fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H2',location:'electron/services/cloud-auth.ts:fetchMemberAuthorized:1st-response',message:'authorized request first response',data:{logContext,status:response.status},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (response.status !== 401) {
+      return response;
+    }
+
+    const refreshed = await this.refreshAccessToken();
+    // #region agent log
+    fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H2',location:'electron/services/cloud-auth.ts:fetchMemberAuthorized:after-refresh',message:'authorized request refresh result',data:{logContext,refreshed},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (!refreshed) {
+      return response;
+    }
+
+    const td = await this.getStoredTokenData();
+    if (!td) {
+      return response;
+    }
+
+    const mergedRetry: RequestInit = {
+      ...init,
+      headers: {
+        ...baseHeaders,
+        Authorization: `Bearer ${td.accessToken}`,
+      },
+    };
+
+    return cloudFetchLogged(`${logContext}:after-401-refresh`, url, mergedRetry);
   }
 
   // 登录（密码方式）
@@ -129,7 +190,7 @@ export class CloudAuthService {
         expiresAt: Date.now() + expiresIn * 1000
       });
 
-      const userInfo = await this.resolveUserProfileAfterLogin(accessToken, parsed.value.userInfo);
+      const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };
     } catch (error) {
       logger.error('Cloud login failed:', error);
@@ -161,7 +222,7 @@ export class CloudAuthService {
         expiresAt: Date.now() + expiresIn * 1000
       });
 
-      const userInfo = await this.resolveUserProfileAfterLogin(accessToken, parsed.value.userInfo);
+      const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };
     } catch (error) {
       logger.error('Cloud SMS login failed:', error);
@@ -217,7 +278,7 @@ export class CloudAuthService {
         expiresAt: Date.now() + expiresIn * 1000
       });
 
-      const userInfo = await this.resolveUserProfileAfterLogin(accessToken, parsed.value.userInfo);
+      const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };
     } catch (error) {
       logger.error('Cloud WeChat login failed:', error);
@@ -291,29 +352,54 @@ export class CloudAuthService {
     }
   }
 
-  // 刷新 Access Token
+  // 刷新 Access Token（多路并发时合并为单次请求）
   async refreshAccessToken(): Promise<boolean> {
+    if (this.refreshInFlight !== null) {
+      return this.refreshInFlight;
+    }
+    const p = this.refreshAccessTokenOnce();
+    this.refreshInFlight = p.finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async refreshAccessTokenOnce(): Promise<boolean> {
     const tokenData = await this.getStoredTokenData();
     if (!tokenData?.refreshToken) return false;
 
     try {
       const baseUrl = getCloudApiBaseUrl();
-      const response = await cloudFetchLogged('auth:refresh', `${baseUrl}${MEMBER_AUTH_BASE}/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'tenant-id': '1' },
-        body: JSON.stringify({ refreshToken: tokenData.refreshToken })
-      });
+      const q = new URLSearchParams({ refreshToken: tokenData.refreshToken });
+      const response = await cloudFetchLogged(
+        'auth:refresh-token',
+        `${baseUrl}${MEMBER_AUTH_BASE}/refresh-token?${q.toString()}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'tenant-id': '1' },
+        },
+      );
 
       const rawJson: unknown = await response.json().catch(() => ({}));
       const parsed = parseMemberAuthRefreshBody(rawJson);
+      const root =
+        rawJson !== null && typeof rawJson === 'object' && !Array.isArray(rawJson)
+          ? (rawJson as Record<string, unknown>)
+          : null;
+      const bizCode = typeof root?.code === 'number' ? root.code : undefined;
+      // #region agent log
+      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H4',location:'electron/services/cloud-auth.ts:refreshAccessTokenOnce:parsed',message:'refresh-token parsed result',data:{httpStatus:response.status,bizCode,ok:parsed.ok},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (!parsed.ok) {
-        logger.warn('[CloudAuth] refresh', { httpStatus: response.status });
+        await this.clearTokens();
+        broadcastCloudLoggedOut();
+        logger.warn('[CloudAuth] refresh', { httpStatus: response.status, code: bizCode });
         return false;
       }
 
       await this.storeTokenData({
         accessToken: parsed.accessToken,
-        refreshToken: tokenData.refreshToken,
+        refreshToken: parsed.refreshToken ?? tokenData.refreshToken,
         expiresAt: Date.now() + parsed.expiresIn * 1000
       });
       return true;
@@ -322,6 +408,7 @@ export class CloudAuthService {
     }
 
     await this.clearTokens();
+    broadcastCloudLoggedOut();
     return false;
   }
 
@@ -331,16 +418,15 @@ export class CloudAuthService {
   }
 
   /** GET /app-api/member/user/get — 获取用户信息（主路径，见 docs/api-docs/04_Member_API.md） */
-  private async fetchMemberUser(accessToken: string): Promise<UserInfo | null> {
+  private async fetchMemberUser(): Promise<UserInfo | null> {
     try {
       const baseUrl = getCloudApiBaseUrl();
-      const response = await cloudFetchLogged('member:user-get', `${baseUrl}${MEMBER_USER_BASE}/get`, {
+      const response = await this.fetchMemberAuthorized('member:user-get', `${baseUrl}${MEMBER_USER_BASE}/get`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'tenant-id': '1',
-          Authorization: `Bearer ${accessToken}`
-        }
+        },
       });
 
       const text = await response.text();
@@ -356,6 +442,9 @@ export class CloudAuthService {
       }
 
       const obj = json as { code?: number; data?: unknown };
+      // #region agent log
+      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H1',location:'electron/services/cloud-auth.ts:fetchMemberUser:biz-code',message:'member user api business code observed',data:{httpStatus:response.status,bizCode:obj.code},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (obj.code !== undefined && obj.code !== 0) {
         return null;
       }
@@ -369,17 +458,20 @@ export class CloudAuthService {
   }
 
   /** GET /app-api/member/auth/get-login-user — 备用（user/get 不可用时） */
-  private async fetchLoginUser(accessToken: string): Promise<UserInfo | null> {
+  private async fetchLoginUser(): Promise<UserInfo | null> {
     try {
       const baseUrl = getCloudApiBaseUrl();
-      const response = await cloudFetchLogged('auth:get-login-user', `${baseUrl}${MEMBER_AUTH_BASE}/get-login-user`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'tenant-id': '1',
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
+      const response = await this.fetchMemberAuthorized(
+        'auth:get-login-user',
+        `${baseUrl}${MEMBER_AUTH_BASE}/get-login-user`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'tenant-id': '1',
+          },
+        },
+      );
 
       const text = await response.text();
       let json: unknown;
@@ -394,6 +486,9 @@ export class CloudAuthService {
       }
 
       const obj = json as { code?: number; data?: unknown };
+      // #region agent log
+      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H1',location:'electron/services/cloud-auth.ts:fetchLoginUser:biz-code',message:'login-user api business code observed',data:{httpStatus:response.status,bizCode:obj.code},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (obj.code !== undefined && obj.code !== 0) {
         return null;
       }
@@ -425,20 +520,15 @@ export class CloudAuthService {
     return undefined;
   }
 
-  private async cloudMemberGet(
-    accessToken: string,
-    path: string,
-    logLabel: string
-  ): Promise<unknown | null> {
+  private async cloudMemberGet(path: string, logLabel: string): Promise<unknown | null> {
     try {
       const baseUrl = getCloudApiBaseUrl();
-      const response = await cloudFetchLogged(logLabel, `${baseUrl}${path}`, {
+      const response = await this.fetchMemberAuthorized(logLabel, `${baseUrl}${path}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'tenant-id': '1',
-          Authorization: `Bearer ${accessToken}`
-        }
+        },
       });
 
       const text = await response.text();
@@ -465,8 +555,8 @@ export class CloudAuthService {
     }
   }
 
-  private async fetchMemberVipPlanLabel(accessToken: string): Promise<string | undefined> {
-    const data = await this.cloudMemberGet(accessToken, MEMBER_VIP_GET, 'member:vip-get');
+  private async fetchMemberVipPlanLabel(): Promise<string | undefined> {
+    const data = await this.cloudMemberGet(MEMBER_VIP_GET, 'member:vip-get');
     return this.pickVipPlanLabelFromPayload(data);
   }
 
@@ -533,24 +623,25 @@ export class CloudAuthService {
     const tokenData = await this.getValidToken();
     if (!tokenData) return { isLoggedIn: false };
 
-    let accessToken = tokenData.accessToken;
-    let userInfo = await this.resolveUserInfoForToken(accessToken);
+    let userInfo = await this.resolveUserInfoForToken();
     if (!userInfo) {
       const refreshed = await this.refreshAccessToken();
       if (refreshed) {
         const td = await this.getStoredTokenData();
         if (td) {
-          accessToken = td.accessToken;
-          userInfo = await this.resolveUserInfoForToken(td.accessToken);
+          userInfo = await this.resolveUserInfoForToken();
         }
       }
     }
 
     if (!userInfo) {
+      if (!(await this.getStoredTokenData())) {
+        return { isLoggedIn: false };
+      }
       return { isLoggedIn: true };
     }
 
-    const vipPlan = await this.fetchMemberVipPlanLabel(accessToken);
+    const vipPlan = await this.fetchMemberVipPlanLabel();
 
     const merged: UserInfo = {
       ...userInfo,
