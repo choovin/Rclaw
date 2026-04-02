@@ -48,6 +48,7 @@
         "comms:replay": "node scripts/comms/replay.mjs",
         "comms:baseline": "node scripts/comms/baseline.mjs",
         "comms:compare": "node scripts/comms/compare.mjs",
+        "reset:user-data": "node scripts/reset-user-data.mjs",
         "uv:download": "zx scripts/download-bundled-uv.mjs",
         "uv:download:mac": "zx scripts/download-bundled-uv.mjs --platform=mac",
         "uv:download:win": "zx scripts/download-bundled-uv.mjs --platform=win",

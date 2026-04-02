@@ -22,6 +22,7 @@ Standard dev commands are in `package.json` scripts and `README.md`. Key ones:
 | Comms regression compare | `pnpm run comms:compare` |
 | E2E tests (Playwright) | `pnpm run test:e2e` |
 | Build frontend only | `pnpm run build:vite` |
+| 清空本机应用数据（重测 Setup 向导） | `pnpm run reset:user-data`（加 `-- --yes` 跳过确认；`-- --dir <路径>` 指定目录） |
 
 ### Git 提交信息
 
