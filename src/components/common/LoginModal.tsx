@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth';
 import { cloudApi } from '@/lib/cloud-api';
 // import { getWechatOAuthRedirectUri } from '@/lib/wechat-oauth-redirect';
@@ -303,7 +304,7 @@ export const LoginModal: React.FC = () => {
       <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-[460px] max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold">云账号登录</h2>
+          <h2 className="text-lg font-semibold text-foreground">云账号登录</h2>
           <button onClick={closeLoginModal} className="p-1 hover:bg-accent rounded">
             <X className="w-5 h-5" />
           </button>
@@ -375,30 +376,30 @@ export const LoginModal: React.FC = () => {
             {/* Form */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-1">手机号</label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 bg-secondary text-muted-foreground text-sm border border-r-0 rounded-l-md">
+                <label className="block text-sm mb-1 text-foreground">手机号</label>
+                <div className="flex min-w-0">
+                  <span className="inline-flex h-10 shrink-0 items-center rounded-l-md border border-input border-r-0 bg-secondary px-3 text-sm text-muted-foreground">
                     +86
                   </span>
-                  <input
+                  <Input
                     type="tel"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
                     placeholder="请输入手机号"
-                    className="flex-1 px-3 py-2 border rounded-r-md text-sm"
+                    className="min-w-0 flex-1 rounded-l-none rounded-r-md border-l-0 text-foreground"
                   />
                 </div>
               </div>
 
               {activeTab === 'password' ? (
                 <div>
-                  <label className="block text-sm mb-1">密码</label>
-                  <input
+                  <label className="block text-sm mb-1 text-foreground">密码</label>
+                  <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="请输入密码"
-                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    className="w-full text-foreground"
                   />
                   {error && (
                     <div className="text-sm text-red-500 mt-1">{error}</div>
@@ -406,19 +407,19 @@ export const LoginModal: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm mb-1">验证码</label>
-                  <div className="flex gap-2">
-                    <input
+                  <label className="block text-sm mb-1 text-foreground">验证码</label>
+                  <div className="flex min-w-0 gap-2">
+                    <Input
                       type="text"
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="请输入验证码"
-                      className="flex-1 px-3 py-2 border rounded-md text-sm"
+                      className="min-w-0 flex-1 text-foreground"
                     />
                     <button
                       onClick={handleSendSms}
                       disabled={smsCountdown > 0}
-                      className="px-3 py-2 text-sm bg-secondary hover:bg-secondary/80 rounded-md disabled:opacity-50"
+                      className="shrink-0 rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
                     >
                       {smsCountdown > 0 ? `${smsCountdown}s` : '发送验证码'}
                     </button>
