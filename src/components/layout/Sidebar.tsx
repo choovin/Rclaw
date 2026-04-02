@@ -230,11 +230,11 @@ export function Sidebar() {
       )}
       style={{ backgroundColor: 'hsl(var(--card))' }}
     >
-      {/* Top Header Toggle — macOS: drag region aligns with right TitleBar (38px); traffic lights sit in inset */}
+      {/* Top Header Toggle — macOS: drag region aligns with right TitleBar (48px); traffic lights sit in inset */}
       <div
         className={cn(
           'flex items-center px-3 shrink-0',
-          isMac ? 'drag-region h-[38px]' : 'h-14',
+          isMac ? 'drag-region h-[48px]' : 'h-14',
           sidebarCollapsed ? 'justify-center' : 'justify-between'
         )}
       >

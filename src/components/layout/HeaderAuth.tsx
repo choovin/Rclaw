@@ -3,8 +3,21 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth';
 import { LogOut, User, ChevronRight, HelpCircle } from 'lucide-react';
 import { CoinStackIcon } from '@/components/icons/CoinStackIcon';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const MENU_CLOSE_DELAY_MS = 300;
+/** 1万（显示「N万+」的起始档位） */
+const COIN_WAN = 10_000;
+/** 1000万（封顶显示「1000万+」） */
+const COIN_1000_WAN = 10_000_000;
+
+/** n ≥ 1万 时的缩写（1万+ … 999万+，≥1000万 为 1000万+） */
+function formatCoinCapsuleDisplayWanPlus(n: number): string {
+  if (n >= COIN_1000_WAN) {
+    return '1000万+';
+  }
+  return `${Math.floor(n / COIN_WAN)}万+`;
+}
 
 export const HeaderAuth: React.FC = () => {
   const { isLoggedIn, userInfo, openLoginModal, logout } = useAuthStore();
@@ -61,15 +74,17 @@ export const HeaderAuth: React.FC = () => {
       <button
         type="button"
         onClick={openLoginModal}
-        aria-label="登录"
-        title="未登录，点击登录"
-        className="flex h-full items-center justify-center px-2.5 text-muted-foreground transition-colors hover:text-foreground"
+        aria-label="登录，点击打开登录窗口"
+        className="no-drag flex h-full min-h-0 flex-col items-center justify-center gap-0 px-2.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground"
       >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-hidden>
+          <User className="h-[15px] w-[15px]" strokeWidth={2} />
+        </span>
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          className="-mt-3 shrink-0 rounded-full border border-border/80 bg-background/95 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground shadow-sm backdrop-blur-sm"
           aria-hidden
         >
-          <User className="h-[15px] w-[15px]" strokeWidth={2} />
+          点击登录
         </span>
       </button>
     );
@@ -77,56 +92,58 @@ export const HeaderAuth: React.FC = () => {
 
   const displayName = userInfo?.nickname?.trim() || userInfo?.username?.trim() || '用户';
   const planLabel = userInfo?.subscriptionPlan?.trim() || 'FREE';
+  const coinRaw = userInfo?.coin;
   const coinLabel =
-    userInfo?.coin != null && Number.isFinite(userInfo.coin) ? String(userInfo.coin) : '—';
+    coinRaw != null && Number.isFinite(coinRaw) ? String(coinRaw) : '—';
+  const coinNumeric = coinRaw != null && Number.isFinite(coinRaw) ? Number(coinRaw) : null;
+  const coinCapsuleDisplay =
+    coinNumeric != null
+      ? coinNumeric < COIN_WAN
+        ? coinLabel
+        : formatCoinCapsuleDisplayWanPlus(coinNumeric)
+      : '—';
+  const coinCapsuleShowExactTooltip =
+    coinNumeric != null && coinNumeric >= COIN_WAN;
   const mobileLabel = userInfo?.mobile?.trim() || '—';
 
   return (
-    <div
-      className="relative inline-flex h-full items-center gap-2 px-2.5"
-      onMouseEnter={handleMenuHoverEnter}
-      onMouseLeave={scheduleMenuClose}
-    >
-      <button
-        type="button"
-        aria-expanded={menuOpen}
-        aria-haspopup="menu"
-        aria-label="账户菜单"
-        className="flex h-full shrink-0 items-center justify-center transition-colors"
-      >
-        {userInfo?.avatar ? (
-          <img src={userInfo.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
-            aria-hidden
-          >
-            <User className="h-[15px] w-[15px]" strokeWidth={2} />
-          </span>
-        )}
-      </button>
-
+    <div className="relative inline-flex h-full items-center gap-2 px-2.5">
+      {/* Menu opens only when hovering avatar or the dropdown (not the coin capsule). */}
       <div
-        className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 tabular-nums text-[13px] font-medium text-foreground/85"
-        role="status"
-        aria-label={`积分 ${coinLabel}`}
-        title="积分"
+        className="relative flex h-full shrink-0 items-center"
+        onMouseEnter={handleMenuHoverEnter}
+        onMouseLeave={scheduleMenuClose}
       >
-        <CoinStackIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span>{coinLabel}</span>
-      </div>
+        <button
+          type="button"
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          aria-label="账户菜单"
+          className="flex h-full shrink-0 items-center justify-center transition-colors"
+        >
+          {userInfo?.avatar ? (
+            <img src={userInfo.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+              aria-hidden
+            >
+              <User className="h-[15px] w-[15px]" strokeWidth={2} />
+            </span>
+          )}
+        </button>
 
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            key="header-auth-menu"
-            className="absolute right-0 top-full z-50 origin-top-right pt-2"
-            role="presentation"
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          >
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              key="header-auth-menu"
+              className="absolute right-0 top-full z-50 origin-top-right pt-2"
+              role="presentation"
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            >
             <div
               className="w-[min(calc(100vw-24px),320px)] overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
               role="menu"
@@ -182,6 +199,34 @@ export const HeaderAuth: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
+
+      {coinCapsuleShowExactTooltip ? (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div
+              className="flex h-7 shrink-0 cursor-default items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 tabular-nums text-[13px] font-medium text-foreground/85"
+              role="status"
+              aria-label={`积分 ${coinLabel}`}
+            >
+              <CoinStackIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>{coinCapsuleDisplay}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6} className="text-xs">
+            积分：{coinLabel}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <div
+          className="flex h-7 shrink-0 cursor-default items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 tabular-nums text-[13px] font-medium text-foreground/85"
+          role="status"
+          aria-label={`积分 ${coinLabel}`}
+        >
+          <CoinStackIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span>{coinCapsuleDisplay}</span>
+        </div>
+      )}
     </div>
   );
 };

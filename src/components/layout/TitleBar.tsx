@@ -14,7 +14,7 @@ export function TitleBar() {
 
   if (platform === 'darwin') {
     // macOS: just a drag region, traffic lights are native
-    return <div className="drag-region h-[38px] shrink-0 border-b/0" style={{ backgroundColor: 'hsl(var(--background))' }} />;
+    return <div className="drag-region h-[48px] shrink-0 border-b/0" style={{ backgroundColor: 'hsl(var(--background))' }} />;
   }
 
   // Linux keeps the native frame/title bar for better IME compatibility.
@@ -52,7 +52,7 @@ function WindowsTitleBar() {
   };
 
   return (
-    <div className="drag-region flex h-[38px] shrink-0 items-center border-b/0 relative z-50" style={{ backgroundColor: 'hsl(var(--background))' }}>
+    <div className="drag-region flex h-[48px] shrink-0 items-center border-b/0 relative z-50" style={{ backgroundColor: 'hsl(var(--background))' }}>
       {/* Spacer - creates drag area on left */}
       <div className="flex-1" />
 
