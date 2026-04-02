@@ -474,7 +474,11 @@ export function Settings() {
   };
 
   return (
-    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div
+      data-testid="settings-page"
+      className={cn('relative flex flex-col transition-colors duration-300')}
+      style={{ height: 'calc(100vh - 2.5rem)' }}
+    >
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16">
 
         {/* Header */}

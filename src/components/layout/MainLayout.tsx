@@ -13,7 +13,7 @@ export function MainLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen flex-row overflow-hidden bg-background">
+    <div data-testid="main-layout" className="flex h-screen flex-row overflow-hidden bg-background">
       <Sidebar />
 
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

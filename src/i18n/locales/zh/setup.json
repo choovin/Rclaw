@@ -114,6 +114,7 @@
     "complete": {
         "title": "设置完成！",
         "subtitle": "RClaw 已配置并准备就绪。您现在可以开始与您的 AI 助手聊天了。",
+        "providerAfterLogin": "登录后自动同步模型网关",
         "provider": "AI 提供商",
         "components": "组件",
         "gateway": "网关",

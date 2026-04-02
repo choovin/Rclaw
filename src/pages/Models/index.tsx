@@ -225,7 +225,11 @@ export function Models() {
   const usageLoading = isGatewayRunning && fetchState.status === 'loading';
 
   return (
-    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div
+      data-testid="models-page"
+      className={cn('relative flex flex-col transition-colors duration-300')}
+      style={{ height: 'calc(100vh - 2.5rem)' }}
+    >
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16">
         
         {/* Header */}

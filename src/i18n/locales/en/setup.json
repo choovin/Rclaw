@@ -114,6 +114,7 @@
     "complete": {
         "title": "Setup Complete!",
         "subtitle": "RClaw is configured and ready to use. You can now start chatting with your AI assistant.",
+        "providerAfterLogin": "Model gateway syncs after sign-in",
         "provider": "AI Provider",
         "components": "Components",
         "gateway": "Gateway",

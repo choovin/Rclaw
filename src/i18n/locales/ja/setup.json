@@ -114,6 +114,7 @@
     "complete": {
         "title": "セットアップ完了！",
         "subtitle": "RClawの構成が完了し、使用準備が整いました。AIアシスタントとのチャットを開始できます。",
+        "providerAfterLogin": "サインイン後にモデルゲートウェイを自動同期",
         "provider": "AI プロバイダー",
         "components": "コンポーネント",
         "gateway": "ゲートウェイ",
