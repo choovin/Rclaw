@@ -27,6 +27,7 @@ import {
 import { getCloudApiBaseUrl } from '../utils/cloud-config';
 import { cloudFetchLogged } from '../utils/cloud-fetch-log';
 import { logger } from '../utils/logger';
+import { getApiKey, getDefaultProvider } from '../utils/secure-storage';
 
 export type SyncPlatformProviderResult = { ok: true } | { ok: false; error: string };
 
@@ -68,6 +69,18 @@ export function parseMemberNewApiConfig(json: unknown): { baseUrl: string; apiKe
 
   if (!baseUrl || !token) return null;
   return { baseUrl, apiKey: token };
+}
+
+/** 会员 new-api 的 baseUrl + token 是否与本地 RunNode custom 账号一致（供跳过无意义的 Gateway reload；导出供单测）。 */
+export function memberNewApiConfigMatchesStoredAccount(params: {
+  existingBaseUrl: string | undefined;
+  storedApiKey: string | null;
+  parsed: { baseUrl: string; apiKey: string };
+}): boolean {
+  const sk = (params.storedApiKey ?? '').trim();
+  if (!sk) return false;
+  const existingNorm = ensureOpenAiCompatibleBaseUrlV1(params.existingBaseUrl || '');
+  return existingNorm === params.parsed.baseUrl && sk === params.parsed.apiKey.trim();
 }
 
 export async function syncCloudPlatformProviderFromMemberApi(options: {
@@ -113,6 +126,30 @@ export async function syncCloudPlatformProviderFromMemberApi(options: {
 
     const service = getProviderService();
     const all = await listProviderAccounts();
+    const existingCloud = await getProviderAccount(CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID);
+    const otherCustomAccounts = all.filter(
+      (a) => a.vendorId === 'custom' && a.id !== CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID,
+    );
+
+    if (
+      otherCustomAccounts.length === 0 &&
+      existingCloud &&
+      (await getDefaultProvider()) === CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID
+    ) {
+      const storedKey = await getApiKey(CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID);
+      if (
+        memberNewApiConfigMatchesStoredAccount({
+          existingBaseUrl: existingCloud.baseUrl,
+          storedApiKey: storedKey,
+          parsed,
+        })
+      ) {
+        logger.debug(
+          '[CloudPlatformProvider] new-api config unchanged (baseUrl+token), skip provider sync / gateway reload',
+        );
+        return { ok: true };
+      }
+    }
 
     for (const a of all) {
       if (a.vendorId === 'custom' && a.id !== CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID) {
@@ -123,7 +160,6 @@ export async function syncCloudPlatformProviderFromMemberApi(options: {
     }
 
     const now = new Date().toISOString();
-    const existingCloud = await getProviderAccount(CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID);
     const account: ProviderAccount = {
       id: CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID,
       vendorId: 'custom',

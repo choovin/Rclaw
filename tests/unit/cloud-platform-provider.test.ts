@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ensureOpenAiCompatibleBaseUrlV1,
+  memberNewApiConfigMatchesStoredAccount,
   parseMemberNewApiConfig,
 } from '@electron/services/cloud-platform-provider';
 
@@ -90,5 +91,49 @@ describe('parseMemberNewApiConfig', () => {
         data: { baseUrl: 'https://a/', apiKey: 't' },
       }),
     ).toBeNull();
+  });
+});
+
+describe('memberNewApiConfigMatchesStoredAccount', () => {
+  const parsed = { baseUrl: 'https://gw.example/v1', apiKey: 'secret' };
+
+  it('returns true when baseUrl (normalized) and apiKey match stored', () => {
+    expect(
+      memberNewApiConfigMatchesStoredAccount({
+        existingBaseUrl: 'https://gw.example',
+        storedApiKey: 'secret',
+        parsed,
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false when token differs', () => {
+    expect(
+      memberNewApiConfigMatchesStoredAccount({
+        existingBaseUrl: 'https://gw.example/v1',
+        storedApiKey: 'other',
+        parsed,
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false when baseUrl differs', () => {
+    expect(
+      memberNewApiConfigMatchesStoredAccount({
+        existingBaseUrl: 'https://other/v1',
+        storedApiKey: 'secret',
+        parsed,
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false when stored key missing', () => {
+    expect(
+      memberNewApiConfigMatchesStoredAccount({
+        existingBaseUrl: 'https://gw.example/v1',
+        storedApiKey: null,
+        parsed,
+      }),
+    ).toBe(false);
   });
 });
