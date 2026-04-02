@@ -1,8 +1,71 @@
 #!/usr/bin/env zx
 
 import 'zx/globals';
+import http from 'node:http';
+import https from 'node:https';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { URL as NodeURL } from 'node:url';
 
 const ROOT_DIR = path.resolve(__dirname, '..');
+const MAX_REDIRECTS = 10;
+
+/**
+ * Stream download with redirect follow. Avoids Node fetch/undici bodyTimeout (UND_ERR_BODY_TIMEOUT)
+ * on slow or high-latency links; behavior is closer to curl.
+ */
+async function downloadFile(urlString, destPath, redirectCount = 0) {
+  if (redirectCount > MAX_REDIRECTS) {
+    throw new Error(`Too many redirects (>${MAX_REDIRECTS})`);
+  }
+  const url = new NodeURL(urlString);
+  const client = url.protocol === 'https:' ? https : http;
+  if (!['https:', 'http:'].includes(url.protocol)) {
+    throw new Error(`Unsupported URL protocol: ${url.protocol}`);
+  }
+
+  await new Promise((resolve, reject) => {
+    const req = client.request(
+      url,
+      {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'rclaw-uv-download/1',
+          Accept: '*/*',
+        },
+      },
+      async (res) => {
+        try {
+          const code = res.statusCode ?? 0;
+          if (code >= 300 && code < 400 && res.headers.location) {
+            res.resume();
+            await downloadFile(
+              new NodeURL(res.headers.location, url).href,
+              destPath,
+              redirectCount + 1,
+            );
+            resolve();
+            return;
+          }
+          if (code !== 200) {
+            const err = new Error(`Failed to download: HTTP ${code} ${res.statusMessage ?? ''}`);
+            res.resume();
+            reject(err);
+            return;
+          }
+          const file = createWriteStream(destPath);
+          await pipeline(res, file);
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      },
+    );
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 const UV_VERSION = '0.10.0';
 const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
 const OUTPUT_BASE = path.join(ROOT_DIR, 'resources', 'bin');
@@ -63,12 +126,9 @@ async function setupTarget(id) {
   await fs.ensureDir(tempDir);
 
   try {
-    // Download
+    // Download (stream via http/https — no undici body timeout)
     echo`⬇️ Downloading: ${downloadUrl}`;
-    const response = await fetch(downloadUrl);
-    if (!response.ok) throw new Error(`Failed to download: ${response.statusText}`);
-    const buffer = await response.arrayBuffer();
-    await fs.writeFile(archivePath, Buffer.from(buffer));
+    await downloadFile(downloadUrl, archivePath);
 
     // Extract
     echo`📂 Extracting...`;
