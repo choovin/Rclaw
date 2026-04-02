@@ -1,6 +1,7 @@
 {
     "title": "Digital Employees",
     "subtitle": "When adding a new Agent, RClaw will copy the main Agent's workspace files and runtime auth setup. The configuration can be modified through a dialog.",
+    "refresh": "Refresh",
     "addAgent": "Add Agent",
     "gatewayWarning": "Gateway service is not running. Agent/channel changes may take a moment to apply.",
     "defaultBadge": "default",

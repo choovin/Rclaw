@@ -2,7 +2,7 @@
     "title": "Digital Employees",
     "subtitle": "Manage and add your digital employee team",
     "tabs": {
-        "marketplace": "Marketplace",
+        "marketplace": "Digital Employee Library",
         "myEmployees": "My Employees"
     },
     "searchPlaceholder": "Search employees...",
@@ -11,7 +11,7 @@
     "myEmployees": "My Employees",
     "myEmployeesDesc": "You have added {{count}} employees",
     "noMyEmployees": "No employees yet",
-    "noMyEmployeesDesc": "Add employees from the marketplace to get started",
+    "noMyEmployeesDesc": "Add employees from the digital employee library to get started",
     "add": "Add",
     "remove": "Remove",
     "added": "Added",

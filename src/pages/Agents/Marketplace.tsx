@@ -8,7 +8,6 @@ import { EmployeeCard } from './EmployeeCard';
 import { EmployeeDetail } from './EmployeeDetail';
 import { useEmployeesStore, getAllDepartments } from '@/stores/employees';
 import type { Employee, EmployeeWithStatus, Department } from '@/types/employee';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { AgentSummary } from '@/types/agent';
 import type { GatewayStatus } from '@/types/gateway';
@@ -43,6 +42,7 @@ export interface MarketplaceProps {
   channelGroups: ChannelGroupItem[];
   gatewayStatus: GatewayStatus;
   agentsError: string | null;
+  searchQuery: string;
   onRefreshAgents?: () => void;
 }
 
@@ -51,10 +51,10 @@ export function Marketplace({
   channelGroups,
   gatewayStatus,
   agentsError,
+  searchQuery,
   onRefreshAgents,
 }: MarketplaceProps) {
   const { t } = useTranslation('employees');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -125,19 +125,8 @@ export function Marketplace({
   };
 
   return (
-    <div className="flex h-full gap-4">
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Search */}
-        <div className="mb-4">
-          <Input
-            placeholder={t('searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
-        </div>
-
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Department Filter */}
         <div className="mb-4 flex flex-wrap gap-2 overflow-x-auto pb-2">
           <button
@@ -197,7 +186,6 @@ export function Marketplace({
         </div>
       </div>
 
-      {/* Detail Sidebar */}
       {selectedEmployee && (
         <EmployeeDetail
           employee={selectedEmployee}

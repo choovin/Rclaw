@@ -2,7 +2,7 @@
     "title": "数字员工",
     "subtitle": "管理和添加您的数字员工团队",
     "tabs": {
-        "marketplace": "员工市场",
+        "marketplace": "数字员工库",
         "myEmployees": "我的员工"
     },
     "searchPlaceholder": "搜索员工...",
@@ -28,7 +28,7 @@
     "myEmployees": "我的员工",
     "myEmployeesDesc": "您已添加 {{count}} 名员工",
     "noMyEmployees": "暂无员工",
-    "noMyEmployeesDesc": "从员工市场添加员工开始使用",
+    "noMyEmployeesDesc": "从数字员工库添加员工开始使用",
     "add": "添加",
     "remove": "移除",
     "added": "已添加",

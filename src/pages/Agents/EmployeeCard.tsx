@@ -99,56 +99,54 @@ export function EmployeeCard({
     <div
       onClick={onClick}
       className={cn(
-        'employee-card bg-card border border-border/40 rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer',
+        'employee-card flex h-full flex-col bg-card border border-border/40 rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer',
         className
       )}
     >
-      {/* Department Tag */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-sm">{employee.emoji}</span>
-        <span className="text-xs text-muted-foreground">
-          {t(`departments.${employee.department}`)}
-        </span>
-      </div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* Department Tag */}
+        <div className="mb-3 flex items-center gap-1.5">
+          <span className="text-sm">{employee.emoji}</span>
+          <span className="text-xs text-muted-foreground">
+            {t(`departments.${employee.department}`)}
+          </span>
+        </div>
 
-      {/* Prototype Avatar */}
-      <div
-        className={cn(
-          'w-16 h-16 rounded-full bg-gradient-to-br mb-3 mx-auto',
-          getAvatarColor(employee.department)
-        )}
-        style={{ background: `linear-gradient(135deg, ${employee.color}20, ${employee.color}40)` }}
-      >
-        <div className="w-full h-full flex items-center justify-center text-2xl">
-          {employee.emoji}
+        {/* Prototype Avatar */}
+        <div
+          className={cn(
+            'mx-auto mb-3 h-16 w-16 rounded-full bg-gradient-to-br',
+            getAvatarColor(employee.department)
+          )}
+          style={{ background: `linear-gradient(135deg, ${employee.color}20, ${employee.color}40)` }}
+        >
+          <div className="flex h-full w-full items-center justify-center text-2xl">
+            {employee.emoji}
+          </div>
+        </div>
+
+        {/* Chinese Name (Primary) */}
+        <h3 className="mb-0.5 text-[17px] font-semibold text-foreground">
+          {employee.nameZh}
+        </h3>
+
+        {/* English Name */}
+        <p className="mb-3 text-[13px] text-muted-foreground">
+          {employee.name}
+        </p>
+
+
+        {/* Description：flex 子项默认 min-height:auto 会按全文撑开，必须包一层并 overflow-hidden */}
+        <div className="min-h-0 min-w-0 w-full overflow-hidden">
+          <p className="line-clamp-2 break-words text-[13px] leading-snug text-muted-foreground [overflow-wrap:anywhere]">
+            {employee.descriptionZh || employee.description}
+          </p>
         </div>
       </div>
 
-      {/* Chinese Name (Primary) */}
-      <h3 className="text-[17px] font-semibold text-foreground mb-0.5">
-        {employee.nameZh}
-      </h3>
-
-      {/* English Name */}
-      <p className="text-[13px] text-muted-foreground mb-3">
-        {employee.name}
-      </p>
-
-      {/* Vibe */}
-      {(employee.vibeZh || employee.vibe) && (
-        <p className="text-[13px] text-foreground/70 mb-3 line-clamp-2 italic">
-          {employee.vibeZh || employee.vibe}
-        </p>
-      )}
-
-      {/* Description - prefer Chinese description */}
-      <p className="text-[13px] text-muted-foreground line-clamp-2 mb-4">
-        {employee.descriptionZh || employee.description}
-      </p>
-
-      {/* Add Progress or Button */}
+      {/* Add Progress or Button — 同行卡片底部对齐 */}
       {showAddButton && (
-        <div className="mt-2">
+        <div className="mt-3 shrink-0">
           {addProgress !== null ? (
             <AddProgress
               currentStep={addProgress}
@@ -162,7 +160,7 @@ export function EmployeeCard({
               variant={isAdded ? 'outline' : 'default'}
               onClick={handleAddClick}
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               {isAdded ? t('remove') : t('addEmployee')}
             </Button>
           )}

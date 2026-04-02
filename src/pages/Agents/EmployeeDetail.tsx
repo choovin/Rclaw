@@ -16,6 +16,7 @@ import { EmployeeRemoveDialog } from '@/components/common/EmployeeRemoveDialog';
 import { AlertCircle, Loader2, Plus, Settings2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { AgentSettingsModal, type ChannelGroupItem } from './AgentSettingsModal';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 const DEPARTMENT_COLORS: Record<string, string> = {
   engineering: '#3b82f6',
@@ -112,7 +113,17 @@ export function EmployeeDetail({
   };
 
   return (
-    <div className="w-80 shrink-0 border-l bg-card flex flex-col">
+    <>
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="right"
+        data-testid="employee-detail-sheet"
+        className="flex h-full min-h-0 w-[min(20rem,calc(100vw-1rem))] max-w-[20rem] flex-col gap-0 border-l p-0 sm:w-80"
+      >
+        <SheetTitle className="sr-only">
+          {employee.nameZh} ({employee.name})
+        </SheetTitle>
+        <div className="flex min-h-0 flex-1 flex-col bg-card">
       {/* Header */}
       <div className="p-5 border-b flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -235,43 +246,46 @@ export function EmployeeDetail({
           </div>
         )}
       </div>
+        </div>
+      </SheetContent>
+    </Sheet>
 
-      <ConfirmDialog
-        open={missingLinkOpen}
-        title={t('errors.missingLinkedAgentTitle')}
-        message={t('errors.missingLinkedAgent')}
-        confirmLabel={t('common:actions.confirm')}
-        cancelLabel={t('common:actions.cancel')}
-        variant="default"
-        onConfirm={() => setMissingLinkOpen(false)}
-        onCancel={() => setMissingLinkOpen(false)}
-      />
+    <ConfirmDialog
+      open={missingLinkOpen}
+      title={t('errors.missingLinkedAgentTitle')}
+      message={t('errors.missingLinkedAgent')}
+      confirmLabel={t('common:actions.confirm')}
+      cancelLabel={t('common:actions.cancel')}
+      variant="default"
+      onConfirm={() => setMissingLinkOpen(false)}
+      onCancel={() => setMissingLinkOpen(false)}
+    />
 
-      <EmployeeRemoveDialog
-        key={`${employee.id}-${removeOpen}`}
-        open={removeOpen}
-        onCancel={() => setRemoveOpen(false)}
-        onConfirm={async () => {
-          try {
-            await removeEmployee(employee.id);
-            setRemoveOpen(false);
-            toast.success(t('removeSuccess'));
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : String(err));
-          }
+    <EmployeeRemoveDialog
+      key={`${employee.id}-${removeOpen}`}
+      open={removeOpen}
+      onCancel={() => setRemoveOpen(false)}
+      onConfirm={async () => {
+        try {
+          await removeEmployee(employee.id);
+          setRemoveOpen(false);
+          toast.success(t('removeSuccess'));
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : String(err));
+        }
+      }}
+    />
+
+    {runtimeSettingsOpen && linkedAgentSummary && (
+      <AgentSettingsModal
+        agent={linkedAgentSummary}
+        channelGroups={channelGroups}
+        onClose={() => {
+          setRuntimeSettingsOpen(false);
+          onRefreshAgents?.();
         }}
       />
-
-      {runtimeSettingsOpen && linkedAgentSummary && (
-        <AgentSettingsModal
-          agent={linkedAgentSummary}
-          channelGroups={channelGroups}
-          onClose={() => {
-            setRuntimeSettingsOpen(false);
-            onRefreshAgents?.();
-          }}
-        />
-      )}
-    </div>
+    )}
+    </>
   );
 }

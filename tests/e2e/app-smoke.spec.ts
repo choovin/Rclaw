@@ -13,6 +13,17 @@ test.describe('ClawX Electron smoke flows', () => {
     await expect(page.getByTestId('setup-runtime-step')).toBeVisible();
   });
 
+  test('employees page shows tab bar and search in one row', async ({ page }) => {
+    await expect(page.getByTestId('setup-page')).toBeVisible();
+    await page.getByTestId('setup-skip-button').click();
+    await expect(page.getByTestId('main-layout')).toBeVisible();
+    const raw = page.url();
+    const base = raw.includes('#') ? raw.slice(0, raw.indexOf('#')) : raw;
+    await page.goto(`${base}#/employees`);
+    await expect(page.getByTestId('employees-page-toolbar')).toBeVisible();
+    await expect(page.getByTestId('employees-search-input')).toBeVisible();
+  });
+
   test('can skip setup and navigate to settings (prod build hides /models)', async ({ page }) => {
     await expect(page.getByTestId('setup-page')).toBeVisible();
     await page.getByTestId('setup-skip-button').click();

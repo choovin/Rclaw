@@ -2,7 +2,7 @@
     "title": "デジタル従業員",
     "subtitle": "デジタル従業員チームを管理・追加",
     "tabs": {
-        "marketplace": "マーケットプレイス",
+        "marketplace": "デジタル従業員ライブラリ",
         "myEmployees": "マイ従業員"
     },
     "searchPlaceholder": "従業員を検索...",
@@ -11,7 +11,7 @@
     "myEmployees": "マイ従業員",
     "myEmployeesDesc": "{{count}}名の従業員を追加済み",
     "noMyEmployees": "従業員がいません",
-    "noMyEmployeesDesc": "マーケットプレイスから従業員を追加してください",
+    "noMyEmployeesDesc": "デジタル従業員ライブラリから従業員を追加してください",
     "add": "追加",
     "remove": "削除",
     "added": "追加済み",
