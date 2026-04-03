@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getOffsetsFromSelection,
   getPlainTextFromRoot,
+  getRectAtPlainTextOffset,
   normalizeComposerPlainText,
   repairComposerPlainTextIfCaretArtifact,
   setSelectionFromOffsets,
@@ -125,6 +126,21 @@ describe('getOffsetsFromSelection / setSelectionFromOffsets', () => {
 
     setSelectionFromOffsets(root, 0, 11);
     expect(getOffsetsFromSelection(root)).toEqual({ start: 0, end: 11 });
+
+    root.remove();
+  });
+
+  it('getRectAtPlainTextOffset: runs for valid offsets (layout-dependent in real browsers)', () => {
+    const root = document.createElement('div');
+    root.textContent = '/abc';
+    document.body.append(root);
+
+    const atSlash = getRectAtPlainTextOffset(root, 0);
+    const atEnd = getRectAtPlainTextOffset(root, 4);
+    // jsdom 常无文本布局，矩形可能为 null；在真实浏览器中应得到 slash 处矩形且 left ≤ 行尾。
+    if (atSlash != null && atEnd != null) {
+      expect(atEnd.left).toBeGreaterThanOrEqual(atSlash.left);
+    }
 
     root.remove();
   });

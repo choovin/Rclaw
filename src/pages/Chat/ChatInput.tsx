@@ -166,6 +166,11 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
       setSlashAnchorRect(null);
       return;
     }
+    const atSlash = composerRef.current?.getRectAtPlainTextOffset(slashInline.slashIndex) ?? null;
+    if (atSlash) {
+      setSlashAnchorRect(atSlash);
+      return;
+    }
     if (slashInline.caretRect) {
       setSlashAnchorRect(slashInline.caretRect);
       return;

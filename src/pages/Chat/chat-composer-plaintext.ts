@@ -147,14 +147,60 @@ export function repairComposerPlainTextIfCaretArtifact(root: HTMLElement, expect
 }
 
 /**
- * Returns start/end offsets (in root text-node order, 0-based, end exclusive) for the current
- * window selection, or `null` if the caret/selection is not fully inside `root`.
+ * Rect for anchoring UI to a plain-text offset. Prefers a one-code-unit range `[offset, offset+1)`
+ * so `/` gets a non-zero width in Chromium; falls back to a collapsed range at `offset`.
  */
+export function getRectAtPlainTextOffset(root: HTMLElement, offset: number): DOMRect | null {
+  try {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const total = getTotalTextLength(root);
+    const off = Math.max(0, Math.min(offset, total));
+    const range = document.createRange();
 
-/**
- * Caret rectangle at the **focus end** of the current selection, if it lies inside `root`.
- * JSDOM may omit `getClientRects` on Range; fall back to `getBoundingClientRect`.
- */
+    const pickRect = (r: Range): DOMRect | null => {
+      if (typeof r.getClientRects === 'function') {
+        try {
+          const rects = r.getClientRects();
+          if (rects.length > 0) {
+            return rects[rects.length - 1]!;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      if (typeof r.getBoundingClientRect !== 'function') {
+        return null;
+      }
+      const br = r.getBoundingClientRect();
+      if (br.width === 0 && br.height === 0) {
+        return null;
+      }
+      return br;
+    };
+
+    if (off < total) {
+      const [startNode, startOff] = offsetToNodeBoundary(root, off);
+      const endExclusive = Math.min(off + 1, total);
+      const [endNode, endOff] = offsetToNodeBoundary(root, endExclusive);
+      range.setStart(startNode, startOff);
+      range.setEnd(endNode, endOff);
+      const span = pickRect(range);
+      if (span) {
+        return span;
+      }
+    }
+
+    const [node, nodeOff] = offsetToNodeBoundary(root, off);
+    range.setStart(node, nodeOff);
+    range.collapse(true);
+    return pickRect(range);
+  } catch {
+    return null;
+  }
+}
+
 export function getCaretRectFromDomSelection(root: HTMLElement): DOMRect | null {
   try {
     if (typeof window === 'undefined') {

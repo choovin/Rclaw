@@ -7,6 +7,7 @@ import {
   getCaretRectFromDomSelection,
   getOffsetsFromSelection,
   getPlainTextFromRoot,
+  getRectAtPlainTextOffset,
   repairComposerPlainTextIfCaretArtifact,
   setSelectionFromOffsets,
 } from './chat-composer-plaintext';
@@ -23,6 +24,8 @@ import { cn } from '@/lib/utils';
 export type ChatComposerHandle = {
   focus: () => void;
   getSelectionOffsets: () => { start: number; end: number } | null;
+  /** Rect at a plain-text offset (for anchoring UI to `/`, not only the caret). */
+  getRectAtPlainTextOffset: (offset: number) => DOMRect | null;
   setPlainTextAndSelection: (text: string, sel: { start: number; end: number }) => void;
 };
 
@@ -76,6 +79,13 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
             return null;
           }
           return getOffsetsFromSelection(root) ?? lastKnownSelectionRef.current;
+        },
+        getRectAtPlainTextOffset: (offset: number) => {
+          const root = rootRef.current;
+          if (!root) {
+            return null;
+          }
+          return getRectAtPlainTextOffset(root, offset);
         },
         setPlainTextAndSelection: (text: string, sel: { start: number; end: number }) => {
           pendingProgrammaticRef.current = { text, sel };

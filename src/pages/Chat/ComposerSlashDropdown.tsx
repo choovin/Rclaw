@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import type { Skill } from '@/types/skill';
 import { cn } from '@/lib/utils';
 import { normalizeCommandName } from './chat-skill-command';
@@ -51,7 +52,13 @@ export function ComposerSlashDropdown(props: {
     return null;
   }
 
-  return (
+  const body = typeof document !== 'undefined' ? document.body : null;
+  if (!body) {
+    return null;
+  }
+
+  // Portal 到 body：祖先若带 transform（如 MainLayout 的 animate-fade-in），fixed 会相对错误包含块，getBoundingClientRect 与 left/top 不一致。
+  return createPortal(
     <div
       role="listbox"
       data-testid="chat-skill-inline-picker"
@@ -101,6 +108,7 @@ export function ComposerSlashDropdown(props: {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    body,
   );
 }
