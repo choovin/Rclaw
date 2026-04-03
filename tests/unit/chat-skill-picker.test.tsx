@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import {
+  adjustCaretForComposerZwsp,
+  COMPOSER_ZWSP,
   deleteTokenAtRange,
+  ensureComposerZwspAfterSlashTokens,
+  findSlashTokenForBackspaceDelete,
+  formatComposerTextForSend,
+  getTokenDeletionSpan,
   insertAtSelection,
   normalizeCommandName,
   parseSlashTokens,
+  stripSlashTokensFromRange,
 } from '@/pages/Chat/chat-skill-command';
 import { SkillPickerPopover } from '@/pages/Chat/SkillPickerPopover';
 
@@ -31,6 +38,21 @@ describe('chat-skill-command', () => {
     ]);
   });
 
+  it('parseSlashTokens: treats composer ZWSP after command as suffix boundary', () => {
+    expect(parseSlashTokens('/feishu\u200b')).toMatchObject([
+      { startIndex: 0, endIndexExclusive: 7, text: '/feishu' },
+    ]);
+    expect(parseSlashTokens('/feishu \u200bmore')).toMatchObject([
+      { startIndex: 0, endIndexExclusive: 7, text: '/feishu' },
+    ]);
+  });
+
+  it('parseSlashTokens: ZWSP before / is a valid prefix boundary', () => {
+    expect(parseSlashTokens('\u200b/feishu\u200b')).toMatchObject([
+      { startIndex: 1, endIndexExclusive: 8, text: '/feishu' },
+    ]);
+  });
+
   it('insertAtSelection: inserts at caret or replaces selection and returns next selection', () => {
     const r1 = insertAtSelection('hello world', { start: 6, end: 6 }, '/feishu ');
     expect(r1.nextValue).toBe('hello /feishu world');
@@ -39,6 +61,14 @@ describe('chat-skill-command', () => {
     const r2 = insertAtSelection('hello world', { start: 0, end: 6 }, '/feishu ');
     expect(r2.nextValue).toBe('/feishu world');
     expect(r2.nextSelection).toEqual({ start: 8, end: 8 });
+  });
+
+  it('ensureComposerZwspAfterSlashTokens: inserts ZWSP after delimiter space; adjustCaret maps caret', () => {
+    const before = '/feishu ';
+    const after = ensureComposerZwspAfterSlashTokens(before);
+    expect(after).toBe(`/feishu \u200b`);
+    expect(adjustCaretForComposerZwsp(before, 8)).toBe(9);
+    expect(adjustCaretForComposerZwsp(after, 9)).toBe(9);
   });
 
   it('deleteTokenAtRange: deletes token and one trailing space only, updates selection deterministically', () => {
@@ -53,6 +83,56 @@ describe('chat-skill-command', () => {
     expect(del.nextValue).toBe('/a test');
     // 光标原在串尾；删除中间 token 后应落在新的串尾
     expect(del.nextSelection).toEqual({ start: del.nextValue.length, end: del.nextValue.length });
+  });
+
+  it('deleteTokenAtRange: also removes leading ZWSP before the slash token', () => {
+    const value = '\u200b/a\u200b';
+    const tokens = parseSlashTokens(value);
+    expect(tokens).toHaveLength(1);
+    const del = deleteTokenAtRange(
+      value,
+      { startIndex: tokens[0]!.startIndex, endIndexExclusive: tokens[0]!.endIndexExclusive },
+      { start: value.length, end: value.length },
+    );
+    expect(del.nextValue).toBe('');
+  });
+
+  it('getTokenDeletionSpan spans full skill segment (prefix ZWSP + /cmd + trailing ZWSP)', () => {
+    const value = '\u200b/feishu\u200b';
+    const tokens = parseSlashTokens(value);
+    expect(tokens).toHaveLength(1);
+    const span = getTokenDeletionSpan(value, tokens[0]!);
+    expect(span.start).toBe(0);
+    expect(span.endExclusive).toBe(value.length);
+    expect(value.slice(span.start, span.endExclusive)).toBe(value);
+  });
+
+  it('findSlashTokenForBackspaceDelete: any backspace inside segment targets the token', () => {
+    const value = '\u200b/feishu\u200b';
+    const t = parseSlashTokens(value)[0]!;
+    for (let caret = 1; caret <= value.length; caret++) {
+      expect(findSlashTokenForBackspaceDelete(value, caret)).toEqual(t);
+    }
+    expect(findSlashTokenForBackspaceDelete(value, 0)).toBeNull();
+  });
+
+  it('stripSlashTokensFromRange: omits slash token payload for clipboard (full select)', () => {
+    const value = 'hello /feishu world';
+    expect(stripSlashTokensFromRange(value, 0, value.length)).toBe('hello  world');
+  });
+
+  it('stripSlashTokensFromRange: keeps only non-token chars in partial selection', () => {
+    expect(stripSlashTokensFromRange('/feishu ', 0, 8)).toBe(' ');
+    expect(stripSlashTokensFromRange('aa /feishu bb', 0, 2)).toBe('aa');
+  });
+
+  it('formatComposerTextForSend: inserts space after slash token when ZWSP separates cmd and text', () => {
+    const raw = `hello ${COMPOSER_ZWSP}/feishu${COMPOSER_ZWSP}world`;
+    expect(formatComposerTextForSend(raw)).toBe('hello /feishu world');
+  });
+
+  it('formatComposerTextForSend: does not double space when space already follows token', () => {
+    expect(formatComposerTextForSend(`/feishu ${COMPOSER_ZWSP}more`)).toBe('/feishu more');
   });
 });
 

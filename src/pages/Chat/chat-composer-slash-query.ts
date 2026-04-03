@@ -1,6 +1,8 @@
 /** Detects inline `/command` typing (incomplete token) for slash menu. */
 
-const PREFIX_BOUNDARY = new Set([' ', '\n', '\r', '\t', '(', '[', '{', '"', "'"]);
+import { COMPOSER_ZWSP } from './chat-skill-command';
+
+const PREFIX_BOUNDARY = new Set([' ', '\n', '\r', '\t', '(', '[', '{', '"', "'", COMPOSER_ZWSP]);
 
 function isPrefixBoundaryChar(ch: string | undefined): boolean {
   if (ch == null) {

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { getPlainTextFromRoot, setSelectionFromOffsets } from '@/pages/Chat/chat-composer-plaintext';
+import { COMPOSER_ZWSP } from '@/pages/Chat/chat-skill-command';
 import { MemoryRouter } from 'react-router-dom';
 import { ChatInput } from '@/pages/Chat/ChatInput';
 
@@ -195,7 +196,9 @@ describe('ChatInput agent targeting', () => {
     fireEvent.click(screen.getByText('/feishu'));
 
     await waitFor(() => {
-      expect(getPlainTextFromRoot(composer as HTMLElement)).toBe('hello /feishu world');
+      expect(getPlainTextFromRoot(composer as HTMLElement)).toBe(
+        `hello ${COMPOSER_ZWSP}/feishu${COMPOSER_ZWSP}world`,
+      );
     });
     expect(screen.queryByPlaceholderText('Search skills')).not.toBeInTheDocument();
   });

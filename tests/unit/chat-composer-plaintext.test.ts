@@ -3,6 +3,7 @@ import {
   getOffsetsFromSelection,
   getPlainTextFromRoot,
   normalizeComposerPlainText,
+  repairComposerPlainTextIfCaretArtifact,
   setSelectionFromOffsets,
 } from '@/pages/Chat/chat-composer-plaintext';
 import { parseSlashTokens } from '@/pages/Chat/chat-skill-command';
@@ -37,6 +38,29 @@ describe('getPlainTextFromRoot', () => {
     root.innerText = 'a\r\nb';
     expect(getPlainTextFromRoot(root)).toBe(normalizeComposerPlainText(root.innerText));
     expect(getPlainTextFromRoot(root)).toBe('a\nb');
+  });
+});
+
+describe('repairComposerPlainTextIfCaretArtifact', () => {
+  it('removes a single ASCII space inserted between newline and following char', () => {
+    const root = document.createElement('div');
+    root.appendChild(document.createTextNode('\n a'));
+    expect(repairComposerPlainTextIfCaretArtifact(root, '\na')).toBe(true);
+    expect(getPlainTextFromRoot(root)).toBe('\na');
+  });
+
+  it('removes a single NBSP when it is the only extra character', () => {
+    const root = document.createElement('div');
+    root.appendChild(document.createTextNode('\n\u00a0a'));
+    expect(repairComposerPlainTextIfCaretArtifact(root, '\na')).toBe(true);
+    expect(getPlainTextFromRoot(root)).toBe('\na');
+  });
+
+  it('returns false when mismatch is not a single space artifact', () => {
+    const root = document.createElement('div');
+    root.appendChild(document.createTextNode('ab'));
+    expect(repairComposerPlainTextIfCaretArtifact(root, 'a')).toBe(false);
+    expect(getPlainTextFromRoot(root)).toBe('ab');
   });
 });
 

@@ -12,6 +12,9 @@ importers:
 
   .:
     dependencies:
+      '@floating-ui/dom':
+        specifier: ^1.7.6
+        version: 1.7.6
       '@sinclair/typebox':
         specifier: ^0.34.48
         version: 0.34.48

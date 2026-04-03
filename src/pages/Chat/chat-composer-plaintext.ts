@@ -2,9 +2,22 @@ export function normalizeComposerPlainText(s: string): string {
   return String(s ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
+/**
+ * Plain text must match {@link getOffsetsFromSelection} / TreeWalker text-node order.
+ * Do not use `innerText` here: after `contenteditable=false` chips and line breaks, Chromium's
+ * `innerText` can inject layout spaces / NBSP that are not in text nodes, causing a controlled
+ * value ↔ selection mismatch (extra spaces on each keystroke).
+ */
 export function getPlainTextFromRoot(el: HTMLElement): string {
-  // JSDOM often leaves `innerText` empty while `textContent` reflects nodes; browsers prefer `innerText` for line breaks.
-  const raw = el.innerText || el.textContent || '';
+  let raw = '';
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let n: Node | null;
+  while ((n = walker.nextNode())) {
+    raw += (n as Text).data;
+  }
+  if (raw.length === 0 && typeof el.innerText === 'string' && el.innerText.length > 0) {
+    raw = el.innerText;
+  }
   return normalizeComposerPlainText(raw);
 }
 
@@ -81,6 +94,56 @@ function offsetToNodeBoundary(root: HTMLElement, offset: number): [Node, number]
     return [t, t.length];
   }
   return [root, 0];
+}
+
+/**
+ * Deletes one UTF-16 code unit at the given plain-text offset (TreeWalker text-node order).
+ */
+export function deleteOneCharAtPlainTextOffset(root: HTMLElement, offset: number): void {
+  const total = getTotalTextLength(root);
+  if (offset < 0 || offset >= total) {
+    return;
+  }
+  const [n, o] = offsetToNodeBoundary(root, offset);
+  if (n.nodeType !== Node.TEXT_NODE) {
+    return;
+  }
+  const t = n as Text;
+  if (o < 0 || o >= t.length) {
+    return;
+  }
+  t.data = t.data.slice(0, o) + t.data.slice(o + 1);
+}
+
+/**
+ * Chromium may insert a single space/NBSP after `setSelectionFromOffsets` at certain boundaries
+ * (e.g. after a newline following a contenteditable=false chip). If the DOM differs from the
+ * controlled `expected` string only by that artifact, remove it so value ↔ DOM stay aligned.
+ */
+export function repairComposerPlainTextIfCaretArtifact(root: HTMLElement, expected: string): boolean {
+  const got = getPlainTextFromRoot(root);
+  if (got === expected) {
+    return false;
+  }
+  if (got.length !== expected.length + 1) {
+    return false;
+  }
+  let i = 0;
+  while (i < expected.length && got[i] === expected[i]) {
+    i++;
+  }
+  if (i >= got.length) {
+    return false;
+  }
+  const ch = got[i]!;
+  if (ch !== ' ' && ch !== '\u00a0') {
+    return false;
+  }
+  if (expected[i] !== got[i + 1]) {
+    return false;
+  }
+  deleteOneCharAtPlainTextOffset(root, i);
+  return getPlainTextFromRoot(root) === expected;
 }
 
 /**

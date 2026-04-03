@@ -41,11 +41,12 @@ export type BuildComposerBodyOptions = {
   removeButtonAriaLabel?: string;
 };
 
-const OUTER_CHIP_CLASS = 'group relative inline max-w-full align-baseline';
+const OUTER_CHIP_CLASS =
+  'group relative mx-1 inline-flex max-w-full cursor-default select-none items-baseline align-baseline gap-0.5';
 const INNER_LABEL_CLASS =
-  'rounded-md bg-secondary/80 text-foreground ring-1 ring-inset ring-border/50';
+  'inline-block max-w-full select-none rounded-md bg-secondary/80 px-2.5 py-0 text-[15px] font-mono leading-relaxed text-foreground ring-1 ring-inset ring-border/30 transition-[box-shadow] duration-150 group-hover:ring-[#90CAF9]';
 const REMOVE_BTN_CLASS =
-  'pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover:opacity-100';
+  'pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 select-none items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover:opacity-100';
 
 /**
  * 将纯文本中的完整 slash token 渲染为 chip DOM，其余为 `Text` 节点。
@@ -74,6 +75,13 @@ export function buildComposerBody(
     outer.setAttribute('data-token-end', String(part.token.endIndexExclusive));
     outer.className = OUTER_CHIP_CLASS;
     outer.contentEditable = 'false';
+    outer.addEventListener(
+      'selectstart',
+      (ev) => {
+        ev.preventDefault();
+      },
+      true,
+    );
 
     const inner = document.createElement('span');
     inner.className = INNER_LABEL_CLASS;

@@ -22,7 +22,12 @@ import { useTranslation } from 'react-i18next';
 import { SkillPickerPopover } from './SkillPickerPopover';
 import { ComposerSlashDropdown } from './ComposerSlashDropdown';
 import { getSlashQueryAtCaret } from './chat-composer-slash-query';
-import { insertAtSelection, normalizeCommandName } from './chat-skill-command';
+import {
+  COMPOSER_ZWSP,
+  formatComposerTextForSend,
+  insertAtSelection,
+  normalizeCommandName,
+} from './chat-skill-command';
 import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -386,7 +391,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         return;
       }
       const { slashIndex, caret } = slashInline;
-      const insert = `/${payload.commandName} `;
+      const insert = `${COMPOSER_ZWSP}/${payload.commandName}${COMPOSER_ZWSP}`;
       const nextValue = input.slice(0, slashIndex) + insert + input.slice(caret);
       const newCaret = slashIndex + insert.length;
       setInput(nextValue);
@@ -404,7 +409,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
       prevSlashSegmentRef.current = null;
       const sel =
         composerRef.current?.getSelectionOffsets() ?? { start: input.length, end: input.length };
-      const insertText = `/${payload.commandName} `;
+      const insertText = `${COMPOSER_ZWSP}/${payload.commandName}${COMPOSER_ZWSP}`;
       const { nextValue, nextSelection } = insertAtSelection(input, sel, insertText);
       setInput(nextValue);
       setSkillPickerOpen(false);
@@ -419,7 +424,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     const readyAttachments = attachments.filter(a => a.status === 'ready');
     // Capture values before clearing — clear input immediately for snappy UX,
     // but keep attachments available for the async send
-    const textToSend = input.trim();
+    const textToSend = formatComposerTextForSend(input.trim());
     const attachmentsToSend = readyAttachments.length > 0 ? readyAttachments : undefined;
     console.log(`[handleSend] text="${textToSend.substring(0, 50)}", attachments=${attachments.length}, ready=${readyAttachments.length}, sending=${!!attachmentsToSend}`);
     if (attachmentsToSend) {

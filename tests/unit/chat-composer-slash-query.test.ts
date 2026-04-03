@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getSlashQueryAtCaret } from '@/pages/Chat/chat-composer-slash-query';
+import { COMPOSER_ZWSP } from '@/pages/Chat/chat-skill-command';
 
 describe('getSlashQueryAtCaret', () => {
   it('returns query when typing after / with valid prefix', () => {
@@ -21,5 +22,10 @@ describe('getSlashQueryAtCaret', () => {
 
   it('returns null when caret is before the slash', () => {
     expect(getSlashQueryAtCaret('/fe', 0)).toBeNull();
+  });
+
+  it('returns null when ZWSP breaks cmd segment after a slash (post-chip typing)', () => {
+    const s = `/feishu${COMPOSER_ZWSP}hello`;
+    expect(getSlashQueryAtCaret(s, s.length)).toBeNull();
   });
 });

@@ -7,9 +7,17 @@ import {
   getCaretRectFromDomSelection,
   getOffsetsFromSelection,
   getPlainTextFromRoot,
+  repairComposerPlainTextIfCaretArtifact,
   setSelectionFromOffsets,
 } from './chat-composer-plaintext';
-import { deleteTokenAtRange, type SlashToken } from './chat-skill-command';
+import {
+  adjustCaretForComposerZwsp,
+  deleteTokenAtRange,
+  ensureComposerZwspAfterSlashTokens,
+  findSlashTokenForBackspaceDelete,
+  stripSlashTokensFromRange,
+  type SlashToken,
+} from './chat-skill-command';
 import { cn } from '@/lib/utils';
 
 export type ChatComposerHandle = {
@@ -93,16 +101,26 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       );
 
       const pending = pendingProgrammaticRef.current;
+      let snapSel: { start: number; end: number } | null = null;
       if (pending && pending.text === value) {
-        setSelectionFromOffsets(root, pending.sel.start, pending.sel.end);
-        lastKnownSelectionRef.current = pending.sel;
+        snapSel = pending.sel;
         pendingProgrammaticRef.current = null;
         selectionAfterInputRef.current = null;
       } else if (selectionAfterInputRef.current) {
-        const s = selectionAfterInputRef.current;
-        setSelectionFromOffsets(root, s.start, s.end);
-        lastKnownSelectionRef.current = s;
+        snapSel = selectionAfterInputRef.current;
         selectionAfterInputRef.current = null;
+      }
+      if (snapSel) {
+        setSelectionFromOffsets(root, snapSel.start, snapSel.end);
+        lastKnownSelectionRef.current = snapSel;
+        let attempts = 0;
+        while (attempts < 3 && getPlainTextFromRoot(root) !== value) {
+          if (!repairComposerPlainTextIfCaretArtifact(root, value)) {
+            break;
+          }
+          setSelectionFromOffsets(root, snapSel.start, snapSel.end);
+          attempts++;
+        }
       }
 
       root.style.height = 'auto';
@@ -116,21 +134,33 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         return;
       }
       const plain = getPlainTextFromRoot(root);
+      const normalized = ensureComposerZwspAfterSlashTokens(plain);
       const sel = getOffsetsFromSelection(root);
       if (sel) {
-        selectionAfterInputRef.current = sel;
-        lastKnownSelectionRef.current = sel;
+        const adjStart = adjustCaretForComposerZwsp(plain, sel.start);
+        const adjEnd = adjustCaretForComposerZwsp(plain, sel.end);
+        selectionAfterInputRef.current = { start: adjStart, end: adjEnd };
+        lastKnownSelectionRef.current = { start: adjStart, end: adjEnd };
       }
       const effectiveSel =
         sel ?? lastKnownSelectionRef.current ?? { start: plain.length, end: plain.length };
-      const caret = effectiveSel.end;
+      const caretPlain = effectiveSel.end;
+      const outPlain = normalized !== plain ? normalized : plain;
+      let caret: number;
+      if (sel) {
+        caret = adjustCaretForComposerZwsp(plain, caretPlain);
+      } else if (normalized !== plain) {
+        caret = adjustCaretForComposerZwsp(plain, Math.min(caretPlain, plain.length));
+      } else {
+        caret = caretPlain;
+      }
       let caretRect: DOMRect | undefined;
       try {
         caretRect = getCaretRectFromDomSelection(root) ?? undefined;
       } catch {
         caretRect = undefined;
       }
-      onChange(plain, { caret, caretRect });
+      onChange(outPlain, { caret, caretRect });
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -179,6 +209,68 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       sel.removeAllRanges();
       sel.addRange(range);
       handleInput();
+    };
+
+    const handleCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (disabled || isComposing) {
+        return;
+      }
+      const root = rootRef.current;
+      if (!root) {
+        return;
+      }
+      const sel = getOffsetsFromSelection(root);
+      if (!sel) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      const text = stripSlashTokensFromRange(value, sel.start, sel.end);
+      e.clipboardData?.setData('text/plain', text);
+    };
+
+    const handleCut = (e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (disabled || isComposing) {
+        return;
+      }
+      const root = rootRef.current;
+      if (!root) {
+        return;
+      }
+      const sel = getOffsetsFromSelection(root);
+      if (!sel) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      const text = stripSlashTokensFromRange(value, sel.start, sel.end);
+      e.clipboardData?.setData('text/plain', text);
+      const next = value.slice(0, sel.start) + value.slice(sel.end);
+      pendingProgrammaticRef.current = { text: next, sel: { start: sel.start, end: sel.start } };
+      lastKnownSelectionRef.current = { start: sel.start, end: sel.start };
+      onChange(next, { caret: sel.start });
+    };
+
+    const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Backspace' && !isComposing && !disabled && value) {
+        const root = rootRef.current;
+        if (root) {
+          const sel = getOffsetsFromSelection(root);
+          if (sel && sel.start === sel.end) {
+            const token = findSlashTokenForBackspaceDelete(value, sel.end);
+            if (token) {
+              e.preventDefault();
+              e.stopPropagation();
+              const { nextValue, nextSelection } = deleteTokenAtRange(value, token, sel);
+              pendingProgrammaticRef.current = { text: nextValue, sel: nextSelection };
+              lastKnownSelectionRef.current = nextSelection;
+              onChange(nextValue, { caret: nextSelection.end, caretRect: undefined });
+              return;
+            }
+          }
+        }
+      }
+      onKeyDown?.(e);
     };
 
     const handleRootClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -243,7 +335,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
             className,
           )}
           onInput={handleInput}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleComposerKeyDown}
+          onCopy={handleCopy}
+          onCut={handleCut}
           onPaste={handlePaste}
           onClick={handleRootClick}
           onCompositionStart={() => {
