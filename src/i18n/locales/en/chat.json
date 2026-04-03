@@ -34,7 +34,8 @@
             "searchPlaceholder": "Search skills",
             "skillsLibrary": "Skills library",
             "emptyEnabled": "No enabled skills (enable them in Skills library first)",
-            "noResults": "No matching skills"
+            "noResults": "No matching skills",
+            "removeToken": "Remove skill command"
         }
     },
     "historyBuckets": {

@@ -34,7 +34,8 @@
             "searchPlaceholder": "搜索技能",
             "skillsLibrary": "技能库",
             "emptyEnabled": "暂无可用技能（请先在技能库启用）",
-            "noResults": "未找到技能"
+            "noResults": "未找到技能",
+            "removeToken": "移除技能命令"
         }
     },
     "historyBuckets": {

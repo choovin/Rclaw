@@ -7,7 +7,8 @@
  * are sent with the message (no base64 over WebSocket).
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2, AtSign } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2, AtSign, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { hostApiFetch } from '@/lib/host-api';
@@ -16,8 +17,16 @@ import { cn } from '@/lib/utils';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
 import { useChatStore } from '@/stores/chat';
+import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
 import { useTranslation } from 'react-i18next';
+import { SkillPickerPopover } from './SkillPickerPopover';
+import {
+  deleteTokenAtRange,
+  insertAtSelection,
+  parseSlashTokens,
+  type SlashToken,
+} from './chat-skill-command';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -82,17 +91,43 @@ function readFileAsBase64(file: globalThis.File): Promise<string> {
   });
 }
 
+type SlashMirrorPart = { kind: 'text'; text: string } | { kind: 'token'; token: SlashToken };
+
+function buildSlashMirrorParts(value: string): SlashMirrorPart[] {
+  const tokens = parseSlashTokens(value);
+  const parts: SlashMirrorPart[] = [];
+  let i = 0;
+  for (const token of tokens) {
+    if (i < token.startIndex) {
+      parts.push({ kind: 'text', text: value.slice(i, token.startIndex) });
+    }
+    parts.push({ kind: 'token', token });
+    i = token.endIndexExclusive;
+  }
+  if (i < value.length) {
+    parts.push({ kind: 'text', text: value.slice(i) });
+  }
+  return parts;
+}
+
 // ── Component ────────────────────────────────────────────────────
 
 export function ChatInput({ onSend, onStop, disabled = false, sending = false, isEmpty = false }: ChatInputProps) {
   const { t } = useTranslation('chat');
+  const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [targetAgentId, setTargetAgentId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [skillPickerOpen, setSkillPickerOpen] = useState(false);
+  const [isComposingUi, setIsComposingUi] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const skillPickerRef = useRef<HTMLDivElement>(null);
+  const overlayInnerRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
+  const skills = useSkillsStore((s) => s.skills);
+  const fetchSkills = useSkillsStore((s) => s.fetchSkills);
   const gatewayStatus = useGatewayStore((s) => s.status);
   const agents = useAgentsStore((s) => s.agents);
   const currentAgentId = useChatStore((s) => s.currentAgentId);
@@ -110,11 +145,16 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
-  // Auto-resize textarea
+  // Auto-resize textarea + keep slash-command mirror height in sync
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    const ta = textareaRef.current;
+    const inner = overlayInnerRef.current;
+    if (ta) {
+      ta.style.height = 'auto';
+      ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
+    }
+    if (ta && inner) {
+      inner.style.minHeight = `${ta.scrollHeight}px`;
     }
   }, [input]);
 
@@ -139,17 +179,21 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   }, [agents, currentAgentId, targetAgentId]);
 
   useEffect(() => {
-    if (!pickerOpen) return;
+    if (!pickerOpen && !skillPickerOpen) return;
     const handlePointerDown = (event: MouseEvent) => {
-      if (!pickerRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (pickerOpen && !pickerRef.current?.contains(target)) {
         setPickerOpen(false);
+      }
+      if (skillPickerOpen && !skillPickerRef.current?.contains(target)) {
+        setSkillPickerOpen(false);
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
     };
-  }, [pickerOpen]);
+  }, [pickerOpen, skillPickerOpen]);
 
   // ── File staging via native dialog ─────────────────────────────
 
@@ -288,6 +332,53 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const canSend = (input.trim() || attachments.length > 0) && allReady && !disabled && !sending;
   const canStop = sending && !disabled && !!onStop;
 
+  const handleTextareaScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
+    const el = e.currentTarget;
+    const inner = overlayInnerRef.current;
+    if (inner) {
+      inner.style.transform = `translate(-${el.scrollLeft}px, -${el.scrollTop}px)`;
+    }
+  }, []);
+
+  const applySkillPick = useCallback(
+    (payload: { commandName: string; display: string }) => {
+      const ta = textareaRef.current;
+      const start = ta?.selectionStart ?? input.length;
+      const end = ta?.selectionEnd ?? input.length;
+      const insertText = `/${payload.commandName} `;
+      const { nextValue, nextSelection } = insertAtSelection(input, { start, end }, insertText);
+      setInput(nextValue);
+      setSkillPickerOpen(false);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(nextSelection.start, nextSelection.end);
+        }
+      });
+    },
+    [input],
+  );
+
+  const removeSlashToken = useCallback(
+    (token: SlashToken) => {
+      if (isComposingRef.current || isComposingUi) return;
+      const ta = textareaRef.current;
+      const start = ta?.selectionStart ?? 0;
+      const end = ta?.selectionEnd ?? 0;
+      const { nextValue, nextSelection } = deleteTokenAtRange(input, token, { start, end });
+      setInput(nextValue);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(nextSelection.start, nextSelection.end);
+        }
+      });
+    },
+    [input, isComposingUi],
+  );
+
   const handleSend = useCallback(() => {
     if (!canSend) return;
     const readyAttachments = attachments.filter(a => a.status === 'ready');
@@ -310,6 +401,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     onSend(textToSend, attachmentsToSend, targetAgentId);
     setTargetAgentId(null);
     setPickerOpen(false);
+    setSkillPickerOpen(false);
   }, [input, attachments, canSend, onSend, targetAgentId]);
 
   const handleStop = useCallback(() => {
@@ -319,6 +411,11 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape' && skillPickerOpen) {
+        e.preventDefault();
+        setSkillPickerOpen(false);
+        return;
+      }
       if (e.key === 'Backspace' && !input && targetAgentId) {
         setTargetAgentId(null);
         return;
@@ -332,7 +429,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         handleSend();
       }
     },
-    [handleSend, input, targetAgentId],
+    [handleSend, input, skillPickerOpen, targetAgentId],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -436,6 +533,40 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               <Paperclip className="h-4.5 w-4.5" />
             </Button>
 
+            <div ref={skillPickerRef} className="relative shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-11 w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors',
+                  skillPickerOpen && 'bg-secondary text-foreground',
+                )}
+                onClick={() => {
+                  if (!skillPickerOpen) void fetchSkills();
+                  setSkillPickerOpen((open) => !open);
+                  setPickerOpen(false);
+                }}
+                disabled={disabled || sending}
+                title={t('composer.skillPicker.open')}
+              >
+                <Sparkles className="h-4.5 w-4.5" />
+              </Button>
+              <SkillPickerPopover
+                open={skillPickerOpen}
+                skills={skills}
+                onPick={applySkillPick}
+                onOpenSkills={() => {
+                  navigate('/skills');
+                  setSkillPickerOpen(false);
+                }}
+                onClose={() => setSkillPickerOpen(false)}
+                searchPlaceholder={t('composer.skillPicker.searchPlaceholder')}
+                skillsLibraryLabel={t('composer.skillPicker.skillsLibrary')}
+                emptyEnabledLabel={t('composer.skillPicker.emptyEnabled')}
+                noResultsLabel={t('composer.skillPicker.noResults')}
+              />
+            </div>
+
             {showAgentPicker && (
               <div ref={pickerRef} className="relative shrink-0">
                 <Button
@@ -445,7 +576,10 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                     'h-11 w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors',
                     (pickerOpen || selectedTarget) && 'bg-secondary text-foreground'
                   )}
-                  onClick={() => setPickerOpen((open) => !open)}
+                  onClick={() => {
+                    setPickerOpen((open) => !open);
+                    setSkillPickerOpen(false);
+                  }}
                   disabled={disabled || sending}
                   title={t('composer.pickAgent')}
                 >
@@ -475,25 +609,72 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               </div>
             )}
 
-            {/* Textarea */}
-            <div className="flex-1 relative">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onCompositionStart={() => {
-                  isComposingRef.current = true;
-                }}
-                onCompositionEnd={() => {
-                  isComposingRef.current = false;
-                }}
-                onPaste={handlePaste}
-                placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
-                disabled={disabled}
-                className="min-h-[44px] max-h-[200px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent py-3 px-2 text-[15px] placeholder:text-muted-foreground/50 leading-relaxed"
-                rows={1}
-              />
+            {/* Textarea + slash-command mirror (chips above textarea, caret from textarea below) */}
+            <div className="relative min-w-0 flex-1">
+              <div className="relative min-h-[44px]">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onScroll={handleTextareaScroll}
+                  onCompositionStart={() => {
+                    isComposingRef.current = true;
+                    setIsComposingUi(true);
+                  }}
+                  onCompositionEnd={() => {
+                    isComposingRef.current = false;
+                    setIsComposingUi(false);
+                  }}
+                  onPaste={handlePaste}
+                  placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
+                  disabled={disabled}
+                  className="relative z-0 min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent py-3 px-2 text-[15px] leading-relaxed text-transparent caret-foreground shadow-none selection:bg-blue-500/30 placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  rows={1}
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-[1] overflow-hidden py-3 px-2"
+                >
+                  <div
+                    ref={overlayInnerRef}
+                    className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground"
+                  >
+                    {buildSlashMirrorParts(input).map((part, idx) => {
+                      if (part.kind === 'text') {
+                        return <span key={`m-t-${idx}`}>{part.text}</span>;
+                      }
+                      const { token } = part;
+                      const hideRemove = isComposingUi;
+                      return (
+                        <span
+                          key={`m-c-${token.startIndex}-${token.endIndexExclusive}`}
+                          className="group relative mx-0.5 inline-flex max-w-full align-baseline"
+                        >
+                          <span className="rounded-md border border-border/50 bg-secondary/80 px-1 py-0.5 font-mono text-[13px] text-foreground">
+                            {token.text}
+                          </span>
+                          {!hideRemove && (
+                            <button
+                              type="button"
+                              className="pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover:opacity-100"
+                              aria-label={t('composer.skillPicker.removeToken')}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeSlashToken(token);
+                              }}
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Send Button */}

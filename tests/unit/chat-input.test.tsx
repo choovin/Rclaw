@@ -1,8 +1,10 @@
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ChatInput } from '@/pages/Chat/ChatInput';
 
-const { agentsState, chatState, gatewayState } = vi.hoisted(() => ({
+const { agentsState, chatState, gatewayState, skillsState } = vi.hoisted(() => ({
   agentsState: {
     agents: [] as Array<Record<string, unknown>>,
   },
@@ -11,6 +13,19 @@ const { agentsState, chatState, gatewayState } = vi.hoisted(() => ({
   },
   gatewayState: {
     status: { state: 'running', port: 18789 },
+  },
+  skillsState: {
+    skills: [
+      {
+        id: 'feishu',
+        slug: 'feishu',
+        name: 'Feishu',
+        description: 'Feishu skill',
+        enabled: true,
+        icon: '⚙️',
+      },
+    ] as Array<Record<string, unknown>>,
+    fetchSkills: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -24,6 +39,10 @@ vi.mock('@/stores/chat', () => ({
 
 vi.mock('@/stores/gateway', () => ({
   useGatewayStore: (selector: (state: typeof gatewayState) => unknown) => selector(gatewayState),
+}));
+
+vi.mock('@/stores/skills', () => ({
+  useSkillsStore: (selector: (state: typeof skillsState) => unknown) => selector(skillsState),
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -58,9 +77,25 @@ function translate(key: string, vars?: Record<string, unknown>): string {
       return `gateway ${String(vars?.state ?? '')} | port: ${String(vars?.port ?? '')} ${String(vars?.pid ?? '')}`.trim();
     case 'composer.retryFailedAttachments':
       return 'Retry failed attachments';
+    case 'composer.skillPicker.open':
+      return 'Select skill';
+    case 'composer.skillPicker.searchPlaceholder':
+      return 'Search skills';
+    case 'composer.skillPicker.skillsLibrary':
+      return 'Skills library';
+    case 'composer.skillPicker.emptyEnabled':
+      return 'No enabled skills';
+    case 'composer.skillPicker.noResults':
+      return 'No matching skills';
+    case 'composer.skillPicker.removeToken':
+      return 'Remove skill command';
     default:
       return key;
   }
+}
+
+function renderChatInput(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
 }
 
 vi.mock('react-i18next', () => ({
@@ -91,7 +126,7 @@ describe('ChatInput agent targeting', () => {
       },
     ];
 
-    render(<ChatInput onSend={vi.fn()} />);
+    renderChatInput(<ChatInput onSend={vi.fn()} />);
 
     expect(screen.queryByTitle('Choose agent')).not.toBeInTheDocument();
   });
@@ -123,7 +158,7 @@ describe('ChatInput agent targeting', () => {
       },
     ];
 
-    render(<ChatInput onSend={onSend} />);
+    renderChatInput(<ChatInput onSend={onSend} />);
 
     fireEvent.click(screen.getByTitle('Choose agent'));
     fireEvent.click(screen.getByText('Research'));
@@ -134,5 +169,21 @@ describe('ChatInput agent targeting', () => {
     fireEvent.click(screen.getByTitle('Send'));
 
     expect(onSend).toHaveBeenCalledWith('Hello direct agent', undefined, 'research');
+  });
+
+  it('inserts picked skill at caret and closes skill popover', () => {
+    renderChatInput(<ChatInput onSend={vi.fn()} disabled={false} sending={false} isEmpty />);
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+
+    fireEvent.change(textarea, { target: { value: 'hello world' } });
+    textarea.setSelectionRange(6, 6);
+
+    fireEvent.click(screen.getByTitle('Select skill'));
+    expect(screen.getByText('/feishu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('/feishu'));
+
+    expect(textarea.value).toBe('hello /feishu world');
+    expect(screen.queryByPlaceholderText('Search skills')).not.toBeInTheDocument();
   });
 });

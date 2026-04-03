@@ -34,7 +34,8 @@
             "searchPlaceholder": "スキルを検索",
             "skillsLibrary": "スキルライブラリ",
             "emptyEnabled": "利用できるスキルがありません（スキルライブラリで有効化してください）",
-            "noResults": "一致するスキルがありません"
+            "noResults": "一致するスキルがありません",
+            "removeToken": "スキルコマンドを削除"
         }
     },
     "historyBuckets": {
