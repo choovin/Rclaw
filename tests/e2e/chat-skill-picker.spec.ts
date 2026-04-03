@@ -26,14 +26,32 @@ test.describe('Chat skill picker', () => {
 
     await skipSetupAndGoToChat(page);
 
-    const textarea = page.getByRole('textbox');
+    const composer = page.getByTestId('chat-composer');
     // E2E 下主进程会跳过网关自启；Chat 页在 app:getE2eMode 为 true 时仍启用输入框
-    await expect(textarea).toBeEnabled({ timeout: 15_000 });
-    await textarea.click();
-    await textarea.fill('hello world');
+    await expect(composer).toBeEnabled({ timeout: 15_000 });
+    await composer.click();
+    await composer.fill('hello world');
     await page.evaluate(() => {
-      const el = document.querySelector('textarea');
-      if (el) el.setSelectionRange(6, 6);
+      const root = document.querySelector('[data-testid="chat-composer"]') as HTMLElement | null;
+      if (!root) return;
+      const range = document.createRange();
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let seen = 0;
+      const target = 6;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const tn = node as Text;
+        const len = tn.length;
+        if (target <= seen + len) {
+          range.setStart(tn, target - seen);
+          range.setEnd(tn, target - seen);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          return;
+        }
+        seen += len;
+      }
     });
 
     await page.getByTestId('chat-skill-picker-trigger').click();
@@ -54,11 +72,11 @@ test.describe('Chat skill picker', () => {
     expect(slug).toBeTruthy();
     await firstOption.click();
 
-    await expect(textarea).toHaveValue(`hello /${slug} world`);
+    await expect(composer).toHaveText(`hello /${slug} world`);
 
     await page.getByTestId('chat-skill-chip').first().hover();
     await page.getByTestId('chat-skill-chip-remove').first().click();
 
-    await expect(textarea).toHaveValue('hello world');
+    await expect(composer).toHaveText('hello world');
   });
 });

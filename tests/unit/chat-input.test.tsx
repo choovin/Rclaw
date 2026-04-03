@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { getPlainTextFromRoot, setSelectionFromOffsets } from '@/pages/Chat/chat-composer-plaintext';
 import { MemoryRouter } from 'react-router-dom';
 import { ChatInput } from '@/pages/Chat/ChatInput';
 
@@ -165,25 +166,33 @@ describe('ChatInput agent targeting', () => {
 
     expect(screen.getByText('@Research')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello direct agent' } });
+    const composer = screen.getByTestId('chat-composer');
+    composer.textContent = 'Hello direct agent';
+    fireEvent.input(composer);
     fireEvent.click(screen.getByTitle('Send'));
 
     expect(onSend).toHaveBeenCalledWith('Hello direct agent', undefined, 'research');
   });
 
-  it('inserts picked skill at caret and closes skill popover', () => {
+  it('inserts picked skill at caret and closes skill popover', async () => {
     renderChatInput(<ChatInput onSend={vi.fn()} disabled={false} sending={false} isEmpty />);
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const composer = screen.getByTestId('chat-composer');
 
-    fireEvent.change(textarea, { target: { value: 'hello world' } });
-    textarea.setSelectionRange(6, 6);
+    composer.textContent = 'hello world';
+    fireEvent.input(composer);
+    await waitFor(() => {
+      expect(composer).toHaveTextContent('hello world');
+    });
+    setSelectionFromOffsets(composer, 6, 6);
 
     fireEvent.click(screen.getByTitle('Select skill'));
     expect(screen.getByText('/feishu')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('/feishu'));
 
-    expect(textarea.value).toBe('hello /feishu world');
+    await waitFor(() => {
+      expect(getPlainTextFromRoot(composer as HTMLElement)).toBe('hello /feishu world');
+    });
     expect(screen.queryByPlaceholderText('Search skills')).not.toBeInTheDocument();
   });
 });
