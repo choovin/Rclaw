@@ -323,7 +323,7 @@ export function Sidebar() {
                         style={{ letterSpacing: '-0.005em' }}
                       >
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-foreground/60">
+                          <span className="shrink-0 rounded-md bg-foreground px-2 py-0.5 text-xs font-semibold text-background">
                             {agentName}
                           </span>
                           <span className="truncate">{getSessionLabel(s.key, s.displayName, s.label)}</span>
