@@ -132,7 +132,7 @@ describe('ChatInput agent targeting', () => {
     expect(screen.queryByTitle('Choose agent')).not.toBeInTheDocument();
   });
 
-  it('lets the user select an agent target and sends it with the message', () => {
+  it('lets the user select an agent target and sends it with the message', async () => {
     const onSend = vi.fn();
     agentsState.agents = [
       {
@@ -169,6 +169,9 @@ describe('ChatInput agent targeting', () => {
     const composer = screen.getByTestId('chat-composer');
     composer.textContent = 'Hello direct agent';
     fireEvent.input(composer);
+    await waitFor(() => {
+      expect(getPlainTextFromRoot(composer as HTMLElement)).toBe('Hello direct agent');
+    });
     fireEvent.click(screen.getByTitle('Send'));
 
     expect(onSend).toHaveBeenCalledWith('Hello direct agent', undefined, 'research');
@@ -184,6 +187,7 @@ describe('ChatInput agent targeting', () => {
       expect(composer).toHaveTextContent('hello world');
     });
     setSelectionFromOffsets(composer, 6, 6);
+    fireEvent.input(composer);
 
     fireEvent.click(screen.getByTitle('Select skill'));
     expect(screen.getByText('/feishu')).toBeInTheDocument();

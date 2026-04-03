@@ -87,6 +87,48 @@ function offsetToNodeBoundary(root: HTMLElement, offset: number): [Node, number]
  * Returns start/end offsets (in root text-node order, 0-based, end exclusive) for the current
  * window selection, or `null` if the caret/selection is not fully inside `root`.
  */
+
+/**
+ * Caret rectangle at the **focus end** of the current selection, if it lies inside `root`.
+ * JSDOM may omit `getClientRects` on Range; fall back to `getBoundingClientRect`.
+ */
+export function getCaretRectFromDomSelection(root: HTMLElement): DOMRect | null {
+  try {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      return null;
+    }
+    const range = sel.getRangeAt(0).cloneRange();
+    if (!root.contains(range.commonAncestorContainer)) {
+      return null;
+    }
+    range.collapse(false);
+    if (typeof range.getClientRects === 'function') {
+      try {
+        const rects = range.getClientRects();
+        if (rects.length > 0) {
+          return rects[rects.length - 1]!;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (typeof range.getBoundingClientRect !== 'function') {
+      return null;
+    }
+    const br = range.getBoundingClientRect();
+    if (br.width === 0 && br.height === 0) {
+      return null;
+    }
+    return br;
+  } catch {
+    return null;
+  }
+}
+
 export function getOffsetsFromSelection(root: HTMLElement): { start: number; end: number } | null {
   const sel = typeof window !== 'undefined' ? window.getSelection() : null;
   if (!sel || sel.rangeCount === 0) {

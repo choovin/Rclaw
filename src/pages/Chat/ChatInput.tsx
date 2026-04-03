@@ -6,7 +6,7 @@
  * Files are staged to disk via IPC — only lightweight path references
  * are sent with the message (no base64 over WebSocket).
  */
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2, AtSign, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,9 @@ import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
 import { useTranslation } from 'react-i18next';
 import { SkillPickerPopover } from './SkillPickerPopover';
-import { insertAtSelection } from './chat-skill-command';
+import { ComposerSlashDropdown } from './ComposerSlashDropdown';
+import { getSlashQueryAtCaret } from './chat-composer-slash-query';
+import { insertAtSelection, normalizeCommandName } from './chat-skill-command';
 import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -96,7 +98,16 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const [targetAgentId, setTargetAgentId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
+  const [slashInline, setSlashInline] = useState<{
+    slashIndex: number;
+    query: string;
+    caret: number;
+    caretRect: DOMRect | null;
+  } | null>(null);
+  const [slashHighlightIndex, setSlashHighlightIndex] = useState(0);
+  const prevSlashSegmentRef = useRef<number | null>(null);
   const composerRef = useRef<ChatComposerHandle>(null);
+  const composerWrapRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const skillPickerRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
@@ -119,6 +130,45 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
+  const filteredSkillsForSlash = useMemo(() => {
+    if (!slashInline) {
+      return [];
+    }
+    const q = slashInline.query.trim().toLowerCase();
+    const enabled = (skills ?? []).filter((s) => s.enabled);
+    if (!q) {
+      return enabled;
+    }
+    return enabled.filter(
+      (s) =>
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.slug ?? s.id).toLowerCase().includes(q) ||
+        (s.description || '').toLowerCase().includes(q),
+    );
+  }, [slashInline, skills]);
+
+  useEffect(() => {
+    if (!slashInline) {
+      return;
+    }
+    const n = filteredSkillsForSlash.length;
+    setSlashHighlightIndex((i) => Math.min(Math.max(0, i), Math.max(0, n - 1)));
+  }, [filteredSkillsForSlash.length, slashInline]);
+
+  const [slashAnchorRect, setSlashAnchorRect] = useState<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    if (!slashInline) {
+      setSlashAnchorRect(null);
+      return;
+    }
+    if (slashInline.caretRect) {
+      setSlashAnchorRect(slashInline.caretRect);
+      return;
+    }
+    const r = composerWrapRef.current?.getBoundingClientRect();
+    setSlashAnchorRect(r ?? null);
+  }, [slashInline]);
+
   // Focus composer on mount (avoids Windows focus loss after session delete + native dialog)
   useEffect(() => {
     if (!disabled) {
@@ -140,7 +190,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   }, [agents, currentAgentId, targetAgentId]);
 
   useEffect(() => {
-    if (!pickerOpen && !skillPickerOpen) return;
+    if (!pickerOpen && !skillPickerOpen && !slashInline) {
+      return;
+    }
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       if (pickerOpen && !pickerRef.current?.contains(target)) {
@@ -149,12 +201,19 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
       if (skillPickerOpen && !skillPickerRef.current?.contains(target)) {
         setSkillPickerOpen(false);
       }
+      if (slashInline) {
+        const inComposer = composerWrapRef.current?.contains(target);
+        const inInline = (target as Element).closest?.('[data-testid="chat-skill-inline-picker"]');
+        if (!inComposer && !inInline) {
+          setSlashInline(null);
+        }
+      }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
     };
-  }, [pickerOpen, skillPickerOpen]);
+  }, [pickerOpen, skillPickerOpen, slashInline]);
 
   // ── File staging via native dialog ─────────────────────────────
 
@@ -293,8 +352,56 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const canSend = (input.trim() || attachments.length > 0) && allReady && !disabled && !sending;
   const canStop = sending && !disabled && !!onStop;
 
+  const handleComposerChange = useCallback(
+    (plain: string, meta?: { caret: number; caretRect?: DOMRect }) => {
+      setInput(plain);
+      if (isComposingRef.current) {
+        return;
+      }
+      const caret = meta?.caret ?? plain.length;
+      const q = getSlashQueryAtCaret(plain, caret);
+      if (q) {
+        void fetchSkills();
+        if (prevSlashSegmentRef.current !== q.slashIndex) {
+          setSlashHighlightIndex(0);
+          prevSlashSegmentRef.current = q.slashIndex;
+        }
+        setSlashInline({
+          slashIndex: q.slashIndex,
+          query: q.query,
+          caret,
+          caretRect: meta?.caretRect ?? null,
+        });
+      } else {
+        prevSlashSegmentRef.current = null;
+        setSlashInline(null);
+      }
+    },
+    [fetchSkills],
+  );
+
+  const applyInlineSlashPick = useCallback(
+    (payload: { commandName: string }) => {
+      if (!slashInline) {
+        return;
+      }
+      const { slashIndex, caret } = slashInline;
+      const insert = `/${payload.commandName} `;
+      const nextValue = input.slice(0, slashIndex) + insert + input.slice(caret);
+      const newCaret = slashIndex + insert.length;
+      setInput(nextValue);
+      prevSlashSegmentRef.current = null;
+      setSlashInline(null);
+      composerRef.current?.setPlainTextAndSelection(nextValue, { start: newCaret, end: newCaret });
+      composerRef.current?.focus();
+    },
+    [slashInline, input],
+  );
+
   const applySkillPick = useCallback(
     (payload: { commandName: string; display: string }) => {
+      setSlashInline(null);
+      prevSlashSegmentRef.current = null;
       const sel =
         composerRef.current?.getSelectionOffsets() ?? { start: input.length, end: input.length };
       const insertText = `/${payload.commandName} `;
@@ -330,6 +437,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     setTargetAgentId(null);
     setPickerOpen(false);
     setSkillPickerOpen(false);
+    setSlashInline(null);
+    prevSlashSegmentRef.current = null;
   }, [input, attachments, canSend, onSend, targetAgentId]);
 
   const handleStop = useCallback(() => {
@@ -339,25 +448,72 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape' && skillPickerOpen) {
-        e.preventDefault();
-        setSkillPickerOpen(false);
-        return;
+      if (e.key === 'Escape') {
+        if (slashInline) {
+          e.preventDefault();
+          setSlashInline(null);
+          prevSlashSegmentRef.current = null;
+          return;
+        }
+        if (skillPickerOpen) {
+          e.preventDefault();
+          setSkillPickerOpen(false);
+          return;
+        }
       }
-      if (e.key === 'Backspace' && !input && targetAgentId) {
-        setTargetAgentId(null);
-        return;
+
+      if (slashInline && filteredSkillsForSlash.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashHighlightIndex((i) => Math.min(i + 1, filteredSkillsForSlash.length - 1));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashHighlightIndex((i) => Math.max(i - 1, 0));
+          return;
+        }
       }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         const nativeEvent = e.nativeEvent as KeyboardEvent;
         if (isComposingRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) {
           return;
         }
+        if (slashInline) {
+          if (filteredSkillsForSlash.length > 0) {
+            e.preventDefault();
+            const s = filteredSkillsForSlash[slashHighlightIndex];
+            if (s) {
+              const raw = (s.slug ?? s.id) as string;
+              applyInlineSlashPick({ commandName: normalizeCommandName(raw) });
+            }
+            return;
+          }
+          e.preventDefault();
+          setSlashInline(null);
+          prevSlashSegmentRef.current = null;
+          return;
+        }
         e.preventDefault();
         handleSend();
+        return;
+      }
+
+      if (e.key === 'Backspace' && !input && targetAgentId) {
+        setTargetAgentId(null);
       }
     },
-    [handleSend, input, skillPickerOpen, targetAgentId],
+    [
+      applyInlineSlashPick,
+      filteredSkillsForSlash,
+      handleSend,
+      input,
+      skillPickerOpen,
+      slashHighlightIndex,
+      slashInline,
+      targetAgentId,
+    ],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -472,6 +628,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                 )}
                 onClick={() => {
                   if (!skillPickerOpen) void fetchSkills();
+                  setSlashInline(null);
+                  prevSlashSegmentRef.current = null;
                   setSkillPickerOpen((open) => !open);
                   setPickerOpen(false);
                 }}
@@ -506,6 +664,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                     (pickerOpen || selectedTarget) && 'bg-secondary text-foreground'
                   )}
                   onClick={() => {
+                    setSlashInline(null);
+                    prevSlashSegmentRef.current = null;
                     setPickerOpen((open) => !open);
                     setSkillPickerOpen(false);
                   }}
@@ -538,11 +698,11 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               </div>
             )}
 
-            <div className="relative min-w-0 flex-1" onPaste={handlePaste}>
+            <div ref={composerWrapRef} className="relative min-w-0 flex-1" onPaste={handlePaste}>
               <ChatComposer
                 ref={composerRef}
                 value={input}
-                onChange={setInput}
+                onChange={handleComposerChange}
                 disabled={disabled}
                 placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
                 onKeyDown={handleKeyDown}
@@ -553,6 +713,16 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                   isComposingRef.current = false;
                 }}
                 removeButtonAriaLabel={t('composer.skillPicker.removeToken')}
+              />
+              <ComposerSlashDropdown
+                open={!!slashInline && !!slashAnchorRect}
+                anchorRect={slashAnchorRect}
+                skills={skills}
+                query={slashInline?.query ?? ''}
+                highlightIndex={slashHighlightIndex}
+                onPick={applyInlineSlashPick}
+                emptyEnabledLabel={t('composer.skillPicker.emptyEnabled')}
+                noResultsLabel={t('composer.skillPicker.noResults')}
               />
             </div>
 

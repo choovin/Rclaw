@@ -4,6 +4,7 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { buildComposerBody } from './chat-composer-decoration';
 import {
+  getCaretRectFromDomSelection,
   getOffsetsFromSelection,
   getPlainTextFromRoot,
   setSelectionFromOffsets,
@@ -17,9 +18,11 @@ export type ChatComposerHandle = {
   setPlainTextAndSelection: (text: string, sel: { start: number; end: number }) => void;
 };
 
+export type ChatComposerChangeMeta = { caret: number; caretRect?: DOMRect };
+
 export type ChatComposerProps = {
   value: string;
-  onChange: (v: string) => void;
+  onChange: (v: string, meta?: ChatComposerChangeMeta) => void;
   disabled?: boolean;
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
@@ -47,6 +50,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
     const rootRef = useRef<HTMLDivElement>(null);
     const [isComposing, setIsComposing] = useState(false);
     const selectionAfterInputRef = useRef<{ start: number; end: number } | null>(null);
+    /** Last known offsets inside the composer (e.g. before focus moves to a toolbar button). */
+    const lastKnownSelectionRef = useRef<{ start: number; end: number } | null>(null);
     const pendingProgrammaticRef = useRef<{ text: string; sel: { start: number; end: number } } | null>(
       null,
     );
@@ -62,10 +67,11 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
           if (!root) {
             return null;
           }
-          return getOffsetsFromSelection(root);
+          return getOffsetsFromSelection(root) ?? lastKnownSelectionRef.current;
         },
         setPlainTextAndSelection: (text: string, sel: { start: number; end: number }) => {
           pendingProgrammaticRef.current = { text, sel };
+          lastKnownSelectionRef.current = sel;
         },
       }),
       [],
@@ -89,11 +95,13 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       const pending = pendingProgrammaticRef.current;
       if (pending && pending.text === value) {
         setSelectionFromOffsets(root, pending.sel.start, pending.sel.end);
+        lastKnownSelectionRef.current = pending.sel;
         pendingProgrammaticRef.current = null;
         selectionAfterInputRef.current = null;
       } else if (selectionAfterInputRef.current) {
         const s = selectionAfterInputRef.current;
         setSelectionFromOffsets(root, s.start, s.end);
+        lastKnownSelectionRef.current = s;
         selectionAfterInputRef.current = null;
       }
 
@@ -111,8 +119,18 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       const sel = getOffsetsFromSelection(root);
       if (sel) {
         selectionAfterInputRef.current = sel;
+        lastKnownSelectionRef.current = sel;
       }
-      onChange(plain);
+      const effectiveSel =
+        sel ?? lastKnownSelectionRef.current ?? { start: plain.length, end: plain.length };
+      const caret = effectiveSel.end;
+      let caretRect: DOMRect | undefined;
+      try {
+        caretRect = getCaretRectFromDomSelection(root) ?? undefined;
+      } catch {
+        caretRect = undefined;
+      }
+      onChange(plain, { caret, caretRect });
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -191,7 +209,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       const sel = getOffsetsFromSelection(root) ?? { start: 0, end: 0 };
       const { nextValue, nextSelection } = deleteTokenAtRange(value, token, sel);
       pendingProgrammaticRef.current = { text: nextValue, sel: nextSelection };
-      onChange(nextValue);
+      lastKnownSelectionRef.current = nextSelection;
+      onChange(nextValue, { caret: nextSelection.end, caretRect: undefined });
     };
 
     const editable = !disabled;

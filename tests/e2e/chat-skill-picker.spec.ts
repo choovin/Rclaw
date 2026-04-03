@@ -79,4 +79,23 @@ test.describe('Chat skill picker', () => {
 
     await expect(composer).toHaveText('hello world');
   });
+
+  test('typing / opens inline skill list when enabled skills exist (smoke)', async ({ page }) => {
+    test.setTimeout(180_000);
+    await skipSetupAndGoToChat(page);
+    const composer = page.getByTestId('chat-composer');
+    await expect(composer).toBeEnabled({ timeout: 15_000 });
+    await composer.click();
+    await composer.press('/');
+    const empty = page.getByTestId('chat-skill-inline-empty');
+    const firstOption = page.getByTestId('chat-skill-inline-option').first();
+    await Promise.race([
+      firstOption.waitFor({ state: 'visible', timeout: 45_000 }),
+      empty.waitFor({ state: 'visible', timeout: 45_000 }),
+    ]);
+    if (await empty.isVisible()) {
+      test.skip();
+    }
+    await expect(page.getByTestId('chat-skill-inline-picker')).toBeVisible({ timeout: 15_000 });
+  });
 });
