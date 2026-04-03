@@ -121,16 +121,37 @@ UI 列表显示与实际插入使用同一 `commandName`，避免“点的和插
   - overlay 默认 `pointer-events: none`，保证点击空白区域仍落到 `textarea` 用于定位/聚焦。
   - chip 与其 `X` 按钮区域设为 `pointer-events: auto`，允许点击删除。
 
+选区/复制与可访问性（验收要求）：
+
+- 拖拽选择文本时，选区高亮应与 overlay 文本视觉一致（即：用户看到的“被选中区域”与复制结果一致）。
+- 复制（Ctrl/Cmd+C）得到的内容必须为底层 `textarea.value` 原文，不包含任何展示层符号。
+- 屏幕阅读器应仍以 `textarea` 为可读对象（overlay 仅作视觉层，不应抢夺可访问性焦点）。
+
 ### Token 识别规则（决定哪些文本渲染为 chip）
 
 为了避免用户输入中途被“抢占成 chip”导致难编辑，chip 只对“完整命令 token”生效：
 
 - 匹配模式：`/(?:[a-z0-9_]{1,32})`（前导 `/`）
-- 边界条件：token 后必须是以下之一才视为“完整 token”
-  - 空格 ` `
-  - 换行 `\n`
+- **前置边界**：token 仅在满足以下条件之一时才被识别为命令：
+  - token 位于文本开头（index 0），或
+  - token 前一个字符属于“分隔符集合”：空格、换行、Tab、左括号、左中括号、左大括号、单双引号（实现阶段将这组字符以常量形式定义）。
+  - 目的：避免在 URL（如 `http://a/b`）、路径（如 `foo/bar`、`/usr/bin`）或单词内部把 `/xxx` 误识别为命令。
+- **后置边界（最终选择：保守策略）**：token 后必须是以下之一才视为“完整 token”
+  - 空格 ` `（0x20）
+  - 换行（`\n` 或 `\r\n` 的 `\n` 位置，见“换行归一化约束”）
   - 文本结束
-  - 标点（实现阶段按需求决定是否包含；默认不包含以减少误识别）
+  - 说明：`/cmd,`、`/cmd.`、`/cmd)` 等 **不** 视为完整 token（仍按普通文本显示）。用户需输入空格或换行后，token 才会变为 chip。
+
+最小验收示例：
+
+- 应识别为 chip：
+  - `"/feishu "`（开头 + 后置空格）
+  - `"请用 /feishu "`（前置空格 + 后置空格）
+  - `"(\n/feishu \n"`（前置换行 + 后置空格/换行）
+- 不应识别为 chip：
+  - `"http://a/b "`（前置字符不属于分隔符集合）
+  - `"foo/bar "`（同上）
+  - `"/feishu,"`（后置不是空格/换行/EOF）
 
 当用户正在输入 `/fe` 并且尚未输入空格/换行时，不渲染为 chip，仍显示为普通文本；当输入到 `/feishu ` 后，下一次渲染周期才替换为 chip。
 
@@ -138,14 +159,21 @@ UI 列表显示与实际插入使用同一 `commandName`，避免“点的和插
 
 点击 chip 的 `X`：
 
-1. 在底层 `input` 字符串中定位该 chip 对应的 token 的起止范围（基于 overlay 渲染时产生的分段索引，避免二次正则导致错删）。
-2. 删除 token 本身，并额外删除其后紧跟的一个空格（若存在）。
-3. 更新 `input` state，并将 caret 放到删除位置（或就近位置，保证继续输入自然）。
+1. 解析阶段必须为每个 token 记录其在 `textarea.value` 中的稳定范围：
+   - `startIndex`：包含 `/` 的起点
+   - `endIndexExclusive`：不包含后置边界字符的终点
+   - overlay 渲染 chip 时将该范围绑定到 chip（闭包参数或 data 属性），点击删除时直接使用范围切片删除，避免“按文本再搜索”造成错删（尤其在重复 token 场景：`/a /a `）。
+2. 删除 token 本身；并且**仅**额外删除其后紧跟的一个半角空格（0x20，若存在）。
+   - 不跨越换行（不删除 `\n`/`\r\n`），不吞掉多个空格或 Tab。
+3. Caret/selection 更新规则（可验收）：
+   - 删除后将 selection 折叠为 caret，其位置为 `startIndex`。
+   - 若当前 selection 完全位于被删范围之后，则整体左移删除长度。
+   - 若当前 selection 与被删范围有交叠，则统一折叠到 `startIndex`。
 
 ### 与输入法/键盘的兼容性
 
 - 不改变 `textarea` 的 `onKeyDown`、`onCompositionStart/End` 逻辑，只在 `onChange` 后的渲染层做展示替换。
-- chip 删除是鼠标操作（click），不会打断 IME composing；实现阶段需确保 composing 时点击删除不会触发发送/回车逻辑。
+- **Composing 期间交互规则（最终选择：更安全）**：当 `isComposing === true` 时，禁用 chip 的删除按钮（`X` 不显示/不可点击），避免 composition 未提交导致 value 变更顺序错乱；composition 结束后恢复可删除。
 
 ### 对齐排版（关键实现约束）
 
@@ -158,12 +186,16 @@ overlay 必须与 `Textarea` 使用完全一致的：
 
 否则会出现“文本对不齐”导致光标与显示错位。
 
+- **尺寸同步**：当 `textarea` 宽度/高度变化（窗口 resize、自动增高、出现/消失滚动条）时，overlay 的 content box 尺寸必须同步更新，以避免换行点不同导致错位。
+- **换行归一化约束**：token 解析、overlay 渲染与删除索引必须基于同一份 `textarea.value` 字符序列；不在任一层对 `\r\n` 做隐式归一化（或若归一化，则必须在写回 value 时同步归一化并保证索引一致），避免 Windows 换行导致 start/end 下标错位从而错删。
+
 ## 边界与错误处理
 
 - **无可用技能**：当 `enabled: true` 的技能列表为空时，面板显示“暂无可用技能”，并提示去“技能库”启用技能。
 - **搜索无结果**：显示“未找到技能”与“尝试不同搜索词”。
 - **命令冲突**：若运行时实际命令为 `name_2` 等后缀，UI 仍插入 `/${commandName}`。用户可手动修改；此时 overlay 只要满足 token 识别规则仍会显示 chip。
 - **多命令文本**：输入中可包含多个 slash token，overlay 会分别渲染为多个 chip；删除操作只影响点击的那个 token。
+- **重要说明**：chip 仅是语法高亮/可撤销插入，不代表该命令一定可被 Gateway 解析为已启用技能；解析失败时仍应按普通文本发送。
 
 ## i18n 文案（建议新增 keys）
 
@@ -177,6 +209,10 @@ overlay 必须与 `Textarea` 使用完全一致的：
 
 （具体 key 命名实现阶段可微调，但需保持结构一致并补齐三语。）
 
+补充规则：
+
+- 覆盖范围：所有存在 `src/i18n/locales/<lang>/chat.json` 的语言都必须补齐相同 keys；若某语言缺少 `chat.json`，遵循现有 i18n fallback 策略（本需求不强制新增新语言文件）。
+
 ## 测试策略（实现阶段）
 
 ### 单元测试（Vitest + React Testing Library）
@@ -184,14 +220,19 @@ overlay 必须与 `Textarea` 使用完全一致的：
 - 新增 `tests/unit/chat-skill-picker.test.tsx`：
   - 打开面板 → 展示 enabled 技能列表
   - 搜索过滤
-  - 点击技能 → 向 input 指定光标位置插入 `/${commandName} `
+  - 点击技能 → 向 input 指定光标位置插入 `/${commandName} `（含存在选区时替换选区文本）
   - overlay 渲染：完整 token 才变为 chip；不完整 token 保持文本
   - 点击 chip 的 `X` → 删除对应 token（及后空格）
+  - 重复 token（`/a /a `）点击第二个 `X` 只删除第二个
+  - 不误识别 URL/路径（如 `http://a/b `、`foo/bar `）
+  - composing 期间 `X` 不可用（若采用 composing 禁用规则）
 
 ### E2E（Playwright）
 
 - 新增/更新 Electron E2E：
   - 打开 Chat → 打开技能面板 → 点选技能 → 输入框出现 chip → 点击 X 删除 → 发送消息验证发送文本符合预期（至少验证 textarea 的 value）。
+  - Esc/点外关闭面板；点击技能后焦点仍在输入框
+  - 输入多行触发滚动后 chip 不漂移（至少覆盖一个“多行滚动 + 仍可删除”的场景）
 
 ## 实施计划概览（不含具体代码）
 
