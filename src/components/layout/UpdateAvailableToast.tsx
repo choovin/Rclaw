@@ -2,7 +2,7 @@
  * Global update prompt: bottom-left toast when an update is available (startup check).
  * Download progress in toast only after user clicks "Upgrade now" here (see toastUpgradeFlowRef).
  */
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { ArrowUp, Loader2, X, Rocket, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useUpdateStore } from '@/stores/update';
@@ -20,8 +20,7 @@ function formatBytes(bytes: number): string {
 export function UpdateAvailableToast() {
   const { t } = useTranslation('settings');
   const [sessionDismissed, setSessionDismissed] = useState(false);
-  /** True after user clicks "Upgrade now" on this toast (sync, avoids React/Zustand ordering gaps). */
-  const toastUpgradeFlowRef = useRef(false);
+  const [toastUpgradeFlow, setToastUpgradeFlow] = useState(false);
 
   const {
     status,
@@ -45,7 +44,7 @@ export function UpdateAvailableToast() {
   }, []);
 
   const handleUpgradeNow = useCallback(() => {
-    toastUpgradeFlowRef.current = true;
+    setToastUpgradeFlow(true);
     void downloadUpdate();
   }, [downloadUpdate]);
 
@@ -53,7 +52,6 @@ export function UpdateAvailableToast() {
     void downloadUpdate();
   }, [downloadUpdate]);
 
-  const toastUpgradeFlow = toastUpgradeFlowRef.current;
   const visible =
     isInitialized &&
     !sessionDismissed &&
