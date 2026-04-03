@@ -10,7 +10,6 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2, AtSign, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { hostApiFetch } from '@/lib/host-api';
 import { invokeIpc } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
@@ -21,12 +20,8 @@ import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
 import { useTranslation } from 'react-i18next';
 import { SkillPickerPopover } from './SkillPickerPopover';
-import {
-  deleteTokenAtRange,
-  insertAtSelection,
-  parseSlashTokens,
-  type SlashToken,
-} from './chat-skill-command';
+import { insertAtSelection } from './chat-skill-command';
+import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -91,25 +86,6 @@ function readFileAsBase64(file: globalThis.File): Promise<string> {
   });
 }
 
-type SlashMirrorPart = { kind: 'text'; text: string } | { kind: 'token'; token: SlashToken };
-
-function buildSlashMirrorParts(value: string): SlashMirrorPart[] {
-  const tokens = parseSlashTokens(value);
-  const parts: SlashMirrorPart[] = [];
-  let i = 0;
-  for (const token of tokens) {
-    if (i < token.startIndex) {
-      parts.push({ kind: 'text', text: value.slice(i, token.startIndex) });
-    }
-    parts.push({ kind: 'token', token });
-    i = token.endIndexExclusive;
-  }
-  if (i < value.length) {
-    parts.push({ kind: 'text', text: value.slice(i) });
-  }
-  return parts;
-}
-
 // ── Component ────────────────────────────────────────────────────
 
 export function ChatInput({ onSend, onStop, disabled = false, sending = false, isEmpty = false }: ChatInputProps) {
@@ -120,11 +96,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const [targetAgentId, setTargetAgentId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
-  const [isComposingUi, setIsComposingUi] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<ChatComposerHandle>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const skillPickerRef = useRef<HTMLDivElement>(null);
-  const overlayInnerRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
   const skills = useSkillsStore((s) => s.skills);
   const fetchSkills = useSkillsStore((s) => s.fetchSkills);
@@ -145,23 +119,10 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
-  // Auto-resize textarea + keep slash-command mirror height in sync
+  // Focus composer on mount (avoids Windows focus loss after session delete + native dialog)
   useEffect(() => {
-    const ta = textareaRef.current;
-    const inner = overlayInnerRef.current;
-    if (ta) {
-      ta.style.height = 'auto';
-      ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
-    }
-    if (ta && inner) {
-      inner.style.minHeight = `${ta.scrollHeight}px`;
-    }
-  }, [input]);
-
-  // Focus textarea on mount (avoids Windows focus loss after session delete + native dialog)
-  useEffect(() => {
-    if (!disabled && textareaRef.current) {
-      textareaRef.current.focus();
+    if (!disabled) {
+      composerRef.current?.focus();
     }
   }, [disabled]);
 
@@ -332,51 +293,18 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const canSend = (input.trim() || attachments.length > 0) && allReady && !disabled && !sending;
   const canStop = sending && !disabled && !!onStop;
 
-  const handleTextareaScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
-    const el = e.currentTarget;
-    const inner = overlayInnerRef.current;
-    if (inner) {
-      inner.style.transform = `translate(-${el.scrollLeft}px, -${el.scrollTop}px)`;
-    }
-  }, []);
-
   const applySkillPick = useCallback(
     (payload: { commandName: string; display: string }) => {
-      const ta = textareaRef.current;
-      const start = ta?.selectionStart ?? input.length;
-      const end = ta?.selectionEnd ?? input.length;
+      const sel =
+        composerRef.current?.getSelectionOffsets() ?? { start: input.length, end: input.length };
       const insertText = `/${payload.commandName} `;
-      const { nextValue, nextSelection } = insertAtSelection(input, { start, end }, insertText);
+      const { nextValue, nextSelection } = insertAtSelection(input, sel, insertText);
       setInput(nextValue);
       setSkillPickerOpen(false);
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(nextSelection.start, nextSelection.end);
-        }
-      });
+      composerRef.current?.setPlainTextAndSelection(nextValue, nextSelection);
+      composerRef.current?.focus();
     },
     [input],
-  );
-
-  const removeSlashToken = useCallback(
-    (token: SlashToken) => {
-      if (isComposingRef.current || isComposingUi) return;
-      const ta = textareaRef.current;
-      const start = ta?.selectionStart ?? 0;
-      const end = ta?.selectionEnd ?? 0;
-      const { nextValue, nextSelection } = deleteTokenAtRange(input, token, { start, end });
-      setInput(nextValue);
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(nextSelection.start, nextSelection.end);
-        }
-      });
-    },
-    [input, isComposingUi],
   );
 
   const handleSend = useCallback(() => {
@@ -395,8 +323,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     }
     setInput('');
     setAttachments([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+    if (composerRef.current) {
+      composerRef.current.setPlainTextAndSelection('', { start: 0, end: 0 });
     }
     onSend(textToSend, attachmentsToSend, targetAgentId);
     setTargetAgentId(null);
@@ -600,7 +528,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                           onSelect={() => {
                             setTargetAgentId(agent.id);
                             setPickerOpen(false);
-                            textareaRef.current?.focus();
+                            composerRef.current?.focus();
                           }}
                         />
                       ))}
@@ -610,74 +538,22 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               </div>
             )}
 
-            {/* Textarea + slash-command mirror (chips above textarea, caret from textarea below) */}
-            <div className="relative min-w-0 flex-1">
-              <div className="relative min-h-[44px]">
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onScroll={handleTextareaScroll}
-                  onCompositionStart={() => {
-                    isComposingRef.current = true;
-                    setIsComposingUi(true);
-                  }}
-                  onCompositionEnd={() => {
-                    isComposingRef.current = false;
-                    setIsComposingUi(false);
-                  }}
-                  onPaste={handlePaste}
-                  placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
-                  disabled={disabled}
-                  className="relative z-0 min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent py-3 px-2 text-[15px] leading-relaxed text-transparent caret-foreground shadow-none selection:bg-blue-500/30 placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  rows={1}
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 z-[1] overflow-hidden py-3 px-2"
-                >
-                  <div
-                    ref={overlayInnerRef}
-                    className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground"
-                  >
-                    {buildSlashMirrorParts(input).map((part, idx) => {
-                      if (part.kind === 'text') {
-                        return <span key={`m-t-${idx}`}>{part.text}</span>;
-                      }
-                      const { token } = part;
-                      const hideRemove = isComposingUi;
-                      return (
-                        <span
-                          key={`m-c-${token.startIndex}-${token.endIndexExclusive}`}
-                          className="group relative mx-0.5 inline-flex max-w-full align-baseline"
-                          data-testid="chat-skill-chip"
-                        >
-                          <span className="rounded-md border border-border/50 bg-secondary/80 px-1 py-0.5 font-mono text-[13px] text-foreground">
-                            {token.text}
-                          </span>
-                          {!hideRemove && (
-                            <button
-                              type="button"
-                              data-testid="chat-skill-chip-remove"
-                              className="pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover:opacity-100"
-                              aria-label={t('composer.skillPicker.removeToken')}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeSlashToken(token);
-                              }}
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+            <div className="relative min-w-0 flex-1" onPaste={handlePaste}>
+              <ChatComposer
+                ref={composerRef}
+                value={input}
+                onChange={setInput}
+                disabled={disabled}
+                placeholder={disabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={() => {
+                  isComposingRef.current = true;
+                }}
+                onCompositionEnd={() => {
+                  isComposingRef.current = false;
+                }}
+                removeButtonAriaLabel={t('composer.skillPicker.removeToken')}
+              />
             </div>
 
             {/* Send Button */}

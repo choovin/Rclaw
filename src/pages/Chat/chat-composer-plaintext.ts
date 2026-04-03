@@ -1,9 +1,11 @@
 export function normalizeComposerPlainText(s: string): string {
-  return s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return String(s ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
 export function getPlainTextFromRoot(el: HTMLElement): string {
-  return normalizeComposerPlainText(el.innerText);
+  // JSDOM often leaves `innerText` empty while `textContent` reflects nodes; browsers prefer `innerText` for line breaks.
+  const raw = el.innerText || el.textContent || '';
+  return normalizeComposerPlainText(raw);
 }
 
 function isBoundaryInsideRoot(root: HTMLElement, node: Node | null): boolean {

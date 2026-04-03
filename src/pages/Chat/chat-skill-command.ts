@@ -85,7 +85,7 @@ export function deleteTokenAtRange(
   const lo = Math.min(selStart, selEnd);
   const hi = Math.max(selStart, selEnd);
 
-  let nextCaret = startIndex;
+  let nextCaret: number;
   if (lo >= endIndexExclusive + dropSpace) {
     nextCaret = lo - removedLen;
   } else if (hi <= startIndex) {

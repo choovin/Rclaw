@@ -70,6 +70,8 @@ export function buildComposerBody(
 
     const outer = document.createElement('span');
     outer.setAttribute('data-testid', 'chat-skill-chip');
+    outer.setAttribute('data-token-start', String(part.token.startIndex));
+    outer.setAttribute('data-token-end', String(part.token.endIndexExclusive));
     outer.className = OUTER_CHIP_CLASS;
     outer.contentEditable = 'false';
 
@@ -86,6 +88,9 @@ export function buildComposerBody(
       if (removeButtonAriaLabel) {
         btn.setAttribute('aria-label', removeButtonAriaLabel);
       }
+      btn.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+      });
       appendLucideXIcon(btn);
       outer.appendChild(btn);
     }
