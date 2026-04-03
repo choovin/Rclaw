@@ -20,11 +20,13 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useStickToBottomInstant } from '@/hooks/use-stick-to-bottom-instant';
 import { useMinLoading } from '@/hooks/use-min-loading';
+import { invokeIpc } from '@/lib/api-client';
 
 export function Chat() {
   const { t } = useTranslation('chat');
   const gatewayStatus = useGatewayStore((s) => s.status);
   const isGatewayRunning = gatewayStatus.state === 'running';
+  const [e2eMode, setE2eMode] = useState(false);
 
   const messages = useChatStore((s) => s.messages);
   const currentSessionKey = useChatStore((s) => s.currentSessionKey);
@@ -70,6 +72,12 @@ export function Chat() {
   useEffect(() => {
     void fetchAgents();
   }, [fetchAgents]);
+
+  useEffect(() => {
+    void invokeIpc<boolean>('app:getE2eMode')
+      .then((v) => setE2eMode(Boolean(v)))
+      .catch(() => setE2eMode(false));
+  }, []);
 
   // Update timestamp when sending starts
   useEffect(() => {
@@ -179,7 +187,7 @@ export function Chat() {
       <ChatInput
         onSend={handleSend}
         onStop={abortRun}
-        disabled={!isGatewayRunning}
+        disabled={!isGatewayRunning && !e2eMode}
         sending={sending}
         isEmpty={isEmpty}
       />

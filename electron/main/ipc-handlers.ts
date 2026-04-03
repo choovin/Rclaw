@@ -2131,6 +2131,11 @@ function registerAppHandlers(): void {
     return process.platform;
   });
 
+  /** Playwright E2E 使用 CLAWX_E2E=1 且会跳过网关自启；用于让 Chat 等 UI 在网关未 running 时仍可交互测试 */
+  ipcMain.handle('app:getE2eMode', () => {
+    return process.env.CLAWX_E2E === '1';
+  });
+
   // Quit app
   ipcMain.handle('app:quit', () => {
     app.quit();

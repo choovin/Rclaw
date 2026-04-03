@@ -537,6 +537,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
               <Button
                 variant="ghost"
                 size="icon"
+                data-testid="chat-skill-picker-trigger"
                 className={cn(
                   'h-11 w-11 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors',
                   skillPickerOpen && 'bg-secondary text-foreground',
@@ -650,6 +651,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                         <span
                           key={`m-c-${token.startIndex}-${token.endIndexExclusive}`}
                           className="group relative mx-0.5 inline-flex max-w-full align-baseline"
+                          data-testid="chat-skill-chip"
                         >
                           <span className="rounded-md border border-border/50 bg-secondary/80 px-1 py-0.5 font-mono text-[13px] text-foreground">
                             {token.text}
@@ -657,6 +659,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                           {!hideRemove && (
                             <button
                               type="button"
+                              data-testid="chat-skill-chip-remove"
                               className="pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover:opacity-100"
                               aria-label={t('composer.skillPicker.removeToken')}
                               onMouseDown={(e) => e.preventDefault()}

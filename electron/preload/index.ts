@@ -43,6 +43,7 @@ const electronAPI = {
         'app:name',
         'app:getPath',
         'app:platform',
+        'app:getE2eMode',
         'app:quit',
         'app:relaunch',
         'app:request',

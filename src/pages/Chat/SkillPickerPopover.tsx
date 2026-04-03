@@ -31,20 +31,28 @@ export function SkillPickerPopover(props: {
   if (!props.open) return null;
 
   return (
-    <div className="absolute bottom-full left-0 z-30 mb-2.5 w-96 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-lg">
+    <div
+      className="absolute bottom-full left-0 z-30 mb-2.5 w-96 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-lg"
+      data-testid="chat-skill-picker-popover"
+    >
       <div className="p-2">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={props.searchPlaceholder}
+          data-testid="chat-skill-picker-search"
           className="h-10 w-full rounded-xl border border-border/60 bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
         />
       </div>
       <div className="max-h-72 overflow-y-auto p-2 pt-0">
         {enabled.length === 0 ? (
-          <div className="px-3 py-3 text-sm text-muted-foreground">{props.emptyEnabledLabel}</div>
+          <div className="px-3 py-3 text-sm text-muted-foreground" data-testid="chat-skill-picker-empty">
+            {props.emptyEnabledLabel}
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="px-3 py-3 text-sm text-muted-foreground">{props.noResultsLabel}</div>
+          <div className="px-3 py-3 text-sm text-muted-foreground" data-testid="chat-skill-picker-no-results">
+            {props.noResultsLabel}
+          </div>
         ) : (
           <div className="space-y-1">
             {filtered.map((s) => {
@@ -55,6 +63,8 @@ export function SkillPickerPopover(props: {
                 <button
                   key={s.id}
                   type="button"
+                  data-testid="chat-skill-picker-option"
+                  data-skill-slug={cmd}
                   className={cn(
                     'w-full rounded-xl px-3 py-2 text-left transition-colors hover:bg-secondary/60',
                   )}
