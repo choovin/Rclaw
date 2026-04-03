@@ -639,8 +639,23 @@ export async function provisionDigitalEmployeeAgent(
   payload: ProvisionDigitalEmployeePayload,
   onStage?: (stage: ProvisionWorkspaceStage) => void,
 ): Promise<ProvisionDigitalEmployeeResult> {
+  const nameZhTrimmed = payload.nameZh.trim();
+  if (!nameZhTrimmed) throw new Error('nameZh must be non-empty (trimmed)');
+
+  const nameEnTrimmed = payload.nameEn.trim();
+  if (!nameEnTrimmed) throw new Error('nameEn must be non-empty (trimmed)');
+
+  if (typeof payload.soulContent !== 'string') throw new Error('soulContent must be a string');
+  if (!payload.soulContent.trim()) throw new Error('soulContent must be non-empty (trimmed)');
+
+  if (typeof payload.agentsContent !== 'string') throw new Error('agentsContent must be a string');
+  if (!payload.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
+
+  if (typeof payload.vibe !== 'string') throw new Error('vibe must be a string');
+  if (!payload.vibe.trim()) throw new Error('vibe must be non-empty (trimmed)');
+
   onStage?.('create_agent');
-  const { agentId } = await createAgentWithResult(payload.nameZh, { inheritWorkspace: false });
+  const { agentId } = await createAgentWithResult(nameZhTrimmed, { inheritWorkspace: false });
 
   // Must match createAgent's workspace pattern (~/.openclaw/workspace-${agentId}); do not rely on
   // snapshot lookup — buildSnapshotFromConfig can differ from in-memory config in edge cases.
@@ -649,8 +664,8 @@ export async function provisionDigitalEmployeeAgent(
   onStage?.('write_files');
   try {
     writeDigitalEmployeeWorkspaceFiles(workspacePath, {
-      nameZh: payload.nameZh,
-      roleTitle: payload.nameEn,
+      nameZh: nameZhTrimmed,
+      roleTitle: nameEnTrimmed,
       soulContent: payload.soulContent,
       agentsContent: payload.agentsContent,
       identityContent: payload.identityContent,

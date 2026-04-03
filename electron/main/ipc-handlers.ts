@@ -3,7 +3,7 @@
  * Registers all IPC handlers for main-renderer communication
  */
 import { ipcMain, BrowserWindow, shell, dialog, app, nativeImage } from 'electron';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname, basename } from 'node:path';
 import crypto from 'node:crypto';

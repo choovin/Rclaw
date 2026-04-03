@@ -3,6 +3,7 @@
  * Used from the digital employees "My employees" detail panel when linkedAgentId is set.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,8 +89,9 @@ function hasConfiguredProviderCredentials(
   return statusById.get(account.id)?.hasKey ?? false;
 }
 
-const inputClasses = 'h-[44px] rounded-xl font-mono text-[13px] bg-[#eeece3] dark:bg-muted border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground placeholder:text-foreground/40';
-const selectClasses = 'h-[44px] w-full rounded-xl font-mono text-[13px] bg-[#eeece3] dark:bg-muted border border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground px-3';
+// Keep modal inputs/selects on a monochrome palette; rely on Tailwind dark mode.
+const inputClasses = 'h-[44px] rounded-xl font-mono text-[13px] bg-white dark:bg-black/80 border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground placeholder:text-foreground/40';
+const selectClasses = 'h-[44px] w-full rounded-xl font-mono text-[13px] bg-white dark:bg-black/80 border border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground px-3';
 const labelClasses = 'text-[14px] text-foreground/80 font-bold';
 
 function ChannelLogo({ type }: { type: ChannelType }) {
@@ -161,9 +163,9 @@ export function AgentSettingsModal({
       })),
   );
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border border-border bg-card dark:bg-card overflow-hidden">
+  const modal = (
+    <div data-agent-settings-modal className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border-0 shadow-2xl bg-white dark:bg-black overflow-hidden">
         <CardHeader className="flex flex-row items-start justify-between pb-2 shrink-0">
           <div>
             <CardTitle className="text-2xl font-serif font-normal tracking-tight">
@@ -185,7 +187,9 @@ export function AgentSettingsModal({
         <CardContent className="space-y-6 pt-4 overflow-y-auto flex-1 p-6">
           <div className="space-y-4">
             <div className="space-y-2.5">
-              <Label htmlFor="agent-settings-name" className={labelClasses}>{t('settingsDialog.nameLabel')}</Label>
+              <Label htmlFor="agent-settings-name" className={labelClasses}>
+                {t('settingsDialog.nameLabel')}
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="agent-settings-name"
@@ -199,7 +203,7 @@ export function AgentSettingsModal({
                     variant="outline"
                     onClick={() => void handleSaveName()}
                     disabled={savingName || !name.trim() || name.trim() === agent.name}
-                    className="h-[44px] text-[13px] font-medium rounded-xl px-4 border-black/10 dark:border-white/10 bg-[#eeece3] dark:bg-muted hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-foreground/80 hover:text-foreground"
+                    className="h-[44px] text-[13px] font-medium rounded-xl px-4 border-black/10 dark:border-white/10 bg-white dark:bg-black hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-foreground/80 hover:text-foreground"
                   >
                     {savingName ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
@@ -212,7 +216,7 @@ export function AgentSettingsModal({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4">
+              <div className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-4">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground/80 font-medium">
                   {t('settingsDialog.agentIdLabel')}
                 </p>
@@ -221,7 +225,7 @@ export function AgentSettingsModal({
               <button
                 type="button"
                 onClick={() => setShowModelModal(true)}
-                className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4 text-left hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                className="space-y-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-4 text-left hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
               >
                 <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground/80 font-medium">
                   {t('settingsDialog.modelLabel')}
@@ -243,7 +247,9 @@ export function AgentSettingsModal({
                 <h3 className="text-xl font-serif text-foreground font-normal tracking-tight">
                   {t('settingsDialog.channelsTitle')}
                 </h3>
-                <p className="text-[14px] text-foreground/70 mt-1">{t('settingsDialog.channelsDescription')}</p>
+                <p className="text-[14px] text-foreground/70 mt-1">
+                  {t('settingsDialog.channelsDescription')}
+                </p>
               </div>
             </div>
 
@@ -254,19 +260,21 @@ export function AgentSettingsModal({
             ) : (
               <div className="space-y-3">
                 {assignedChannels.map((channel) => (
-                  <div key={`${channel.channelType}-${channel.accountId}`} className="flex items-center justify-between rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent p-4">
+                  <div
+                    key={`${channel.channelType}-${channel.accountId}`}
+                    className="flex items-center justify-between rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-4"
+                  >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-[40px] w-[40px] shrink-0 flex items-center justify-center text-foreground bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-full shadow-sm">
+                      <div className="h-[40px] w-[40px] shrink-0 flex items-center justify-center text-foreground bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full shadow-sm">
                         <ChannelLogo type={channel.channelType} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[15px] font-semibold text-foreground">{channel.name}</p>
                         <p className="text-[13.5px] text-muted-foreground">
-                          {CHANNEL_NAMES[channel.channelType]} · {channel.accountId === 'default' ? t('settingsDialog.mainAccount') : channel.accountId}
+                          {CHANNEL_NAMES[channel.channelType]} ·{' '}
+                          {channel.accountId === 'default' ? t('settingsDialog.mainAccount') : channel.accountId}
                         </p>
-                        {channel.error && (
-                          <p className="text-xs text-destructive mt-1">{channel.error}</p>
-                        )}
+                        {channel.error && <p className="text-xs text-destructive mt-1">{channel.error}</p>}
                       </div>
                     </div>
                     <div className="shrink-0" />
@@ -283,13 +291,13 @@ export function AgentSettingsModal({
         </CardContent>
       </Card>
       {showModelModal && (
-        <AgentModelModal
-          agent={agent}
-          onClose={() => setShowModelModal(false)}
-        />
+        <AgentModelModal agent={agent} onClose={() => setShowModelModal(false)} />
       )}
     </div>
   );
+
+  if (typeof document === 'undefined') return modal;
+  return createPortal(modal, document.body);
 }
 
 function AgentModelModal({
@@ -415,8 +423,8 @@ function AgentModelModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-xl rounded-3xl border-0 shadow-2xl bg-[#f3f1e9] dark:bg-card overflow-hidden">
+    <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-xl rounded-3xl border-0 shadow-2xl bg-white dark:bg-black overflow-hidden">
         <CardHeader className="flex flex-row items-start justify-between pb-2">
           <div>
             <CardTitle className="text-2xl font-serif font-normal tracking-tight">

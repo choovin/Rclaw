@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
   assignChannelToAgent,
+  createAgent,
   clearChannelBinding,
   deleteAgentConfig,
   listAgentsSnapshot,
@@ -124,6 +125,29 @@ export async function handleAgentRoutes(
 ): Promise<boolean> {
   if (url.pathname === '/api/agents' && req.method === 'GET') {
     sendJson(res, 200, { success: true, ...(await listAgentsSnapshot()) });
+    return true;
+  }
+
+  if (url.pathname === '/api/agents' && req.method === 'POST') {
+    try {
+      const body = await parseJsonBody<{ name: string; inheritWorkspace?: boolean }>(req);
+      if (typeof body.name !== 'string') {
+        sendJson(res, 400, { success: false, error: 'name is required (string)' });
+        return true;
+      }
+
+      const snapshot = await createAgent(body.name, { inheritWorkspace: Boolean(body.inheritWorkspace) });
+
+      // Ensure runtime provider auth registry is up-to-date for newly created agent workspaces.
+      syncAllProviderAuthToRuntime().catch((syncError) => {
+        console.warn('[agents] Failed to sync provider auth after agent creation:', syncError);
+      });
+
+      scheduleGatewayReload(ctx, 'create-agent');
+      sendJson(res, 200, { success: true, ...snapshot });
+    } catch (error) {
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
     return true;
   }
 
@@ -252,20 +276,39 @@ export async function handleAgentRoutes(
         vibe?: string;
       }>(req);
 
-      if (typeof body.nameZh !== 'string') {
-        sendJson(res, 400, { success: false, error: 'nameZh is required (string)' });
-        return true;
-      }
+      const mustTrimNonEmpty = (value: unknown, fieldName: string): string => {
+        if (typeof value !== 'string') throw new Error(`${fieldName} must be a string`);
+        const trimmed = value.trim();
+        if (!trimmed) throw new Error(`${fieldName} must be non-empty (trimmed)`);
+        return trimmed;
+      };
+
+      const employeeId = mustTrimNonEmpty(body.employeeId, 'employeeId');
+      const nameZh = mustTrimNonEmpty(body.nameZh, 'nameZh');
+      const nameEn = mustTrimNonEmpty(body.nameEn, 'nameEn');
+
+      if (typeof body.soulContent !== 'string') throw new Error('soulContent must be a string');
+      if (!body.soulContent.trim()) throw new Error('soulContent must be non-empty (trimmed)');
+      const soulContent = body.soulContent;
+
+      if (typeof body.agentsContent !== 'string') throw new Error('agentsContent must be a string');
+      if (!body.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
+      const agentsContent = body.agentsContent;
+
+      const vibe = mustTrimNonEmpty(body.vibe, 'vibe');
+
+      const identityContent =
+        typeof body.identityContent === 'string' ? body.identityContent : '';
 
       const result = await provisionDigitalEmployeeAgent(
         {
-          nameZh: body.nameZh,
-          nameEn: body.nameEn,
-          soulContent: body.soulContent || '',
-          agentsContent: body.agentsContent || '',
-          identityContent: body.identityContent || '',
+          nameZh,
+          nameEn,
+          soulContent,
+          agentsContent,
+          identityContent,
           emoji: typeof body.emoji === 'string' ? body.emoji : undefined,
-          vibe: typeof body.vibe === 'string' ? body.vibe : undefined,
+          vibe,
         },
         (stage) => emitProvisionStage(ctx, stage),
       );
@@ -280,14 +323,17 @@ export async function handleAgentRoutes(
         success: true,
         agentId: result.agentId,
         workspacePath: result.workspacePath,
-        employeeId: body.employeeId,
+        employeeId,
       });
     } catch (error) {
       const err = error as Error & { agentId?: string };
       console.error('[agents] POST /api/employees/provision failed:', error);
-      sendJson(res, 500, {
+      const msg = String(error);
+      const isValidationError =
+        /must be a string|must be non-empty \(trimmed\)/i.test(msg) && !err.agentId;
+      sendJson(res, isValidationError ? 400 : 500, {
         success: false,
-        error: String(error),
+        error: msg,
         agentId: err.agentId,
       });
     }

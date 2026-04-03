@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAgentsStore } from '@/stores/agents';
 import { useGatewayStore } from '@/stores/gateway';
@@ -9,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Marketplace } from './Marketplace';
 import { MyEmployees } from './MyEmployees';
+import { CreateDigitalEmployeeDialog } from './CreateDigitalEmployeeDialog';
 import type { ChannelGroupItem } from './AgentSettingsModal';
 
 export function Agents() {
@@ -18,6 +21,7 @@ export function Agents() {
   const { agents, error, fetchAgents } = useAgentsStore();
   const [channelGroups, setChannelGroups] = useState<ChannelGroupItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const fetchChannelAccounts = useCallback(async () => {
     try {
@@ -60,8 +64,9 @@ export function Agents() {
   }, [fetchChannelAccounts, gatewayStatus.state]);
 
   return (
-    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
-      <div className="mx-auto flex h-full w-full flex-col p-10 pt-0">
+    <>
+      <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
+        <div className="mx-auto flex h-full w-full flex-col p-10 pt-0">
         <Tabs defaultValue="marketplace" className="flex min-h-0 flex-1 flex-col">
           <div
             className="mb-4 flex shrink-0 items-center gap-4 py-0.5"
@@ -82,6 +87,16 @@ export function Agents() {
                 'focus-visible:ring-inset focus-visible:ring-offset-0',
               )}
             />
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => setShowAddDialog(true)}
+              data-testid="create-digital-employee-button"
+              className="h-9 shrink-0 ml-auto rounded-full shadow-none"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {tEmployees('createDigitalEmployee.toolbarButton')}
+            </Button>
           </div>
 
           <TabsContent value="marketplace" className="m-0 min-h-0 flex-1 overflow-hidden">
@@ -105,9 +120,13 @@ export function Agents() {
               onRefreshAgents={() => void fetchAgents()}
             />
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
-    </div>
+      {showAddDialog && (
+        <CreateDigitalEmployeeDialog onClose={() => setShowAddDialog(false)} />
+      )}
+    </>
   );
 }
 

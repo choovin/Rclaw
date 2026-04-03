@@ -61,7 +61,7 @@ export function EmployeeCard({
   const [missingLinkOpen, setMissingLinkOpen] = useState(false);
 
   const ADD_STEPS: StepConfig[] = [
-    { label: '创建 Agent', icon: '🤖' },
+    { label: '创建 员工', icon: '🤖' },
     { label: '写入工作区', icon: '📝' },
     { label: '校验文件', icon: '✓' },
     { label: '同步 Gateway', icon: '🔄' },

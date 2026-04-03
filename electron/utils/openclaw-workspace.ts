@@ -137,12 +137,23 @@ export async function repairClawXOnlyBootstrapFiles(): Promise<void> {
 
 // ── Context merging ──────────────────────────────────────────────
 
+interface MergeClawXContextOptions {
+  /**
+   * When true, create missing target `.md` files with only the ClawX section
+   * (same as merging into an empty file). Used after retries so we do not
+   * warn forever when the gateway never seeds a workspace file.
+   */
+  createMissingIfAbsent?: boolean;
+}
+
 /**
  * Merge ClawX context snippets into workspace bootstrap files that
  * already exist on disk.  Returns the number of target files that were
- * skipped because they don't exist yet.
+ * skipped because they don't exist yet (unless createMissingIfAbsent).
  */
-async function mergeClawXContextOnce(): Promise<number> {
+async function mergeClawXContextOnce(options?: MergeClawXContextOptions): Promise<number> {
+  const createMissing = options?.createMissingIfAbsent === true;
+
   const contextDir = join(getResourcesDir(), 'context');
   if (!(await fileExists(contextDir))) {
     // Avoid logging if the logger might be broken (e.g., during app shutdown)
@@ -172,6 +183,29 @@ async function mergeClawXContextOnce(): Promise<number> {
       const targetPath = join(workspaceDir, targetName);
 
       if (!(await fileExists(targetPath))) {
+        if (createMissing) {
+          let section: string;
+          try {
+            section = await readFile(join(contextDir, file), 'utf-8');
+          } catch {
+            skipped++;
+            continue;
+          }
+          const merged = mergeClawXSection('', section);
+          try {
+            await writeFile(targetPath, merged, 'utf-8');
+            try {
+              logger.info(
+                `Created ${targetName} with RClaw context (${workspaceDir}); gateway may still add a full template later`,
+              );
+            } catch {
+              // ignore logging errors during shutdown
+            }
+          } catch {
+            skipped++;
+          }
+          continue;
+        }
         try {
           logger.debug(`Skipping ${targetName} in ${workspaceDir} (file does not exist yet, will be seeded by gateway)`);
         } catch {
@@ -226,6 +260,16 @@ export async function ensureClawXContext(): Promise<void> {
     } catch {
       // ignore logging errors during shutdown
     }
+  }
+
+  skipped = await mergeClawXContextOnce({ createMissingIfAbsent: true });
+  if (skipped === 0) {
+    try {
+      logger.info('RClaw context merge completed after creating missing bootstrap files');
+    } catch {
+      // ignore logging errors during shutdown
+    }
+    return;
   }
 
   try {

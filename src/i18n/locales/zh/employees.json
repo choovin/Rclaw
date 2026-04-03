@@ -6,6 +6,23 @@
         "myEmployees": "我的员工"
     },
     "searchPlaceholder": "搜索员工...",
+    "createDigitalEmployee": {
+        "toolbarButton": "创建数字员工",
+        "title": "创建数字员工",
+        "nameLabel": "员工名称",
+        "namePlaceholder": "给你的数字员工起个名字",
+        "descriptionLabel": "一句话描述",
+        "vibePlaceholder": "一句话概括这个员工的核心气质",
+        "soulLabel": "角色定位与策略",
+        "soulPlaceholder": "# 角色人设（SOUL.md）\n\n## 身份与记忆\n- **角色**：[你的角色称谓]\n- **个性**：[一两句话概括性格与专业气质]\n- **记忆**：在对话中持续追踪关键上下文与约束，保持人设一致。\n\n## 须遵守的规则\n- 不确定时先澄清再动手，避免臆测。\n- 不编造事实；需要外部信息时说明依据或请用户补充。\n\n## 沟通风格\n- 简洁、结构化；复杂内容先分点再展开。\n- 对用户指令保持尊重，必要时温和地提出更优方案。",
+        "agentsLabel": "智能体的工作内容",
+        "agentsPlaceholder": "# 智能体工作说明（AGENTS.md）\n\n## 核心使命\n- [用一句话说明此智能体负责达成的业务目标]\n\n## 常见交付物\n- 文档、代码、分析报告、方案草稿等（按你的场景填写）\n\n## 工作流程\n1. 对齐目标与约束\n2. 设计方案并拆分步骤\n3. 执行、自检与交付说明\n\n## 权限与安全边界\n- 不上传或外发未授权的敏感数据。\n- 涉及外部系统或付费操作前，先征得确认。",
+        "emojiLabel": "选择图标 emoji",
+        "colorLabel": "color",
+        "submit": "创建",
+        "creating": "创建中...",
+        "fillRequired": "请填写所有必填项（并确保非空白）"
+    },
     "allDepartments": "全部",
     "departments": {
         "engineering": "研发",
@@ -22,7 +39,8 @@
         "integrations": "集成",
         "specialized": "专门技能",
         "spatial-computing": "空间计算",
-        "paid-media": "付费媒体"
+        "paid-media": "付费媒体",
+        "custom": "自定义"
     },
     "noEmployees": "没有找到员工",
     "myEmployees": "我的员工",

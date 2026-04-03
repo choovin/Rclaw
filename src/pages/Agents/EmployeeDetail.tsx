@@ -77,7 +77,7 @@ export function EmployeeDetail({
   }, [agents, linkedAgentId]);
 
   const ADD_STEPS: StepConfig[] = [
-    { label: '创建 Agent', icon: '🤖' },
+    { label: '创建 员工', icon: '🤖' },
     { label: '写入工作区文件', icon: '📝' },
     { label: '校验文件', icon: '✓' },
     { label: '同步并重载 Gateway', icon: '🔄' },
@@ -114,10 +114,28 @@ export function EmployeeDetail({
 
   return (
     <>
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet
+      open
+      modal={false}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <SheetContent
         side="right"
         data-testid="employee-detail-sheet"
+        onPointerDownOutside={(event: any) => {
+          const target = event?.target as HTMLElement | null | undefined;
+          if (target?.closest('[data-agent-settings-modal]')) {
+            event.preventDefault();
+          }
+        }}
+        onInteractOutside={(event: any) => {
+          const target = event?.target as HTMLElement | null | undefined;
+          if (target?.closest('[data-agent-settings-modal]')) {
+            event.preventDefault();
+          }
+        }}
         className="flex h-full min-h-0 w-[min(20rem,calc(100vw-1rem))] max-w-[20rem] flex-col gap-0 border-l p-0 sm:w-80"
       >
         <SheetTitle className="sr-only">

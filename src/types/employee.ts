@@ -18,7 +18,8 @@ export type Department =
   | 'integrations'
   | 'specialized'
   | 'spatial-computing'
-  | 'paid-media';
+  | 'paid-media'
+  | 'custom';
 
 export interface Employee {
   id: string;
@@ -159,5 +160,12 @@ export const DEPARTMENT_MAP: Record<Department, DepartmentInfo> = {
     nameZh: '付费媒体',
     emoji: '📺',
     description: 'Paid advertising and media buying',
+  },
+  custom: {
+    id: 'custom',
+    name: 'Custom',
+    nameZh: '自定义',
+    emoji: '⭐',
+    description: 'User-defined / custom department',
   },
 };
