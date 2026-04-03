@@ -79,7 +79,11 @@ RClaw-resimg/
 .worktrees/
 CLAUDE.md
 claude/
+# Ignore docs by default, but keep design specs in repo
 docs/
+!docs/superpowers/
+!docs/superpowers/specs/
+!docs/superpowers/specs/*.md
 agency-agents-zh
 
 temp/
