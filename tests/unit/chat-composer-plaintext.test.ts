@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getOffsetsFromSelection,
   getPlainTextFromRoot,
   normalizeComposerPlainText,
+  setSelectionFromOffsets,
 } from '@/pages/Chat/chat-composer-plaintext';
 import { parseSlashTokens } from '@/pages/Chat/chat-skill-command';
 
@@ -35,5 +37,90 @@ describe('getPlainTextFromRoot', () => {
     root.innerText = 'a\r\nb';
     expect(getPlainTextFromRoot(root)).toBe(normalizeComposerPlainText(root.innerText));
     expect(getPlainTextFromRoot(root)).toBe('a\nb');
+  });
+});
+
+describe('getOffsetsFromSelection / setSelectionFromOffsets', () => {
+  it('reads collapsed caret offset (hello world @ 6)', () => {
+    const root = document.createElement('div');
+    root.textContent = 'hello world';
+    document.body.append(root);
+
+    setSelectionFromOffsets(root, 6, 6);
+    expect(getOffsetsFromSelection(root)).toEqual({ start: 6, end: 6 });
+
+    root.remove();
+  });
+
+  it('reads a range spanning "wor" (offsets 6–9)', () => {
+    const root = document.createElement('div');
+    root.textContent = 'hello world';
+    document.body.append(root);
+
+    setSelectionFromOffsets(root, 6, 9);
+    expect(getOffsetsFromSelection(root)).toEqual({ start: 6, end: 9 });
+
+    root.remove();
+  });
+
+  it('round-trips arbitrary offsets', () => {
+    const root = document.createElement('div');
+    root.textContent = 'hello world';
+    document.body.append(root);
+
+    const pairs: Array<[number, number]> = [
+      [0, 0],
+      [0, 5],
+      [6, 11],
+      [2, 8],
+    ];
+    for (const [a, b] of pairs) {
+      setSelectionFromOffsets(root, a, b);
+      expect(getOffsetsFromSelection(root)).toEqual({
+        start: Math.min(a, b),
+        end: Math.max(a, b),
+      });
+    }
+
+    root.remove();
+  });
+
+  it('handles nested split text nodes (span) and round-trips', () => {
+    const root = document.createElement('div');
+    root.innerHTML = 'hello <span>wo</span>rld';
+    document.body.append(root);
+
+    const total = 'hello world'.length;
+    expect(total).toBe(11);
+
+    setSelectionFromOffsets(root, 6, 9);
+    expect(getOffsetsFromSelection(root)).toEqual({ start: 6, end: 9 });
+
+    setSelectionFromOffsets(root, 11, 11);
+    expect(getOffsetsFromSelection(root)).toEqual({ start: 11, end: 11 });
+
+    setSelectionFromOffsets(root, 0, 11);
+    expect(getOffsetsFromSelection(root)).toEqual({ start: 0, end: 11 });
+
+    root.remove();
+  });
+
+  it('returns null when selection anchor is outside root', () => {
+    const root = document.createElement('div');
+    root.textContent = 'inside';
+    const outside = document.createElement('div');
+    outside.textContent = 'outside';
+    document.body.append(root, outside);
+
+    const range = document.createRange();
+    range.selectNodeContents(outside.firstChild as Text);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    expect(getOffsetsFromSelection(root)).toBeNull();
+
+    root.remove();
+    outside.remove();
   });
 });
