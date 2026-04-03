@@ -7,7 +7,16 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', 'dist-electron/**', 'openclaw/**', 'release/**', 'build/**'],
+    ignores: [
+      'dist/**',
+      'dist-electron/**',
+      'openclaw/**',
+      'release/**',
+      'release-v2/**',
+      'build/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
   },
   {
     files: ['**/*.{ts,tsx}'],
