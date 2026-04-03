@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import {
   deleteTokenAtRange,
   insertAtSelection,
   normalizeCommandName,
   parseSlashTokens,
 } from '@/pages/Chat/chat-skill-command';
+import { SkillPickerPopover } from '@/pages/Chat/SkillPickerPopover';
 
 describe('chat-skill-command', () => {
   it('normalizeCommandName: lowercases, replaces invalid chars with _, truncates 32', () => {
@@ -51,5 +53,50 @@ describe('chat-skill-command', () => {
     expect(del.nextValue).toBe('/a test');
     // 光标原在串尾；删除中间 token 后应落在新的串尾
     expect(del.nextSelection).toEqual({ start: del.nextValue.length, end: del.nextValue.length });
+  });
+});
+
+describe('SkillPickerPopover', () => {
+  it('shows enabled skills, filters by search, calls onPick with commandName', () => {
+    const onPick = vi.fn();
+    const onOpenSkills = vi.fn();
+
+    render(
+      <SkillPickerPopover
+        open
+        skills={[
+          { id: 'feishu', slug: 'feishu', name: 'Feishu', description: 'desc', enabled: true, icon: '⚙️' },
+          {
+            id: 'tavily-search',
+            slug: 'tavily-search',
+            name: 'Tavily',
+            description: 'search',
+            enabled: true,
+            icon: '⚡',
+          },
+          { id: 'disabled', slug: 'disabled', name: 'Disabled', description: 'x', enabled: false, icon: '❌' },
+        ]}
+        onPick={onPick}
+        onOpenSkills={onOpenSkills}
+        onClose={() => {}}
+        searchPlaceholder="搜索技能"
+        skillsLibraryLabel="技能库"
+        emptyEnabledLabel="暂无可用技能"
+        noResultsLabel="未找到技能"
+      />,
+    );
+
+    expect(screen.queryByText('/disabled')).toBeNull();
+    expect(screen.getByText('/feishu')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('搜索技能'), { target: { value: 'tavily' } });
+    expect(screen.queryByText('/feishu')).toBeNull();
+    expect(screen.getByText('/tavily_search')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('/tavily_search'));
+    expect(onPick).toHaveBeenCalledWith({ commandName: 'tavily_search', display: '/tavily_search' });
+
+    fireEvent.click(screen.getByText('技能库'));
+    expect(onOpenSkills).toHaveBeenCalled();
   });
 });

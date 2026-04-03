@@ -28,7 +28,14 @@
         "stop": "Stop",
         "gatewayConnected": "connected",
         "gatewayStatus": "gateway {{state}} | port: {{port}} {{pid}}",
-        "retryFailedAttachments": "Retry failed attachments"
+        "retryFailedAttachments": "Retry failed attachments",
+        "skillPicker": {
+            "open": "Select skill",
+            "searchPlaceholder": "Search skills",
+            "skillsLibrary": "Skills library",
+            "emptyEnabled": "No enabled skills (enable them in Skills library first)",
+            "noResults": "No matching skills"
+        }
     },
     "historyBuckets": {
         "today": "Today",

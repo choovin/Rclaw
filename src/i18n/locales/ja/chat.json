@@ -28,7 +28,14 @@
         "stop": "停止",
         "gatewayConnected": "接続済み",
         "gatewayStatus": "ゲートウェイ {{state}} | ポート: {{port}} {{pid}}",
-        "retryFailedAttachments": "失敗した添付を再試行"
+        "retryFailedAttachments": "失敗した添付を再試行",
+        "skillPicker": {
+            "open": "スキルを選択",
+            "searchPlaceholder": "スキルを検索",
+            "skillsLibrary": "スキルライブラリ",
+            "emptyEnabled": "利用できるスキルがありません（スキルライブラリで有効化してください）",
+            "noResults": "一致するスキルがありません"
+        }
     },
     "historyBuckets": {
         "today": "今日",

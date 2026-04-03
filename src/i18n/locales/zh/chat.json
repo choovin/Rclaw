@@ -28,7 +28,14 @@
         "stop": "停止",
         "gatewayConnected": "已连接",
         "gatewayStatus": "gateway {{state}} | port: {{port}} {{pid}}",
-        "retryFailedAttachments": "重试失败的附件"
+        "retryFailedAttachments": "重试失败的附件",
+        "skillPicker": {
+            "open": "选择技能",
+            "searchPlaceholder": "搜索技能",
+            "skillsLibrary": "技能库",
+            "emptyEnabled": "暂无可用技能（请先在技能库启用）",
+            "noResults": "未找到技能"
+        }
     },
     "historyBuckets": {
         "today": "今天",
