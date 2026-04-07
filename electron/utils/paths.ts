@@ -117,7 +117,12 @@ export function getOpenClawDir(): string {
   if (getElectronApp().isPackaged) {
     return join(process.resourcesPath, 'openclaw');
   }
-  // Development: use node_modules/openclaw
+  // Development: prefer the bundled build/openclaw if present so dev can
+  // exercise the same "bundled skills" behaviour as packaged builds.
+  const bundledCandidate = join(__dirname, '../../build/openclaw');
+  if (existsSync(join(bundledCandidate, 'openclaw.mjs'))) {
+    return bundledCandidate;
+  }
   return join(__dirname, '../../node_modules/openclaw');
 }
 

@@ -41,6 +41,13 @@ interface PreinstalledManifest {
     skills?: PreinstalledSkillSpec[];
 }
 
+interface BundledSkillManifest {
+    skills?: Array<{
+        slug: string;
+        autoEnable?: boolean;
+    }>;
+}
+
 interface PreinstalledLockEntry {
     slug: string;
     version?: string;
@@ -225,6 +232,143 @@ export async function ensureBuiltinSkillsInstalled(): Promise<void> {
             logger.info(`Installed built-in skill: ${slug} -> ${targetDir}`);
         } catch (error) {
             logger.warn(`Failed to install built-in skill ${slug}:`, error);
+        }
+    }
+}
+
+type BundledSkillSpec = {
+    slug: string;
+    /**
+     * Source directory inside the OpenClaw package dir, e.g. <openclawDir>/skills/<slug>.
+     * We deploy from here to ~/.openclaw/skills/<slug>/ so the Gateway can load it.
+     */
+    sourceRelativePath: string;
+    autoEnable?: boolean;
+};
+
+interface BundledMarker {
+    source: 'clawx-bundled';
+    slug: string;
+    installedAt: string;
+}
+
+const BUNDLED_MARKER_NAME = '.clawx-bundled.json';
+const BUNDLED_MANIFEST_NAME = 'bundled-manifest.json';
+
+async function readBundledSkillsManifest(): Promise<BundledSkillSpec[]> {
+    const candidates = [
+        join(getResourcesDir(), 'skills', BUNDLED_MANIFEST_NAME),
+        join(process.cwd(), 'resources', 'skills', BUNDLED_MANIFEST_NAME),
+    ];
+
+    const manifestPath = candidates.find((p) => existsSync(p));
+    if (!manifestPath) {
+        return [];
+    }
+
+    try {
+        const raw = await readFile(manifestPath, 'utf-8');
+        const parsed = JSON.parse(raw) as BundledSkillManifest;
+        if (!Array.isArray(parsed.skills)) {
+            return [];
+        }
+        const specs: BundledSkillSpec[] = [];
+        for (const entry of parsed.skills) {
+            const slug = entry?.slug?.trim();
+            if (!slug) continue;
+            specs.push({
+                slug,
+                sourceRelativePath: join('skills', slug),
+                autoEnable: Boolean(entry.autoEnable),
+            });
+        }
+        return specs;
+    } catch (error) {
+        logger.warn('Failed to read bundled-skills manifest:', error);
+        return [];
+    }
+}
+
+async function tryReadBundledMarker(markerPath: string): Promise<BundledMarker | null> {
+    if (!existsSync(markerPath)) {
+        return null;
+    }
+    try {
+        const raw = await readFile(markerPath, 'utf-8');
+        const parsed = JSON.parse(raw) as BundledMarker;
+        if (parsed?.source !== 'clawx-bundled' || !parsed?.slug) {
+            return null;
+        }
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Ensure selected OpenClaw-bundled skills are deployed to ~/.openclaw/skills/<slug>/.
+ *
+ * Policy:
+ * - If local skill exists without our marker, treat as user-managed and never overwrite.
+ * - If local skill exists with our marker, skip (non-destructive; no auto-upgrade here).
+ * - If missing locally, install and write a marker. Optionally auto-enable.
+ */
+export async function ensureBundledSkillsInstalled(): Promise<void> {
+    const skills = await readBundledSkillsManifest();
+    if (skills.length === 0) {
+        return;
+    }
+
+    const openclawDir = getOpenClawDir();
+    const targetRoot = join(homedir(), '.openclaw', 'skills');
+    await mkdir(targetRoot, { recursive: true });
+
+    const toEnable: string[] = [];
+
+    for (const spec of skills) {
+        const sourceDir = join(openclawDir, spec.sourceRelativePath);
+        const sourceManifest = join(sourceDir, 'SKILL.md');
+        if (!existsSync(sourceManifest)) {
+            logger.warn(`Bundled skill source missing SKILL.md, skipping: ${sourceDir}`);
+            continue;
+        }
+
+        const targetDir = join(targetRoot, spec.slug);
+        const targetManifest = join(targetDir, 'SKILL.md');
+        const markerPath = join(targetDir, BUNDLED_MARKER_NAME);
+        const marker = await tryReadBundledMarker(markerPath);
+
+        if (existsSync(targetManifest)) {
+            if (!marker) {
+                logger.info(`Skipping user-managed skill: ${spec.slug}`);
+                continue;
+            }
+            continue;
+        }
+
+        try {
+            await mkdir(targetDir, { recursive: true });
+            await cpAsyncSafe(sourceDir, targetDir);
+            const markerPayload: BundledMarker = {
+                source: 'clawx-bundled',
+                slug: spec.slug,
+                installedAt: new Date().toISOString(),
+            };
+            await writeFile(markerPath, `${JSON.stringify(markerPayload, null, 2)}\n`, 'utf-8');
+            if (spec.autoEnable) {
+                toEnable.push(spec.slug);
+            }
+            logger.info(`Installed bundled skill: ${spec.slug} -> ${targetDir}`);
+        } catch (error) {
+            logger.warn(`Failed to install bundled skill ${spec.slug}:`, error);
+        }
+    }
+
+    if (toEnable.length > 0) {
+        try {
+            await setSkillsEnabled(toEnable, true);
+        } catch (error) {
+            logger.warn('Failed to auto-enable bundled skills:', error);
         }
     }
 }

@@ -35,7 +35,7 @@ import {
 import { createSignalQuitHandler } from './signal-quit';
 import { acquireProcessInstanceFileLock } from './process-instance-lock';
 import { getSetting } from '../utils/store';
-import { ensureBuiltinSkillsInstalled, ensurePreinstalledSkillsInstalled } from '../utils/skill-config';
+import { ensureBundledSkillsInstalled, ensureBuiltinSkillsInstalled, ensurePreinstalledSkillsInstalled } from '../utils/skill-config';
 import { ensureAllBundledPluginsInstalled } from '../utils/plugin-install';
 import { startHostApiServer } from '../api/server';
 import { HostEventBus } from '../api/event-bus';
@@ -351,6 +351,14 @@ async function initialize(): Promise<void> {
   if (!isE2EMode) {
     void ensureBuiltinSkillsInstalled().catch((error) => {
       logger.warn('Failed to install built-in skills:', error);
+    });
+  }
+
+  // Pre-deploy bundled skills shipped inside OpenClaw's skills/ directory
+  // to ~/.openclaw/skills/ so they are discoverable and usable in chat.
+  if (!isE2EMode) {
+    void ensureBundledSkillsInstalled().catch((error) => {
+      logger.warn('Failed to install bundled skills:', error);
     });
   }
 
