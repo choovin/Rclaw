@@ -765,12 +765,23 @@ export function Skills() {
                     <div
                       data-testid="skills-card"
                       key={skill.id}
+                      role="button"
+                      tabIndex={0}
                       className={cn(
                         'group rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-card/40',
                         'hover:bg-white/60 dark:hover:bg-card/60 transition-colors cursor-pointer',
                         'p-4 flex flex-col min-h-[152px]'
                       )}
                       onClick={() => setSelectedSkill(skill)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setSelectedSkill(skill);
+                        }
+                        if (e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedSkill(skill);
+                        }
+                      }}
                     >
                       <div className="flex items-start gap-4">
                         <div className="h-11 w-11 shrink-0 flex items-center justify-center text-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden">
