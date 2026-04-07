@@ -48,6 +48,8 @@ interface ChatInputProps {
   disabled?: boolean;
   sending?: boolean;
   isEmpty?: boolean;
+  prefillSkillCommand?: string;
+  onPrefillConsumed?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -94,7 +96,15 @@ function readFileAsBase64(file: globalThis.File): Promise<string> {
 
 // ── Component ────────────────────────────────────────────────────
 
-export function ChatInput({ onSend, onStop, disabled = false, sending = false, isEmpty = false }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onStop,
+  disabled = false,
+  sending = false,
+  isEmpty = false,
+  prefillSkillCommand,
+  onPrefillConsumed,
+}: ChatInputProps) {
   const { t } = useTranslation('chat');
   const navigate = useNavigate();
   const [input, setInput] = useState('');
@@ -113,6 +123,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const composerWrapRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const skillPickerRef = useRef<HTMLDivElement>(null);
+  const didPrefillSkillCommandRef = useRef(false);
   const isComposingRef = useRef(false);
   const skills = useSkillsStore((s) => s.skills);
   const fetchSkills = useSkillsStore((s) => s.fetchSkills);
@@ -416,6 +427,25 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     },
     [input, slashSession, closeSkillPickerUi, clearSlashSkillDismissed],
   );
+
+  // One-shot: prefill `/command` passed from route state (e.g. Skills "Use now").
+  useEffect(() => {
+    if (disabled || sending) return;
+    if (didPrefillSkillCommandRef.current) return;
+    const raw = (prefillSkillCommand ?? '').trim();
+    if (!raw) return;
+
+    const cmd = raw.startsWith('/') ? raw.slice(1) : raw;
+    const commandName = normalizeCommandName(cmd);
+    didPrefillSkillCommandRef.current = true;
+    if (!commandName) {
+      onPrefillConsumed?.();
+      return;
+    }
+
+    applySkillPick({ commandName, display: raw });
+    onPrefillConsumed?.();
+  }, [applySkillPick, disabled, onPrefillConsumed, prefillSkillCommand, sending]);
 
   const handleSend = useCallback(() => {
     if (!canSend) return;

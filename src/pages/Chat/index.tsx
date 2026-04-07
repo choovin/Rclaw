@@ -4,8 +4,9 @@
  * via gateway:rpc IPC. Session selector, thinking toggle, and refresh
  * are in the toolbar; messages render with markdown + streaming.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useChatStore, type RawMessage } from '@/stores/chat';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
@@ -23,9 +24,15 @@ import { useMinLoading } from '@/hooks/use-min-loading';
 import { invokeIpc } from '@/lib/api-client';
 import { useChatSkillsRefresh } from './useChatSkillsRefresh';
 
+type ChatRouteState = {
+  prefillSkillCommand?: string;
+};
+
 export function Chat() {
   useChatSkillsRefresh();
   const { t } = useTranslation('chat');
+  const location = useLocation();
+  const navigate = useNavigate();
   const gatewayStatus = useGatewayStore((s) => s.status);
   const isGatewayRunning = gatewayStatus.state === 'running';
   const [e2eMode, setE2eMode] = useState(false);
@@ -45,6 +52,15 @@ export function Chat() {
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
 
   const cleanupEmptySession = useChatStore((s) => s.cleanupEmptySession);
+  const routeState = (location.state ?? null) as ChatRouteState | null;
+  const prefillSkillCommand = routeState?.prefillSkillCommand;
+
+  const clearPrefillState = useCallback(() => {
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: null },
+    );
+  }, [navigate, location.hash, location.pathname, location.search]);
 
   // Gate: 检查登录状态，未登录则弹出登录框
   const handleSend = async (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {
@@ -192,6 +208,8 @@ export function Chat() {
         disabled={!isGatewayRunning && !e2eMode}
         sending={sending}
         isEmpty={isEmpty}
+        prefillSkillCommand={prefillSkillCommand}
+        onPrefillConsumed={clearPrefillState}
       />
 
       {/* Transparent loading overlay */}
