@@ -53,7 +53,7 @@ test.describe('Skills store grid cards', () => {
     await expect(candidateCard.getByTestId('skills-card-delete-tooltip')).toBeVisible();
   });
 
-  test("点击 skills-card-use-now 跳转 chat，并且 chat-composer 含有 '/' 且聚焦", async ({ page }) => {
+  test('点击 skills-card-use-now 跳转 chat，并预填 /command（chip 或文本）且聚焦', async ({ page }) => {
     test.setTimeout(180_000);
     await skipSetupAndGoToSkills(page);
 
@@ -67,7 +67,13 @@ test.describe('Skills store grid cards', () => {
     const composer = page.getByTestId('chat-composer');
     await expect(composer).toBeVisible({ timeout: 15_000 });
     await expect(composer).toBeFocused();
-    await expect(composer).toContainText('/');
+    // 预填应至少包含 `/<cmd>`；E2E 环境技能数据不稳定，因此用正则做最小断言。
+    await expect(composer).toContainText(/\/[a-z0-9_]+/i);
+    // 若渲染成 chip，也应出现 chip testid（不强制，因为可能尚未渲染 overlay）。
+    const chip = page.getByTestId('chat-skill-chip').first();
+    if (await chip.count().catch(() => 0)) {
+      await expect(chip).toBeVisible();
+    }
   });
 });
 
