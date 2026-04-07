@@ -63,6 +63,7 @@
 
 - **Esc / 点击外部 / 未选关闭**：`skillPickerOpen = false`，清除 slash 会话与 `slashPickerSearchQuery`；composer **保留**单个 `/`（用户已确认）。
 - **选中技能**：关闭面板，在记录的 `slashIndex` 执行插入；清除 slash 会话状态；焦点回 composer。
+- **退出面板后不再匹配技能**：用户通过 Esc、点击面板外或「技能库」等关闭面板且未选中技能时，记录当前 slash 的 `slashIndex`；之后只要该下标处仍是 `/`，即使用户继续输入 `/xxx`，也**不再**打开技能面板、不再剥离 query，按普通文本处理；删除或移位该 `/` 后清除记录，可再次触发新的 `/` 技能流程。
 
 ### 5. Chip 与「非面板」文本
 

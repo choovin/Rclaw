@@ -104,6 +104,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
   const [skillPickerSearch, setSkillPickerSearch] = useState('');
   const [slashSession, setSlashSession] = useState<{ slashIndex: number } | null>(null);
+  const slashSessionRef = useRef<{ slashIndex: number } | null>(null);
+  /** 用户关闭技能面板且未选技能后，该下标处的 `/` 不再触发技能匹配，直至该字符被删或移位 */
+  const dismissedSlashIndexRef = useRef<number | null>(null);
   const prevSlashPickerSlashIndexRef = useRef<number | null>(null);
   const syncingSlashStripRef = useRef(false);
   const composerRef = useRef<ChatComposerHandle>(null);
@@ -138,6 +141,18 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     }
     return set;
   }, [skills]);
+
+  slashSessionRef.current = slashSession;
+
+  const markSlashSkillDismissed = useCallback(() => {
+    if (slashSessionRef.current) {
+      dismissedSlashIndexRef.current = slashSessionRef.current.slashIndex;
+    }
+  }, []);
+
+  const clearSlashSkillDismissed = useCallback(() => {
+    dismissedSlashIndexRef.current = null;
+  }, []);
 
   const closeSkillPickerUi = useCallback(() => {
     setSkillPickerOpen(false);
@@ -176,6 +191,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         setPickerOpen(false);
       }
       if (skillPickerOpen && !skillPickerRef.current?.contains(target)) {
+        markSlashSkillDismissed();
         closeSkillPickerUi();
       }
     };
@@ -183,7 +199,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
     };
-  }, [pickerOpen, skillPickerOpen, closeSkillPickerUi]);
+  }, [pickerOpen, skillPickerOpen, closeSkillPickerUi, markSlashSkillDismissed]);
 
   // ── File staging via native dialog ─────────────────────────────
 
@@ -334,8 +350,18 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         return;
       }
       const caret = meta?.caret ?? plain.length;
+      if (dismissedSlashIndexRef.current !== null) {
+        const di = dismissedSlashIndexRef.current;
+        if (di >= plain.length || plain[di] !== '/') {
+          dismissedSlashIndexRef.current = null;
+        }
+      }
       const qu = getSlashQueryAtCaret(plain, caret);
       if (qu) {
+        if (dismissedSlashIndexRef.current !== null && qu.slashIndex === dismissedSlashIndexRef.current) {
+          setInput(plain);
+          return;
+        }
         void fetchSkills();
         setSkillPickerOpen(true);
         const slashChanged = prevSlashPickerSlashIndexRef.current !== qu.slashIndex;
@@ -373,6 +399,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         const nextValue = input.slice(0, slashIndex) + insertText + input.slice(slashIndex + 1);
         const newCaret = slashIndex + insertText.length;
         setInput(nextValue);
+        clearSlashSkillDismissed();
         closeSkillPickerUi();
         composerRef.current?.setPlainTextAndSelection(nextValue, { start: newCaret, end: newCaret });
         composerRef.current?.focus();
@@ -382,11 +409,12 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         composerRef.current?.getSelectionOffsets() ?? { start: input.length, end: input.length };
       const { nextValue, nextSelection } = insertAtSelection(input, sel, insertText);
       setInput(nextValue);
+      clearSlashSkillDismissed();
       closeSkillPickerUi();
       composerRef.current?.setPlainTextAndSelection(nextValue, nextSelection);
       composerRef.current?.focus();
     },
-    [input, slashSession, closeSkillPickerUi],
+    [input, slashSession, closeSkillPickerUi, clearSlashSkillDismissed],
   );
 
   const handleSend = useCallback(() => {
@@ -411,8 +439,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     onSend(textToSend, attachmentsToSend, targetAgentId);
     setTargetAgentId(null);
     setPickerOpen(false);
+    clearSlashSkillDismissed();
     closeSkillPickerUi();
-  }, [input, attachments, canSend, onSend, targetAgentId, closeSkillPickerUi, slashChipCommandNames]);
+  }, [input, attachments, canSend, onSend, targetAgentId, closeSkillPickerUi, clearSlashSkillDismissed, slashChipCommandNames]);
 
   const handleStop = useCallback(() => {
     if (!canStop) return;
@@ -424,6 +453,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
       if (e.key === 'Escape') {
         if (skillPickerOpen) {
           e.preventDefault();
+          markSlashSkillDismissed();
           closeSkillPickerUi();
           return;
         }
@@ -447,7 +477,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         setTargetAgentId(null);
       }
     },
-    [handleSend, input, skillPickerOpen, targetAgentId, closeSkillPickerUi],
+    [handleSend, input, skillPickerOpen, targetAgentId, closeSkillPickerUi, markSlashSkillDismissed],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -582,10 +612,14 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                 skills={skills}
                 onPick={applySkillPick}
                 onOpenSkills={() => {
+                  markSlashSkillDismissed();
                   navigate('/skills');
                   closeSkillPickerUi();
                 }}
-                onClose={closeSkillPickerUi}
+                onClose={() => {
+                  markSlashSkillDismissed();
+                  closeSkillPickerUi();
+                }}
                 searchQuery={skillPickerSearch}
                 onSearchChange={setSkillPickerSearch}
                 autoFocusSearch={skillPickerOpen}
