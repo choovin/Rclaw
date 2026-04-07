@@ -6,7 +6,7 @@
  * Files are staged to disk via IPC — only lightweight path references
  * are sent with the message (no base64 over WebSocket).
  */
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, Loader2, AtSign, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
 import { useTranslation } from 'react-i18next';
 import { SkillPickerPopover } from './SkillPickerPopover';
-import { ComposerSlashDropdown } from './ComposerSlashDropdown';
 import { getSlashQueryAtCaret } from './chat-composer-slash-query';
 import {
   COMPOSER_ZWSP,
@@ -103,14 +102,10 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const [targetAgentId, setTargetAgentId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
-  const [slashInline, setSlashInline] = useState<{
-    slashIndex: number;
-    query: string;
-    caret: number;
-    caretRect: DOMRect | null;
-  } | null>(null);
-  const [slashHighlightIndex, setSlashHighlightIndex] = useState(0);
-  const prevSlashSegmentRef = useRef<number | null>(null);
+  const [skillPickerSearch, setSkillPickerSearch] = useState('');
+  const [slashSession, setSlashSession] = useState<{ slashIndex: number } | null>(null);
+  const prevSlashPickerSlashIndexRef = useRef<number | null>(null);
+  const syncingSlashStripRef = useRef(false);
   const composerRef = useRef<ChatComposerHandle>(null);
   const composerWrapRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -135,49 +130,21 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
-  const filteredSkillsForSlash = useMemo(() => {
-    if (!slashInline) {
-      return [];
+  const slashChipCommandNames = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of skills ?? []) {
+      if (!s.enabled) continue;
+      set.add(normalizeCommandName((s.slug ?? s.id) as string));
     }
-    const q = slashInline.query.trim().toLowerCase();
-    const enabled = (skills ?? []).filter((s) => s.enabled);
-    if (!q) {
-      return enabled;
-    }
-    return enabled.filter(
-      (s) =>
-        (s.name || '').toLowerCase().includes(q) ||
-        (s.slug ?? s.id).toLowerCase().includes(q) ||
-        (s.description || '').toLowerCase().includes(q),
-    );
-  }, [slashInline, skills]);
+    return set;
+  }, [skills]);
 
-  useEffect(() => {
-    if (!slashInline) {
-      return;
-    }
-    const n = filteredSkillsForSlash.length;
-    setSlashHighlightIndex((i) => Math.min(Math.max(0, i), Math.max(0, n - 1)));
-  }, [filteredSkillsForSlash.length, slashInline]);
-
-  const [slashAnchorRect, setSlashAnchorRect] = useState<DOMRect | null>(null);
-  useLayoutEffect(() => {
-    if (!slashInline) {
-      setSlashAnchorRect(null);
-      return;
-    }
-    const atSlash = composerRef.current?.getRectAtPlainTextOffset(slashInline.slashIndex) ?? null;
-    if (atSlash) {
-      setSlashAnchorRect(atSlash);
-      return;
-    }
-    if (slashInline.caretRect) {
-      setSlashAnchorRect(slashInline.caretRect);
-      return;
-    }
-    const r = composerWrapRef.current?.getBoundingClientRect();
-    setSlashAnchorRect(r ?? null);
-  }, [slashInline]);
+  const closeSkillPickerUi = useCallback(() => {
+    setSkillPickerOpen(false);
+    setSlashSession(null);
+    setSkillPickerSearch('');
+    prevSlashPickerSlashIndexRef.current = null;
+  }, []);
 
   // Focus composer on mount (avoids Windows focus loss after session delete + native dialog)
   useEffect(() => {
@@ -200,7 +167,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   }, [agents, currentAgentId, targetAgentId]);
 
   useEffect(() => {
-    if (!pickerOpen && !skillPickerOpen && !slashInline) {
+    if (!pickerOpen && !skillPickerOpen) {
       return;
     }
     const handlePointerDown = (event: MouseEvent) => {
@@ -209,21 +176,14 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         setPickerOpen(false);
       }
       if (skillPickerOpen && !skillPickerRef.current?.contains(target)) {
-        setSkillPickerOpen(false);
-      }
-      if (slashInline) {
-        const inComposer = composerWrapRef.current?.contains(target);
-        const inInline = (target as Element).closest?.('[data-testid="chat-skill-inline-picker"]');
-        if (!inComposer && !inInline) {
-          setSlashInline(null);
-        }
+        closeSkillPickerUi();
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
     };
-  }, [pickerOpen, skillPickerOpen, slashInline]);
+  }, [pickerOpen, skillPickerOpen, closeSkillPickerUi]);
 
   // ── File staging via native dialog ─────────────────────────────
 
@@ -364,64 +324,69 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
 
   const handleComposerChange = useCallback(
     (plain: string, meta?: { caret: number; caretRect?: DOMRect }) => {
-      setInput(plain);
+      if (syncingSlashStripRef.current) {
+        syncingSlashStripRef.current = false;
+        setInput(plain);
+        return;
+      }
       if (isComposingRef.current) {
+        setInput(plain);
         return;
       }
       const caret = meta?.caret ?? plain.length;
-      const q = getSlashQueryAtCaret(plain, caret);
-      if (q) {
+      const qu = getSlashQueryAtCaret(plain, caret);
+      if (qu) {
         void fetchSkills();
-        if (prevSlashSegmentRef.current !== q.slashIndex) {
-          setSlashHighlightIndex(0);
-          prevSlashSegmentRef.current = q.slashIndex;
+        setSkillPickerOpen(true);
+        const slashChanged = prevSlashPickerSlashIndexRef.current !== qu.slashIndex;
+        if (slashChanged) {
+          setSkillPickerSearch('');
+          prevSlashPickerSlashIndexRef.current = qu.slashIndex;
         }
-        setSlashInline({
-          slashIndex: q.slashIndex,
-          query: q.query,
-          caret,
-          caretRect: meta?.caretRect ?? null,
-        });
-      } else {
-        prevSlashSegmentRef.current = null;
-        setSlashInline(null);
-      }
-    },
-    [fetchSkills],
-  );
-
-  const applyInlineSlashPick = useCallback(
-    (payload: { commandName: string }) => {
-      if (!slashInline) {
+        setSlashSession({ slashIndex: qu.slashIndex });
+        const stripped = plain.slice(0, qu.slashIndex + 1) + plain.slice(caret);
+        if (stripped !== plain) {
+          setSkillPickerSearch(qu.query);
+          syncingSlashStripRef.current = true;
+          setInput(stripped);
+          const newCaret = qu.slashIndex + 1;
+          composerRef.current?.setPlainTextAndSelection(stripped, { start: newCaret, end: newCaret });
+          return;
+        }
+        setInput(plain);
         return;
       }
-      const { slashIndex, caret } = slashInline;
-      const insert = `${COMPOSER_ZWSP}/${payload.commandName}${COMPOSER_ZWSP}`;
-      const nextValue = input.slice(0, slashIndex) + insert + input.slice(caret);
-      const newCaret = slashIndex + insert.length;
-      setInput(nextValue);
-      prevSlashSegmentRef.current = null;
-      setSlashInline(null);
-      composerRef.current?.setPlainTextAndSelection(nextValue, { start: newCaret, end: newCaret });
-      composerRef.current?.focus();
+      prevSlashPickerSlashIndexRef.current = null;
+      setInput(plain);
+      if (slashSession) {
+        closeSkillPickerUi();
+      }
     },
-    [slashInline, input],
+    [fetchSkills, slashSession, closeSkillPickerUi],
   );
 
   const applySkillPick = useCallback(
     (payload: { commandName: string; display: string }) => {
-      setSlashInline(null);
-      prevSlashSegmentRef.current = null;
+      const insertText = `${COMPOSER_ZWSP}/${payload.commandName}${COMPOSER_ZWSP}`;
+      if (slashSession) {
+        const { slashIndex } = slashSession;
+        const nextValue = input.slice(0, slashIndex) + insertText + input.slice(slashIndex + 1);
+        const newCaret = slashIndex + insertText.length;
+        setInput(nextValue);
+        closeSkillPickerUi();
+        composerRef.current?.setPlainTextAndSelection(nextValue, { start: newCaret, end: newCaret });
+        composerRef.current?.focus();
+        return;
+      }
       const sel =
         composerRef.current?.getSelectionOffsets() ?? { start: input.length, end: input.length };
-      const insertText = `${COMPOSER_ZWSP}/${payload.commandName}${COMPOSER_ZWSP}`;
       const { nextValue, nextSelection } = insertAtSelection(input, sel, insertText);
       setInput(nextValue);
-      setSkillPickerOpen(false);
+      closeSkillPickerUi();
       composerRef.current?.setPlainTextAndSelection(nextValue, nextSelection);
       composerRef.current?.focus();
     },
-    [input],
+    [input, slashSession, closeSkillPickerUi],
   );
 
   const handleSend = useCallback(() => {
@@ -429,7 +394,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     const readyAttachments = attachments.filter(a => a.status === 'ready');
     // Capture values before clearing — clear input immediately for snappy UX,
     // but keep attachments available for the async send
-    const textToSend = formatComposerTextForSend(input.trim());
+    const textToSend = formatComposerTextForSend(input.trim(), slashChipCommandNames);
     const attachmentsToSend = readyAttachments.length > 0 ? readyAttachments : undefined;
     console.log(`[handleSend] text="${textToSend.substring(0, 50)}", attachments=${attachments.length}, ready=${readyAttachments.length}, sending=${!!attachmentsToSend}`);
     if (attachmentsToSend) {
@@ -446,10 +411,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
     onSend(textToSend, attachmentsToSend, targetAgentId);
     setTargetAgentId(null);
     setPickerOpen(false);
-    setSkillPickerOpen(false);
-    setSlashInline(null);
-    prevSlashSegmentRef.current = null;
-  }, [input, attachments, canSend, onSend, targetAgentId]);
+    closeSkillPickerUi();
+  }, [input, attachments, canSend, onSend, targetAgentId, closeSkillPickerUi, slashChipCommandNames]);
 
   const handleStop = useCallback(() => {
     if (!canStop) return;
@@ -459,28 +422,9 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (slashInline) {
-          e.preventDefault();
-          setSlashInline(null);
-          prevSlashSegmentRef.current = null;
-          return;
-        }
         if (skillPickerOpen) {
           e.preventDefault();
-          setSkillPickerOpen(false);
-          return;
-        }
-      }
-
-      if (slashInline && filteredSkillsForSlash.length > 0) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setSlashHighlightIndex((i) => Math.min(i + 1, filteredSkillsForSlash.length - 1));
-          return;
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSlashHighlightIndex((i) => Math.max(i - 1, 0));
+          closeSkillPickerUi();
           return;
         }
       }
@@ -490,19 +434,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         if (isComposingRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) {
           return;
         }
-        if (slashInline) {
-          if (filteredSkillsForSlash.length > 0) {
-            e.preventDefault();
-            const s = filteredSkillsForSlash[slashHighlightIndex];
-            if (s) {
-              const raw = (s.slug ?? s.id) as string;
-              applyInlineSlashPick({ commandName: normalizeCommandName(raw) });
-            }
-            return;
-          }
+        if (skillPickerOpen) {
           e.preventDefault();
-          setSlashInline(null);
-          prevSlashSegmentRef.current = null;
           return;
         }
         e.preventDefault();
@@ -514,16 +447,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
         setTargetAgentId(null);
       }
     },
-    [
-      applyInlineSlashPick,
-      filteredSkillsForSlash,
-      handleSend,
-      input,
-      skillPickerOpen,
-      slashHighlightIndex,
-      slashInline,
-      targetAgentId,
-    ],
+    [handleSend, input, skillPickerOpen, targetAgentId, closeSkillPickerUi],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -637,10 +561,15 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                   skillPickerOpen && 'bg-secondary text-foreground',
                 )}
                 onClick={() => {
-                  if (!skillPickerOpen) void fetchSkills();
-                  setSlashInline(null);
-                  prevSlashSegmentRef.current = null;
-                  setSkillPickerOpen((open) => !open);
+                  if (skillPickerOpen) {
+                    closeSkillPickerUi();
+                    return;
+                  }
+                  void fetchSkills();
+                  setSlashSession(null);
+                  prevSlashPickerSlashIndexRef.current = null;
+                  setSkillPickerSearch('');
+                  setSkillPickerOpen(true);
                   setPickerOpen(false);
                 }}
                 disabled={disabled || sending}
@@ -654,9 +583,12 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                 onPick={applySkillPick}
                 onOpenSkills={() => {
                   navigate('/skills');
-                  setSkillPickerOpen(false);
+                  closeSkillPickerUi();
                 }}
-                onClose={() => setSkillPickerOpen(false)}
+                onClose={closeSkillPickerUi}
+                searchQuery={skillPickerSearch}
+                onSearchChange={setSkillPickerSearch}
+                autoFocusSearch={skillPickerOpen}
                 searchPlaceholder={t('composer.skillPicker.searchPlaceholder')}
                 skillsLibraryLabel={t('composer.skillPicker.skillsLibrary')}
                 emptyEnabledLabel={t('composer.skillPicker.emptyEnabled')}
@@ -674,10 +606,8 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                     (pickerOpen || selectedTarget) && 'bg-secondary text-foreground'
                   )}
                   onClick={() => {
-                    setSlashInline(null);
-                    prevSlashSegmentRef.current = null;
+                    closeSkillPickerUi();
                     setPickerOpen((open) => !open);
-                    setSkillPickerOpen(false);
                   }}
                   disabled={disabled || sending}
                   title={t('composer.pickAgent')}
@@ -723,16 +653,7 @@ export function ChatInput({ onSend, onStop, disabled = false, sending = false, i
                   isComposingRef.current = false;
                 }}
                 removeButtonAriaLabel={t('composer.skillPicker.removeToken')}
-              />
-              <ComposerSlashDropdown
-                open={!!slashInline && !!slashAnchorRect}
-                anchorRect={slashAnchorRect}
-                skills={skills}
-                query={slashInline?.query ?? ''}
-                highlightIndex={slashHighlightIndex}
-                onPick={applyInlineSlashPick}
-                emptyEnabledLabel={t('composer.skillPicker.emptyEnabled')}
-                noResultsLabel={t('composer.skillPicker.noResults')}
+                slashChipCommandNames={slashChipCommandNames}
               />
             </div>
 

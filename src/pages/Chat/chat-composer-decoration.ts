@@ -1,9 +1,11 @@
-import { parseSlashTokens, type SlashToken } from './chat-skill-command';
+import { parseSlashTokens, slashTokensForChipBehavior, type SlashToken } from './chat-skill-command';
 
 type SlashMirrorPart = { kind: 'text'; text: string } | { kind: 'token'; token: SlashToken };
 
-function buildSlashMirrorParts(value: string): SlashMirrorPart[] {
+function buildSlashMirrorParts(value: string, slashChipCommandNames?: ReadonlySet<string>): SlashMirrorPart[] {
   const text = value ?? '';
+  const chipTokens = slashTokensForChipBehavior(text, slashChipCommandNames);
+  const chipStart = new Set(chipTokens.map((t) => t.startIndex));
   const tokens = parseSlashTokens(text);
   const parts: SlashMirrorPart[] = [];
   let i = 0;
@@ -11,7 +13,11 @@ function buildSlashMirrorParts(value: string): SlashMirrorPart[] {
     if (i < token.startIndex) {
       parts.push({ kind: 'text', text: text.slice(i, token.startIndex) });
     }
-    parts.push({ kind: 'token', token });
+    if (chipStart.has(token.startIndex)) {
+      parts.push({ kind: 'token', token });
+    } else {
+      parts.push({ kind: 'text', text: text.slice(token.startIndex, token.endIndexExclusive) });
+    }
     i = token.endIndexExclusive;
   }
   if (i < text.length) {
@@ -39,6 +45,8 @@ export type BuildComposerBodyOptions = {
   showRemoveButtons?: boolean;
   /** 有值时写入删除按钮的 `aria-label` */
   removeButtonAriaLabel?: string;
+  /** 仅对此集合内的命令名渲染 chip；未传则所有合法 slash token 均为 chip */
+  slashChipCommandNames?: ReadonlySet<string>;
 };
 
 const OUTER_CHIP_CLASS =
@@ -58,7 +66,7 @@ export function buildComposerBody(
 ): DocumentFragment {
   const showRemoveButtons = options?.showRemoveButtons !== false;
   const removeButtonAriaLabel = options?.removeButtonAriaLabel ?? '';
-  const parts = buildSlashMirrorParts(plainText);
+  const parts = buildSlashMirrorParts(plainText, options?.slashChipCommandNames);
   const frag = document.createDocumentFragment();
 
   for (const part of parts) {

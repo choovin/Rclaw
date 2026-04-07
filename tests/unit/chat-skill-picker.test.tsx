@@ -13,6 +13,7 @@ import {
   parseSlashTokens,
   stripSlashTokensFromRange,
 } from '@/pages/Chat/chat-skill-command';
+import { buildComposerBody } from '@/pages/Chat/chat-composer-decoration';
 import { SkillPickerPopover } from '@/pages/Chat/SkillPickerPopover';
 
 describe('chat-skill-command', () => {
@@ -126,6 +127,13 @@ describe('chat-skill-command', () => {
     expect(stripSlashTokensFromRange('aa /feishu bb', 0, 2)).toBe('aa');
   });
 
+  it('stripSlashTokensFromRange: with chip whitelist only strips matching commands', () => {
+    const s = 'hello /feishu ';
+    expect(stripSlashTokensFromRange(s, 0, s.length, new Set(['feishu']))).toBe('hello  ');
+    expect(stripSlashTokensFromRange(s, 0, s.length, new Set())).toBe(s);
+    expect(stripSlashTokensFromRange(s, 0, s.length, new Set(['other']))).toBe(s);
+  });
+
   it('formatComposerTextForSend: inserts space after slash token when ZWSP separates cmd and text', () => {
     const raw = `hello ${COMPOSER_ZWSP}/feishu${COMPOSER_ZWSP}world`;
     expect(formatComposerTextForSend(raw)).toBe('hello /feishu world');
@@ -133,6 +141,19 @@ describe('chat-skill-command', () => {
 
   it('formatComposerTextForSend: does not double space when space already follows token', () => {
     expect(formatComposerTextForSend(`/feishu ${COMPOSER_ZWSP}more`)).toBe('/feishu more');
+  });
+});
+
+describe('buildComposerBody chip whitelist', () => {
+  it('renders chip only when command is in slashChipCommandNames', () => {
+    const mount = (plain: string, names: Set<string>) => {
+      const frag = buildComposerBody(plain, { slashChipCommandNames: names });
+      const div = document.createElement('div');
+      div.appendChild(frag);
+      return div;
+    };
+    expect(mount('/unknown ', new Set(['feishu'])).querySelectorAll('[data-testid="chat-skill-chip"]')).toHaveLength(0);
+    expect(mount('/feishu ', new Set(['feishu'])).querySelectorAll('[data-testid="chat-skill-chip"]')).toHaveLength(1);
   });
 });
 
@@ -178,5 +199,46 @@ describe('SkillPickerPopover', () => {
 
     fireEvent.click(screen.getByText('技能库'));
     expect(onOpenSkills).toHaveBeenCalled();
+  });
+
+  it('calls onClose when Escape in search input', () => {
+    const onClose = vi.fn();
+    render(
+      <SkillPickerPopover
+        open
+        skills={[{ id: 'a', slug: 'a', name: 'A', description: '', enabled: true, icon: '✨' }]}
+        onPick={() => {}}
+        onOpenSkills={() => {}}
+        onClose={onClose}
+        searchPlaceholder="搜索技能"
+        skillsLibraryLabel="技能库"
+        emptyEnabledLabel="暂无可用技能"
+        noResultsLabel="未找到技能"
+      />,
+    );
+    fireEvent.keyDown(screen.getByPlaceholderText('搜索技能'), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('respects controlled searchQuery', () => {
+    const onSearchChange = vi.fn();
+    render(
+      <SkillPickerPopover
+        open
+        skills={[{ id: 'a', slug: 'a', name: 'A', description: '', enabled: true, icon: '✨' }]}
+        onPick={() => {}}
+        onOpenSkills={() => {}}
+        onClose={() => {}}
+        searchQuery="typed"
+        onSearchChange={onSearchChange}
+        searchPlaceholder="搜索技能"
+        skillsLibraryLabel="技能库"
+        emptyEnabledLabel="暂无可用技能"
+        noResultsLabel="未找到技能"
+      />,
+    );
+    expect(screen.getByPlaceholderText('搜索技能')).toHaveValue('typed');
+    fireEvent.change(screen.getByPlaceholderText('搜索技能'), { target: { value: 'x' } });
+    expect(onSearchChange).toHaveBeenCalledWith('x');
   });
 });

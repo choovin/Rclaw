@@ -39,6 +39,8 @@ export type ChatComposerProps = {
   onKeyDown?: (e: React.KeyboardEvent) => void;
   className?: string;
   removeButtonAriaLabel?: string;
+  /** 仅对此集合内的命令名渲染 chip 并参与 ZWSP/复制/整块删除；未传则与旧行为一致（全部 token） */
+  slashChipCommandNames?: ReadonlySet<string>;
   onCompositionStart?: () => void;
   onCompositionEnd?: () => void;
 };
@@ -53,6 +55,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       onKeyDown,
       className,
       removeButtonAriaLabel = '',
+      slashChipCommandNames,
       onCompositionStart,
       onCompositionEnd,
     },
@@ -107,6 +110,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         buildComposerBody(value, {
           removeButtonAriaLabel,
           showRemoveButtons: true,
+          slashChipCommandNames,
         }),
       );
 
@@ -136,7 +140,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       root.style.height = 'auto';
       const nextH = Math.min(Math.max(root.scrollHeight, 44), 200);
       root.style.height = `${nextH}px`;
-    }, [value, isComposing, removeButtonAriaLabel]);
+    }, [value, isComposing, removeButtonAriaLabel, slashChipCommandNames]);
 
     const handleInput = () => {
       const root = rootRef.current;
@@ -144,11 +148,11 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         return;
       }
       const plain = getPlainTextFromRoot(root);
-      const normalized = ensureComposerZwspAfterSlashTokens(plain);
+      const normalized = ensureComposerZwspAfterSlashTokens(plain, slashChipCommandNames);
       const sel = getOffsetsFromSelection(root);
       if (sel) {
-        const adjStart = adjustCaretForComposerZwsp(plain, sel.start);
-        const adjEnd = adjustCaretForComposerZwsp(plain, sel.end);
+        const adjStart = adjustCaretForComposerZwsp(plain, sel.start, slashChipCommandNames);
+        const adjEnd = adjustCaretForComposerZwsp(plain, sel.end, slashChipCommandNames);
         selectionAfterInputRef.current = { start: adjStart, end: adjEnd };
         lastKnownSelectionRef.current = { start: adjStart, end: adjEnd };
       }
@@ -158,9 +162,9 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       const outPlain = normalized !== plain ? normalized : plain;
       let caret: number;
       if (sel) {
-        caret = adjustCaretForComposerZwsp(plain, caretPlain);
+        caret = adjustCaretForComposerZwsp(plain, caretPlain, slashChipCommandNames);
       } else if (normalized !== plain) {
-        caret = adjustCaretForComposerZwsp(plain, Math.min(caretPlain, plain.length));
+        caret = adjustCaretForComposerZwsp(plain, Math.min(caretPlain, plain.length), slashChipCommandNames);
       } else {
         caret = caretPlain;
       }
@@ -235,7 +239,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       }
       e.preventDefault();
       e.stopPropagation();
-      const text = stripSlashTokensFromRange(value, sel.start, sel.end);
+      const text = stripSlashTokensFromRange(value, sel.start, sel.end, slashChipCommandNames);
       e.clipboardData?.setData('text/plain', text);
     };
 
@@ -253,7 +257,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       }
       e.preventDefault();
       e.stopPropagation();
-      const text = stripSlashTokensFromRange(value, sel.start, sel.end);
+      const text = stripSlashTokensFromRange(value, sel.start, sel.end, slashChipCommandNames);
       e.clipboardData?.setData('text/plain', text);
       const next = value.slice(0, sel.start) + value.slice(sel.end);
       pendingProgrammaticRef.current = { text: next, sel: { start: sel.start, end: sel.start } };
@@ -267,7 +271,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         if (root) {
           const sel = getOffsetsFromSelection(root);
           if (sel && sel.start === sel.end) {
-            const token = findSlashTokenForBackspaceDelete(value, sel.end);
+            const token = findSlashTokenForBackspaceDelete(value, sel.end, slashChipCommandNames);
             if (token) {
               e.preventDefault();
               e.stopPropagation();

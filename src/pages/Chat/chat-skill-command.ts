@@ -27,6 +27,19 @@ function isSlashTokenSuffixWhitespace(ch: string): boolean {
   return ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t';
 }
 
+/**
+ * Slash tokens that participate in chip UI, ZWSP insertion, clipboard stripping, and backspace-delete.
+ * When `chipCommandNames` is omitted, all parsed tokens are included (legacy behavior).
+ */
+export function slashTokensForChipBehavior(value: string, chipCommandNames?: ReadonlySet<string>): SlashToken[] {
+  const text = value ?? '';
+  const all = parseSlashTokens(text);
+  if (chipCommandNames === undefined) {
+    return all;
+  }
+  return all.filter((t) => chipCommandNames.has(text.slice(t.startIndex + 1, t.endIndexExclusive)));
+}
+
 export function parseSlashTokens(value: string): SlashToken[] {
   const text = value ?? '';
   const tokens: SlashToken[] = [];
@@ -63,14 +76,19 @@ export function parseSlashTokens(value: string): SlashToken[] {
  * Builds clipboard text for `value[start:end)` by omitting characters that belong to parsed slash
  * tokens (chip payload), so chip content is never copied even on Ctrl+A.
  */
-export function stripSlashTokensFromRange(value: string, start: number, end: number): string {
+export function stripSlashTokensFromRange(
+  value: string,
+  start: number,
+  end: number,
+  chipCommandNames?: ReadonlySet<string>,
+): string {
   const text = value ?? '';
   const s = Math.max(0, Math.min(start, text.length));
   const e = Math.max(0, Math.min(end, text.length));
   if (s >= e) {
     return '';
   }
-  const tokens = parseSlashTokens(text);
+  const tokens = slashTokensForChipBehavior(text, chipCommandNames);
   let out = '';
   for (let i = s; i < e; i++) {
     if (tokens.some((t) => i >= t.startIndex && i < t.endIndexExclusive)) {
@@ -85,9 +103,12 @@ export function stripSlashTokensFromRange(value: string, start: number, end: num
  * Trims composer ZWSP and ensures a normal space after each slash token when the next character
  * is not already whitespace, so sent text is `/cmd rest` instead of `/cmdrest`.
  */
-export function formatComposerTextForSend(trimmedComposer: string): string {
+export function formatComposerTextForSend(
+  trimmedComposer: string,
+  chipCommandNames?: ReadonlySet<string>,
+): string {
   const value = trimmedComposer ?? '';
-  const tokens = parseSlashTokens(value);
+  const tokens = slashTokensForChipBehavior(value, chipCommandNames);
   if (tokens.length === 0) {
     return value.replaceAll(COMPOSER_ZWSP, '');
   }
@@ -117,8 +138,11 @@ export function formatComposerTextForSend(trimmedComposer: string): string {
  * Ensures {@link COMPOSER_ZWSP} sits after the slash token's suffix boundary so typed text
  * cannot merge into the chip: prefer ` /cmd␠\u200b` (ZWSP after the delimiter space), not before it.
  */
-export function ensureComposerZwspAfterSlashTokens(value: string): string {
-  const tokens = parseSlashTokens(value);
+export function ensureComposerZwspAfterSlashTokens(
+  value: string,
+  chipCommandNames?: ReadonlySet<string>,
+): string {
+  const tokens = slashTokensForChipBehavior(value, chipCommandNames);
   if (tokens.length === 0) {
     return value;
   }
@@ -148,8 +172,12 @@ export function ensureComposerZwspAfterSlashTokens(value: string): string {
 }
 
 /** Maps a caret/offset in `plainBefore` to the same logical position after {@link ensureComposerZwspAfterSlashTokens}. */
-export function adjustCaretForComposerZwsp(plainBefore: string, caret: number): number {
-  const tokens = parseSlashTokens(plainBefore);
+export function adjustCaretForComposerZwsp(
+  plainBefore: string,
+  caret: number,
+  chipCommandNames?: ReadonlySet<string>,
+): number {
+  const tokens = slashTokensForChipBehavior(plainBefore, chipCommandNames);
   let delta = 0;
   for (const t of tokens) {
     const j = t.endIndexExclusive;
@@ -220,13 +248,17 @@ export function getTokenDeletionSpan(
  * If Backspace would delete a character inside the removable skill segment, return that token
  * so the caller can delete the whole segment in one step.
  */
-export function findSlashTokenForBackspaceDelete(v: string, caret: number): SlashToken | null {
+export function findSlashTokenForBackspaceDelete(
+  v: string,
+  caret: number,
+  chipCommandNames?: ReadonlySet<string>,
+): SlashToken | null {
   if (caret <= 0) {
     return null;
   }
   const delIndex = caret - 1;
   const value = v ?? '';
-  const tokens = parseSlashTokens(value);
+  const tokens = slashTokensForChipBehavior(value, chipCommandNames);
   for (const t of tokens) {
     const span = getTokenDeletionSpan(value, t);
     if (delIndex >= span.start && delIndex < span.endExclusive) {
