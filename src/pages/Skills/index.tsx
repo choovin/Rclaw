@@ -759,7 +759,7 @@ export function Skills() {
               <div data-testid="skills-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {filteredSkills.map((skill) => {
                   const canShowDelete = !skill.isBundled && !skill.isCore && !!skill.slug;
-                  const showBundledDeleteDisabled = !!skill.isBundled;
+                  const showBundledDeleteDisabled = !!skill.isBundled && !skill.isCore;
 
                   return (
                     <div
@@ -774,6 +774,7 @@ export function Skills() {
                       )}
                       onClick={() => setSelectedSkill(skill)}
                       onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return;
                         if (e.key === 'Enter') {
                           setSelectedSkill(skill);
                         }
@@ -840,6 +841,7 @@ export function Skills() {
                                 variant="outline"
                                 size="icon"
                                 disabled
+                                title={t('card.cantDeleteBundled')}
                                 className="h-8 w-8 rounded-full border-black/10 dark:border-white/10 bg-transparent shadow-none text-muted-foreground"
                               >
                                 <Trash2 className="h-4 w-4" />
