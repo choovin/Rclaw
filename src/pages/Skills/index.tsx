@@ -35,6 +35,8 @@ import { toast } from 'sonner';
 import type { Skill } from '@/types/skill';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { useNavigate } from 'react-router-dom';
+import { normalizeCommandName } from '@/pages/Chat/chat-skill-command';
 
 
 
@@ -408,6 +410,7 @@ export function Skills() {
     installing
   } = useSkillsStore();
   const { t } = useTranslation('skills');
+  const navigate = useNavigate();
   const gatewayStatus = useGatewayStore((state) => state.status);
   const [searchQuery, setSearchQuery] = useState('');
   const [installQuery, setInstallQuery] = useState('');
@@ -611,7 +614,7 @@ export function Skills() {
   }
 
   return (
-    <div className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
+    <div data-testid="skills-page" className={cn('relative flex flex-col transition-colors duration-300')} style={{ height: 'calc(100vh - 2.5rem)' }}>
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16">
 
         {/* Header */}
@@ -746,66 +749,127 @@ export function Skills() {
             </div>
           )}
 
-          <div className="flex flex-col gap-1">
-            {filteredSkills.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                <Puzzle className="h-10 w-10 mb-4 opacity-50" />
-                <p>{searchQuery ? t('noSkillsSearch') : t('noSkillsAvailable')}</p>
+          {filteredSkills.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Puzzle className="h-10 w-10 mb-4 opacity-50" />
+              <p>{searchQuery ? t('noSkillsSearch') : t('noSkillsAvailable')}</p>
+            </div>
+          ) : (
+            <>
+              <div data-testid="skills-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filteredSkills.map((skill) => {
+                  const canShowDelete = !skill.isBundled && !skill.isCore && !!skill.slug;
+                  const showBundledDeleteDisabled = !!skill.isBundled;
+
+                  return (
+                    <div
+                      data-testid="skills-card"
+                      key={skill.id}
+                      className={cn(
+                        'group rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-card/40',
+                        'hover:bg-white/60 dark:hover:bg-card/60 transition-colors cursor-pointer',
+                        'p-4 flex flex-col min-h-[152px]'
+                      )}
+                      onClick={() => setSelectedSkill(skill)}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="h-11 w-11 shrink-0 flex items-center justify-center text-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden">
+                          {skill.icon || '🧩'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-[15px] font-semibold text-foreground truncate">{skill.name}</h3>
+                            {skill.isCore ? (
+                              <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                            ) : skill.isBundled ? (
+                              <Puzzle className="h-3 w-3 text-blue-500/70 shrink-0" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-[13.5px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {skill.description}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2 text-[11px] text-foreground/55">
+                            <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-medium bg-black/5 dark:bg-white/10 border-0 shadow-none">
+                              {resolveSkillSourceLabel(skill, t)}
+                            </Badge>
+                            {skill.slug && skill.slug !== skill.name ? (
+                              <span className="truncate font-mono">{skill.slug}</span>
+                            ) : skill.version ? (
+                              <span className="truncate font-mono">v{skill.version}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          data-testid="skills-card-use-now"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-full px-3 border-black/10 dark:border-white/10 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-[12px] font-medium"
+                          onClick={() => {
+                            const commandName = normalizeCommandName(skill.slug ?? skill.id);
+                            navigate('/', { state: { prefillSkillCommand: `/${commandName}` } });
+                          }}
+                        >
+                          {t('card.useNow')}
+                        </Button>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Switch
+                            checked={skill.enabled}
+                            onCheckedChange={(checked) => handleToggle(skill.id, checked)}
+                            disabled={skill.isCore}
+                          />
+
+                          {showBundledDeleteDisabled ? (
+                            <div className="relative group/delete">
+                              <Button
+                                data-testid="skills-card-delete"
+                                variant="outline"
+                                size="icon"
+                                disabled
+                                className="h-8 w-8 rounded-full border-black/10 dark:border-white/10 bg-transparent shadow-none text-muted-foreground"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <div
+                                data-testid="skills-card-delete-tooltip"
+                                className={cn(
+                                  'hidden group-hover/delete:block',
+                                  'absolute right-0 top-full mt-2 z-20',
+                                  'rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-card',
+                                  'px-2.5 py-1.5 text-[12px] text-foreground/80 shadow-md whitespace-nowrap'
+                                )}
+                              >
+                                {t('card.cantDeleteBundled')}
+                              </div>
+                            </div>
+                          ) : canShowDelete ? (
+                            <Button
+                              data-testid="skills-card-delete"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-full border-black/10 dark:border-white/10 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 shadow-none text-muted-foreground hover:text-foreground"
+                              onClick={() => handleUninstall(skill.slug!)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              filteredSkills.map((skill) => (
-                <div
-                  key={skill.id}
-                  className="group flex flex-row items-center justify-between py-3.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer border-b border-black/5 dark:border-white/5 last:border-0"
-                  onClick={() => setSelectedSkill(skill)}
-                >
-                  <div className="flex items-start gap-4 flex-1 overflow-hidden pr-4">
-                    <div className="h-10 w-10 shrink-0 flex items-center justify-center text-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl overflow-hidden">
-                      {skill.icon || '🧩'}
-                    </div>
-                    <div className="flex flex-col overflow-hidden">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-[15px] font-semibold text-foreground truncate">{skill.name}</h3>
-                        {skill.isCore ? (
-                          <Lock className="h-3 w-3 text-muted-foreground" />
-                        ) : skill.isBundled ? (
-                          <Puzzle className="h-3 w-3 text-blue-500/70" />
-                        ) : null}
-                        {skill.slug && skill.slug !== skill.name ? (
-                          <span className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-black/10 dark:border-white/10 text-muted-foreground">
-                            {skill.slug}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="text-[13.5px] text-muted-foreground line-clamp-1 pr-6 leading-relaxed">
-                        {skill.description}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-foreground/55">
-                        <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[10px] font-medium bg-black/5 dark:bg-white/10 border-0 shadow-none">
-                          {resolveSkillSourceLabel(skill, t)}
-                        </Badge>
-                        <span className="truncate font-mono">
-                          {skill.baseDir || t('detail.pathUnavailable')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6 shrink-0" onClick={e => e.stopPropagation()}>
-                    {skill.version && (
-                      <span className="text-[13px] font-mono text-muted-foreground">
-                        v{skill.version}
-                      </span>
-                    )}
-                    <Switch
-                      checked={skill.enabled}
-                      onCheckedChange={(checked) => handleToggle(skill.id, checked)}
-                      disabled={skill.isCore}
-                    />
-                  </div>
+
+              {filteredSkills.length > 0 && (
+                <div data-testid="skills-card-no-more" className="text-center text-[13px] text-muted-foreground font-medium py-6">
+                  {t('card.noMore')}
                 </div>
-              ))
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
