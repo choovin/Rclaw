@@ -19,7 +19,7 @@ export function MainLayout() {
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Title bar: drag region on macOS, icon + controls on Windows */}
         <TitleBar />
-        <main className="min-h-0 flex-1 overflow-auto" style={{ backgroundColor: 'hsl(var(--background))' }}>
+        <main className="min-h-0 flex-1 overflow-hidden" style={{ backgroundColor: 'hsl(var(--background))' }}>
           <div key={location.pathname} className="animate-fade-in min-h-full">
             <Outlet />
           </div>
