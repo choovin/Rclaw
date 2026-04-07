@@ -56,8 +56,11 @@ export function Chat() {
   const prefillSkillCommand = routeState?.prefillSkillCommand;
 
   const clearPrefillState = useCallback(() => {
-    navigate(location.pathname, { replace: true, state: null });
-  }, [navigate, location.pathname]);
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: null },
+    );
+  }, [navigate, location.hash, location.pathname, location.search]);
 
   // Gate: 检查登录状态，未登录则弹出登录框
   const handleSend = async (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {

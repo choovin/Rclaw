@@ -21,6 +21,11 @@
         "disableVisible": "批量禁用可见项",
         "installSkill": "安装技能"
     },
+    "card": {
+        "cantDeleteBundled": "不能删除内置技能",
+        "noMore": "没有更多了",
+        "useNow": "立即使用"
+    },
     "noSkills": "未找到技能",
     "noSkillsSearch": "尝试不同的搜索词",
     "noSkillsAvailable": "暂无可用技能",

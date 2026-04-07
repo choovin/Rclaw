@@ -21,6 +21,11 @@
         "disableVisible": "表示中を一括無効化",
         "installSkill": "スキルをインストール"
     },
+    "card": {
+        "cantDeleteBundled": "内蔵スキルは削除できません",
+        "noMore": "これ以上ありません",
+        "useNow": "今すぐ使う"
+    },
     "noSkills": "スキルが見つかりません",
     "noSkillsSearch": "別の検索語をお試しください",
     "noSkillsAvailable": "利用可能なスキルがありません",

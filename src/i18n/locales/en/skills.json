@@ -21,6 +21,11 @@
         "disableVisible": "Disable Visible",
         "installSkill": "Install Skills"
     },
+    "card": {
+        "cantDeleteBundled": "Built-in skills can’t be deleted",
+        "noMore": "No more",
+        "useNow": "Use now"
+    },
     "noSkills": "No skills found",
     "noSkillsSearch": "Try a different search term",
     "noSkillsAvailable": "No skills available",

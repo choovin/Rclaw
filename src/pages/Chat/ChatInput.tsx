@@ -430,13 +430,14 @@ export function ChatInput({
 
   // One-shot: prefill `/command` passed from route state (e.g. Skills "Use now").
   useEffect(() => {
+    if (disabled || sending) return;
     if (didPrefillSkillCommandRef.current) return;
     const raw = (prefillSkillCommand ?? '').trim();
     if (!raw) return;
-    didPrefillSkillCommandRef.current = true;
 
     const cmd = raw.startsWith('/') ? raw.slice(1) : raw;
     const commandName = normalizeCommandName(cmd);
+    didPrefillSkillCommandRef.current = true;
     if (!commandName) {
       onPrefillConsumed?.();
       return;
@@ -444,7 +445,7 @@ export function ChatInput({
 
     applySkillPick({ commandName, display: raw });
     onPrefillConsumed?.();
-  }, [applySkillPick, onPrefillConsumed, prefillSkillCommand]);
+  }, [applySkillPick, disabled, onPrefillConsumed, prefillSkillCommand, sending]);
 
   const handleSend = useCallback(() => {
     if (!canSend) return;
