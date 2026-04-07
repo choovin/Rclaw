@@ -78,11 +78,13 @@ interface SkillsState {
   searching: boolean;
   searchError: string | null;
   installing: Record<string, boolean>; // slug -> boolean
+  toggling: Record<string, boolean>; // skillId -> boolean
   error: string | null;
 
   // Actions
   fetchSkills: () => Promise<void>;
   searchSkills: (query: string) => Promise<void>;
+  clearSearchResults: () => void;
   installSkill: (slug: string, version?: string) => Promise<void>;
   uninstallSkill: (slug: string) => Promise<void>;
   enableSkill: (skillId: string) => Promise<void>;
@@ -98,6 +100,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   searching: false,
   searchError: null,
   installing: {},
+  toggling: {},
   error: null,
 
   fetchSkills: async () => {
@@ -229,6 +232,10 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     }
   },
 
+  clearSearchResults: () => {
+    set({ searchResults: [], searching: false, searchError: null });
+  },
+
   installSkill: async (slug: string, version?: string) => {
     set((state) => ({ installing: { ...state.installing, [slug]: true } }));
     try {
@@ -282,31 +289,59 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   },
 
   enableSkill: async (skillId) => {
-    const { updateSkill } = get();
+    const { skills, updateSkill, toggling } = get();
+    if (toggling[skillId]) return;
 
+    const prevEnabled = skills.find((s) => s.id === skillId)?.enabled;
+    set((state) => ({ toggling: { ...state.toggling, [skillId]: true } }));
+
+    // Optimistic update: flip UI immediately, then confirm via Gateway.
+    updateSkill(skillId, { enabled: true });
     try {
       await useGatewayStore.getState().rpc('skills.update', { skillKey: skillId, enabled: true });
-      updateSkill(skillId, { enabled: true });
     } catch (error) {
+      if (typeof prevEnabled === 'boolean') {
+        updateSkill(skillId, { enabled: prevEnabled });
+      }
       console.error('Failed to enable skill:', error);
       throw error;
+    } finally {
+      set((state) => {
+        const next = { ...state.toggling };
+        delete next[skillId];
+        return { toggling: next };
+      });
     }
   },
 
   disableSkill: async (skillId) => {
-    const { updateSkill, skills } = get();
+    const { updateSkill, skills, toggling } = get();
+    if (toggling[skillId]) return;
 
     const skill = skills.find((s) => s.id === skillId);
     if (skill?.isCore) {
       throw new Error('Cannot disable core skill');
     }
 
+    const prevEnabled = skill?.enabled;
+    set((state) => ({ toggling: { ...state.toggling, [skillId]: true } }));
+
     try {
-      await useGatewayStore.getState().rpc('skills.update', { skillKey: skillId, enabled: false });
+      // Optimistic update: flip UI immediately, then confirm via Gateway.
       updateSkill(skillId, { enabled: false });
+      await useGatewayStore.getState().rpc('skills.update', { skillKey: skillId, enabled: false });
     } catch (error) {
+      if (typeof prevEnabled === 'boolean') {
+        updateSkill(skillId, { enabled: prevEnabled });
+      }
       console.error('Failed to disable skill:', error);
       throw error;
+    } finally {
+      set((state) => {
+        const next = { ...state.toggling };
+        delete next[skillId];
+        return { toggling: next };
+      });
     }
   },
 

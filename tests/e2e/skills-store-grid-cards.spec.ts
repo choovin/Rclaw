@@ -75,5 +75,28 @@ test.describe('Skills store grid cards', () => {
       await expect(chip).toBeVisible();
     }
   });
+
+  test('Skills 工具栏：点击“技能商店”打开安装 Sheet，关闭后自动回“我的技能”，且“打开技能文件夹”始终可见', async ({ page }) => {
+    test.setTimeout(180_000);
+    await skipSetupAndGoToSkills(page);
+
+    // 工具栏/Tab：需要实现稳定定位（添加 testid）
+    const tabMySkills = page.getByTestId('skills-tab-my-skills');
+    const tabMarketplace = page.getByTestId('skills-tab-marketplace');
+    await expect(tabMySkills).toBeVisible();
+    await expect(tabMarketplace).toBeVisible();
+
+    // “打开技能文件夹”始终可见（不再依赖 hasInstalledSkills）
+    await expect(page.getByTestId('skills-open-folder')).toBeVisible();
+
+    // 点击技能商店 -> Sheet 打开
+    await tabMarketplace.click();
+    await expect(page.getByTestId('skills-install-sheet')).toBeVisible();
+
+    // 关闭 Sheet -> 自动回“我的技能”
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('skills-install-sheet')).toBeHidden();
+    await expect(tabMySkills).toHaveAttribute('data-state', 'active');
+  });
 });
 

@@ -104,6 +104,7 @@
         "title": "マーケットプレイス",
         "installDialogTitle": "スキルをインストール",
         "installDialogSubtitle": "初期表示は Explore、キーワード入力時は検索します。",
+        "install": "インストール",
         "sourceLabel": "ソース",
         "sourceClawHub": "ClawHub",
         "securityNote": "インストール前にスキルカードをクリックして、ClawHubでドキュメントとセキュリティ情報を確認してください。",

@@ -14,7 +14,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Models } from './pages/Models';
 import { Chat } from './pages/Chat';
 import { Channels } from './pages/Channels';
-import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
 import { Settings } from './pages/Settings';
 import { Setup } from './pages/Setup';
@@ -25,6 +24,7 @@ import { applyGatewayTransportPreference } from './lib/api-client';
 import { subscribeCloudSessionIpc, useAuthStore } from './stores/auth';
 
 const Agents = lazy(() => import('./pages/Agents'));
+const Skills = lazy(() => import('./pages/Skills'));
 
 /** Production: always redirect. Dev: only when Settings > dev show Models is enabled. */
 function ModelsRoute() {
@@ -49,6 +49,10 @@ function EmployeesRouteFallback() {
       <p className="mt-3 text-sm text-muted-foreground">{t('status.loading')}</p>
     </div>
   );
+}
+
+function SkillsRouteFallback() {
+  return <EmployeesRouteFallback />;
 }
 
 /**
@@ -230,7 +234,14 @@ function App() {
               />
               <Route path="/agents" element={<Navigate to="/employees" replace />} />
               <Route path="/channels" element={<Channels />} />
-              <Route path="/skills" element={<Skills />} />
+              <Route
+                path="/skills"
+                element={
+                  <Suspense fallback={<SkillsRouteFallback />}>
+                    <Skills />
+                  </Suspense>
+                }
+              />
               <Route path="/cron" element={<Cron />} />
               <Route path="/settings/*" element={<Settings />} />
             </Route>

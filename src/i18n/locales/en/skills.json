@@ -104,6 +104,7 @@
         "title": "Marketplace",
         "installDialogTitle": "Install Skills",
         "installDialogSubtitle": "Browse Explore by default, or enter keywords to search.",
+        "install": "Install",
         "sourceLabel": "Source",
         "sourceClawHub": "ClawHub",
         "securityNote": "Click skill card to view its documentation and security information on ClawHub before installation.",

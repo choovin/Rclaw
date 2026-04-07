@@ -189,25 +189,31 @@ export function Sidebar() {
     () => Object.fromEntries((agents ?? []).map((agent) => [agent.id, agent.name])),
     [agents],
   );
-  const sessionBuckets: Array<{ key: SessionBucketKey; label: string; sessions: typeof sessions }> = [
-    { key: 'today', label: t('chat:historyBuckets.today'), sessions: [] },
-    { key: 'yesterday', label: t('chat:historyBuckets.yesterday'), sessions: [] },
-    { key: 'withinWeek', label: t('chat:historyBuckets.withinWeek'), sessions: [] },
-    { key: 'withinTwoWeeks', label: t('chat:historyBuckets.withinTwoWeeks'), sessions: [] },
-    { key: 'withinMonth', label: t('chat:historyBuckets.withinMonth'), sessions: [] },
-    { key: 'older', label: t('chat:historyBuckets.older'), sessions: [] },
-  ];
-  const sessionBucketMap = Object.fromEntries(sessionBuckets.map((bucket) => [bucket.key, bucket])) as Record<
-    SessionBucketKey,
-    (typeof sessionBuckets)[number]
-  >;
+  const sessionBuckets = useMemo((): Array<{ key: SessionBucketKey; label: string; sessions: typeof sessions }> => {
+    const buckets: Array<{ key: SessionBucketKey; label: string; sessions: typeof sessions }> = [
+      { key: 'today', label: t('chat:historyBuckets.today'), sessions: [] },
+      { key: 'yesterday', label: t('chat:historyBuckets.yesterday'), sessions: [] },
+      { key: 'withinWeek', label: t('chat:historyBuckets.withinWeek'), sessions: [] },
+      { key: 'withinTwoWeeks', label: t('chat:historyBuckets.withinTwoWeeks'), sessions: [] },
+      { key: 'withinMonth', label: t('chat:historyBuckets.withinMonth'), sessions: [] },
+      { key: 'older', label: t('chat:historyBuckets.older'), sessions: [] },
+    ];
 
-  for (const session of [...sessions].sort((a, b) =>
-    (sessionLastActivity[b.key] ?? 0) - (sessionLastActivity[a.key] ?? 0)
-  )) {
-    const bucketKey = getSessionBucket(sessionLastActivity[session.key] ?? 0, nowMs);
-    sessionBucketMap[bucketKey].sessions.push(session);
-  }
+    const bucketMap = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket])) as Record<
+      SessionBucketKey,
+      (typeof buckets)[number]
+    >;
+
+    const sorted = [...sessions].sort(
+      (a, b) => (sessionLastActivity[b.key] ?? 0) - (sessionLastActivity[a.key] ?? 0),
+    );
+    for (const session of sorted) {
+      const bucketKey = getSessionBucket(sessionLastActivity[session.key] ?? 0, nowMs);
+      bucketMap[bucketKey].sessions.push(session);
+    }
+
+    return buckets;
+  }, [nowMs, sessions, sessionLastActivity, t]);
 
   const navItems = [
     ...(import.meta.env.DEV && devShowModelsPage

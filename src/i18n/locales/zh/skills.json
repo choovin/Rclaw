@@ -102,8 +102,9 @@
     },
     "marketplace": {
         "title": "市场",
-        "installDialogTitle": "安装技能",
+        "installDialogTitle": "技能商店",
         "installDialogSubtitle": "默认展示 Explore，输入关键词后执行搜索。",
+        "install": "安装",
         "sourceLabel": "来源",
         "sourceClawHub": "ClawHub",
         "securityNote": "安装前请点击技能卡片，在 ClawHub 上查看其文档和安全信息。",
