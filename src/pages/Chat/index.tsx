@@ -21,8 +21,10 @@ import { cn } from '@/lib/utils';
 import { useStickToBottomInstant } from '@/hooks/use-stick-to-bottom-instant';
 import { useMinLoading } from '@/hooks/use-min-loading';
 import { invokeIpc } from '@/lib/api-client';
+import { useChatSkillsRefresh } from './useChatSkillsRefresh';
 
 export function Chat() {
+  useChatSkillsRefresh();
   const { t } = useTranslation('chat');
   const gatewayStatus = useGatewayStore((s) => s.status);
   const isGatewayRunning = gatewayStatus.state === 'running';

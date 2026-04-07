@@ -36,6 +36,20 @@ type ClawHubListResult = {
   baseDir?: string;
 };
 
+/** Local config from openclaw.json entries (host `/api/skills/configs`). */
+type SkillConfigEntry = {
+  apiKey?: string;
+  env?: Record<string, string>;
+  enabled?: boolean;
+};
+
+function enabledForDiskOnly(cfg: SkillConfigEntry | undefined): boolean {
+  if (cfg && typeof cfg.enabled === 'boolean') {
+    return cfg.enabled;
+  }
+  return true;
+}
+
 function mapErrorCodeToSkillErrorKey(
   code: AppError['code'],
   operation: 'fetch' | 'search' | 'install',
@@ -91,87 +105,104 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     if (get().skills.length === 0) {
       set({ loading: true, error: null });
     }
+
+    let lastError: unknown = null;
+
+    let gatewayData: GatewaySkillsStatusResult = {};
     try {
-      // 1. Fetch from Gateway (running skills)
-      const gatewayData = await useGatewayStore.getState().rpc<GatewaySkillsStatusResult>('skills.status');
+      gatewayData = await useGatewayStore.getState().rpc<GatewaySkillsStatusResult>('skills.status');
+    } catch (e) {
+      lastError = e;
+      console.warn('[skills] skills.status failed', e);
+    }
 
-      // 2. Fetch from ClawHub (installed on disk)
-      const clawhubResult = await hostApiFetch<{ success: boolean; results?: ClawHubListResult[]; error?: string }>('/api/clawhub/list');
+    let clawhubResult: { success: boolean; results?: ClawHubListResult[]; error?: string } = {
+      success: false,
+    };
+    try {
+      clawhubResult = await hostApiFetch<{ success: boolean; results?: ClawHubListResult[]; error?: string }>(
+        '/api/clawhub/list',
+      );
+    } catch (e) {
+      lastError = e;
+      console.warn('[skills] clawhub list failed', e);
+    }
 
-      // 3. Fetch configurations directly from Electron (since Gateway doesn't return them)
-      const configResult = await hostApiFetch<Record<string, { apiKey?: string; env?: Record<string, string> }>>('/api/skills/configs');
+    let configResult: Record<string, SkillConfigEntry> = {};
+    try {
+      configResult = await hostApiFetch<Record<string, SkillConfigEntry>>('/api/skills/configs');
+    } catch (e) {
+      lastError = e;
+      console.warn('[skills] configs failed', e);
+    }
 
-      let combinedSkills: Skill[] = [];
-      const currentSkills = get().skills;
+    let combinedSkills: Skill[] = [];
 
-      // Map gateway skills info
-      if (gatewayData.skills) {
-        combinedSkills = gatewayData.skills.map((s: GatewaySkillStatus) => {
-          // Merge with direct config if available
-          const directConfig = configResult[s.skillKey] || {};
+    if (gatewayData.skills) {
+      combinedSkills = gatewayData.skills.map((s: GatewaySkillStatus) => {
+        const directConfig = configResult[s.skillKey] || {};
 
-          return {
-            id: s.skillKey,
-            slug: s.slug || s.skillKey,
-            name: s.name || s.skillKey,
-            description: s.description || '',
-            enabled: !s.disabled,
-            icon: s.emoji || '📦',
-            version: s.version || '1.0.0',
-            author: s.author,
-            config: {
-              ...(s.config || {}),
-              ...directConfig,
-            },
-            isCore: s.bundled && s.always,
-            isBundled: s.bundled,
-            source: s.source,
-            baseDir: s.baseDir,
-            filePath: s.filePath,
-          };
-        });
-      } else if (currentSkills.length > 0) {
-        // ... if gateway down ...
-        combinedSkills = [...currentSkills];
-      }
+        return {
+          id: s.skillKey,
+          slug: s.slug || s.skillKey,
+          name: s.name || s.skillKey,
+          description: s.description || '',
+          enabled: !s.disabled,
+          icon: s.emoji || '📦',
+          version: s.version || '1.0.0',
+          author: s.author,
+          config: {
+            ...(s.config || {}),
+            ...directConfig,
+          },
+          isCore: s.bundled && s.always,
+          isBundled: s.bundled,
+          source: s.source,
+          baseDir: s.baseDir,
+          filePath: s.filePath,
+        };
+      });
+    }
 
-      // Merge with ClawHub results
-      if (clawhubResult.success && clawhubResult.results) {
-        clawhubResult.results.forEach((cs: ClawHubListResult) => {
-          const existing = combinedSkills.find(s => s.id === cs.slug);
-          if (existing) {
-            if (!existing.baseDir && cs.baseDir) {
-              existing.baseDir = cs.baseDir;
-            }
-            if (!existing.source && cs.source) {
-              existing.source = cs.source;
-            }
-            return;
+    if (clawhubResult.success && clawhubResult.results) {
+      clawhubResult.results.forEach((cs: ClawHubListResult) => {
+        const existing = combinedSkills.find((s) => s.id === cs.slug);
+        if (existing) {
+          if (!existing.baseDir && cs.baseDir) {
+            existing.baseDir = cs.baseDir;
           }
-          const directConfig = configResult[cs.slug] || {};
-          combinedSkills.push({
-            id: cs.slug,
-            slug: cs.slug,
-            name: cs.slug,
-            description: 'Recently installed, initializing...',
-            enabled: false,
-            icon: '⌛',
-            version: cs.version || 'unknown',
-            author: undefined,
-            config: directConfig,
-            isCore: false,
-            isBundled: false,
-            source: cs.source || 'openclaw-managed',
-            baseDir: cs.baseDir,
-          });
+          if (!existing.source && cs.source) {
+            existing.source = cs.source;
+          }
+          return;
+        }
+        const directConfig = configResult[cs.slug] || {};
+        combinedSkills.push({
+          id: cs.slug,
+          slug: cs.slug,
+          name: cs.slug,
+          description: 'Recently installed, initializing...',
+          enabled: enabledForDiskOnly(directConfig),
+          icon: '⌛',
+          version: cs.version || 'unknown',
+          author: undefined,
+          config: directConfig,
+          isCore: false,
+          isBundled: false,
+          source: cs.source || 'openclaw-managed',
+          baseDir: cs.baseDir,
         });
-      }
+      });
+    }
 
-      set({ skills: combinedSkills, loading: false });
-    } catch (error) {
-      console.error('Failed to fetch skills:', error);
-      const appError = normalizeAppError(error, { module: 'skills', operation: 'fetch' });
-      set({ loading: false, error: mapErrorCodeToSkillErrorKey(appError.code, 'fetch') });
+    if (combinedSkills.length === 0 && lastError !== null) {
+      const appError = normalizeAppError(lastError, { module: 'skills', operation: 'fetch' });
+      set({
+        loading: false,
+        error: mapErrorCodeToSkillErrorKey(appError.code, 'fetch'),
+      });
+    } else {
+      set({ skills: combinedSkills, loading: false, error: null });
     }
   },
 
