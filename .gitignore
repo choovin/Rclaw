@@ -47,6 +47,8 @@ test-results/
 .cache/
 .turbo/
 *.tsbuildinfo
+**/__pycache__/
+*.pyc
 
 # Electron
 *.dmg

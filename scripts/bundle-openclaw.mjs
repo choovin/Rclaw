@@ -51,6 +51,31 @@ fs.mkdirSync(OUTPUT, { recursive: true });
 echo`   Copying openclaw package...`;
 fs.cpSync(openclawReal, OUTPUT, { recursive: true, dereference: true });
 
+// 3b. Inject ClawX built-in skills into the bundled openclaw/skills directory.
+// These skills become truly "built-in" (bundled) at runtime because they ship
+// inside the OpenClaw package directory, not as user-installed skills.
+const CLAWX_BUILTIN_SKILLS = [
+  {
+    slug: 'canvas-design',
+    sourceDir: path.join(ROOT, 'resources', 'preinstalled-skills', 'canvas-design'),
+  },
+];
+
+for (const entry of CLAWX_BUILTIN_SKILLS) {
+  const sourceDir = entry.sourceDir;
+  const targetDir = path.join(OUTPUT, 'skills', entry.slug);
+  const sourceManifest = path.join(sourceDir, 'SKILL.md');
+  if (!fs.existsSync(sourceManifest)) {
+    echo`   ⚠️  Built-in skill source missing SKILL.md, skipping: ${sourceDir}`;
+    continue;
+  }
+
+  echo`   Injecting built-in skill: ${entry.slug}`;
+  fs.rmSync(targetDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+  fs.cpSync(sourceDir, targetDir, { recursive: true, dereference: true });
+}
+
 // 4. Recursively collect ALL transitive dependencies via pnpm virtual store BFS
 //
 // pnpm structure example:
