@@ -79,8 +79,10 @@ RClaw-resimg/
 .worktrees/
 CLAUDE.md
 claude/
-# Ignore docs by default, but keep design specs in repo
-docs/
+# Ignore docs by default, but keep design specs in repo.
+# Note: do NOT ignore the `docs/` directory itself, otherwise we can't
+# re-include new files under it (gitignore limitation).
+docs/*
 !docs/superpowers/
 !docs/superpowers/specs/
 !docs/superpowers/specs/*.md
