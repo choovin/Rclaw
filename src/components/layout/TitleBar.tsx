@@ -8,13 +8,24 @@ import { useState, useEffect } from 'react';
 import { Minus, Square, X, Copy } from 'lucide-react';
 import { invokeIpc } from '@/lib/api-client';
 import { HeaderAuth } from './HeaderAuth';
+import { AppMenu } from './AppMenu';
 
 export function TitleBar() {
   const platform = window.electron?.platform;
 
   if (platform === 'darwin') {
-    // macOS: just a drag region, traffic lights are native
-    return <div className="drag-region h-[48px] shrink-0 border-b/0" style={{ backgroundColor: 'hsl(var(--background))' }} />;
+    // macOS: drag region + app menu (traffic lights are native)
+    return (
+      <div
+        className="drag-region flex h-[48px] shrink-0 items-center border-b/0"
+        style={{ backgroundColor: 'hsl(var(--background))' }}
+      >
+        <div className="min-w-0 flex-1" />
+        <div className="no-drag flex h-full shrink-0 items-center pr-2">
+          <AppMenu />
+        </div>
+      </div>
+    );
   }
 
   // Linux keeps the native frame/title bar for better IME compatibility.
@@ -59,6 +70,7 @@ function WindowsTitleBar() {
       {/* Right side - no-drag so clickable */}
       <div className="no-drag flex h-full items-center">
         <HeaderAuth />
+        <AppMenu />
         {/* Window Controls */}
         <div className="flex h-full">
           <button

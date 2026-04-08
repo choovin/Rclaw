@@ -1,4 +1,7 @@
 {
+    "appMenu": {
+        "triggerAria": "App menu"
+    },
     "sidebar": {
         "chat": "Chat",
         "newChat": "New Chat",

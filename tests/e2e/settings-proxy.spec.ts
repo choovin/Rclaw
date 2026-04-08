@@ -20,7 +20,8 @@ test.describe('ClawX developer proxy settings', () => {
   test('keeps proxy save available when disabling proxy in developer mode', async ({ page }) => {
     await completeSetup(page);
 
-    await page.getByTestId('sidebar-nav-settings').click();
+    await page.getByTestId('app-menu-trigger').click();
+    await page.getByTestId('app-menu-item-settings').click();
     await expect(page.getByTestId('settings-page')).toBeVisible();
 
     const devModeToggle = page.getByTestId('settings-dev-mode-switch');

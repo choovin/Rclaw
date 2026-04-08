@@ -10,12 +10,9 @@ import {
   Bot,
   Puzzle,
   Clock,
-  Settings as SettingsIcon,
   PanelLeftClose,
   PanelLeft,
   Plus,
-  Terminal,
-  ExternalLink,
   Trash2,
   Cpu,
 } from 'lucide-react';
@@ -27,7 +24,6 @@ import { useAgentsStore } from '@/stores/agents';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { hostApiFetch } from '@/lib/host-api';
 import { useTranslation } from 'react-i18next';
 import logoSvg from '@/assets/logo.svg';
 
@@ -152,23 +148,6 @@ export function Sidebar() {
 
   const getSessionLabel = (key: string, displayName?: string, label?: string) =>
     sessionLabels[key] ?? label ?? displayName ?? key;
-
-  const openDevConsole = async () => {
-    try {
-      const result = await hostApiFetch<{
-        success: boolean;
-        url?: string;
-        error?: string;
-      }>('/api/gateway/control-ui');
-      if (result.success && result.url) {
-        window.electron.openExternal(result.url);
-      } else {
-        console.error('Failed to get Dev Console URL:', result.error);
-      }
-    } catch (err) {
-      console.error('Error opening Dev Console:', err);
-    }
-  };
 
   const { t } = useTranslation(['common', 'chat']);
   const [sessionToDelete, setSessionToDelete] = useState<{ key: string; label: string } | null>(null);
@@ -303,7 +282,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Session list — below Settings, only when expanded */}
+      {/* Session list — below primary nav, only when expanded */}
       {!sidebarCollapsed && sessions.length > 0 && (
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 mt-3 space-y-0.5 pb-2">
           {sessionBuckets.map((bucket) => (
@@ -360,54 +339,6 @@ export function Sidebar() {
           ))}
         </div>
       )}
-
-      {/* Footer */}
-      <div className="p-2.5 mt-auto">
-        <NavLink
-            to="/settings"
-            data-testid="sidebar-nav-settings"
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors',
-                'hover:bg-secondary text-foreground/70',
-                isActive && 'bg-secondary text-foreground',
-                sidebarCollapsed ? 'justify-center px-0' : ''
-              )
-            }
-            style={{ letterSpacing: '-0.005em' }}
-          >
-          {({ isActive }) => (
-            <>
-              <div className={cn("flex shrink-0 items-center justify-center", isActive ? "text-foreground" : "text-muted-foreground")}>
-                <SettingsIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              </div>
-              {!sidebarCollapsed && <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{t('sidebar.settings')}</span>}
-            </>
-          )}
-        </NavLink>
-
-        <Button
-          data-testid="sidebar-open-dev-console"
-          variant="ghost"
-          className={cn(
-            'flex items-center gap-2.5 rounded-xl px-3 py-2 h-auto text-[14px] font-medium transition-colors w-full mt-1',
-            'hover:bg-secondary text-foreground/70',
-            sidebarCollapsed ? 'justify-center px-0' : 'justify-start'
-          )}
-          style={{ letterSpacing: '-0.005em' }}
-          onClick={openDevConsole}
-        >
-          <div className="flex shrink-0 items-center justify-center text-muted-foreground">
-            <Terminal className="h-[18px] w-[18px]" strokeWidth={1.75} />
-          </div>
-          {!sidebarCollapsed && (
-            <>
-              <span className="flex-1 text-left overflow-hidden text-ellipsis whitespace-nowrap">{t('common:sidebar.openClawPage')}</span>
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-40 text-muted-foreground" />
-            </>
-          )}
-        </Button>
-      </div>
 
       <ConfirmDialog
         open={!!sessionToDelete}

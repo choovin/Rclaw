@@ -1,4 +1,7 @@
 {
+    "appMenu": {
+        "triggerAria": "应用菜单"
+    },
     "sidebar": {
         "chat": "聊天",
         "newChat": "新建对话",
