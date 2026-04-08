@@ -101,7 +101,7 @@
     "meta": {
         "telegram": {
             "description": "Connect Telegram using a bot token from @BotFather",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/TjiGwxsMWi7hpDkDAQBc0ydMnEf#MEkKdqXP1orZU2x4SrFcdUHgnl1",
+            "docsUrl": "https://runnodecn.feishu.cn/docx/Eso7dUDTXoAV2wxx5lKclIsHnYe?from=from_copylink",
             "fields": {
                 "botToken": {
                     "label": "Bot Token",
@@ -123,7 +123,7 @@
         },
         "discord": {
             "description": "Connect Discord using a bot token from Developer Portal",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/BkOywJYCAiYRN9k4KTTceKPMnxg#QS6LdxnA2oNtfcxtFc8cgabnnNd",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/F1aPw1SShid2bGkbsgockTfSnJf?from=from_copylink",
             "fields": {
                 "token": {
                     "label": "Bot Token",
@@ -151,7 +151,7 @@
         },
         "whatsapp": {
             "description": "Connect WhatsApp by scanning a QR code (no phone number required)",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/ES7fwUfH8iGl8FkHYfFcyWB3n4d#doxcnUElomBZLi0NnKLUzn6zLbd",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/Jqd5wqCUiiY4IAkKY8KcuUgFnDf?from=from_copylink",
             "instructions": [
                 "Open WhatsApp on your phone",
                 "Go to Settings > Linked Devices > Link a Device",
@@ -161,7 +161,7 @@
         },
         "wechat": {
             "description": "Connect personal WeChat with Tencent's official OpenClaw plugin by scanning a QR code",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/GHYZwuPCriF0gWkXwkFcJ9zon3b",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/J4AWwQ0xrilxM7kInnMcZ3KznYg?from=from_copylink",
             "instructions": [
                 "Click Generate QR Code to install and enable the official WeChat plugin inside OpenClaw",
                 "Scan the QR code below with WeChat and confirm the connection on your phone",
@@ -171,7 +171,7 @@
         },
         "dingtalk": {
             "description": "Connect DingTalk via OpenClaw channel plugin (Stream mode)",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/Y5eNwiSiZidkLskrwtJc1rUln0b#doxcnDgA78n43DbkiQjI1OqUA7b",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/DWm4wN712iTpw1kwhY7cmnoxnog?from=from_copylink",
             "fields": {
                 "clientId": {
                     "label": "Client ID (AppKey)",
@@ -218,7 +218,7 @@
         },
         "feishu": {
             "description": "Connect Feishu/Lark bot via WebSocket",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/GKn8wOvHnibpPNkNkPzcAvGlnzK#GdHUdp9t9oqyegxwV8ScLvVGn1c",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/HUZNwZxbhiBRsCkvOz2cXTs2nOc?from=from_copylink",
             "fields": {
                 "appId": {
                     "label": "App ID",
@@ -238,7 +238,7 @@
         },
         "wecom": {
             "description": "Connect WeCom Bot via plugin",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/JTGnwoV0RixKPtkr4w7c7gpAnDc",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/FRLFwX5FQigjnRkvjv8ceb2LnId?from=from_copylink",
             "fields": {
                 "botId": {
                     "label": "Bot ID",
@@ -369,7 +369,7 @@
         },
         "qqbot": {
             "description": "Connect QQ Bot via @tencent-connect/openclaw-qqbot plugin",
-            "docsUrl": "https://icnnp7d0dymg.feishu.cn/wiki/KPIJwlyiGiupMrkiS9ice39Zn2c",
+            "docsUrl": "https://runnodecn.feishu.cn/wiki/IynKwNXzvirWKxkKayucqUkhnmf?from=from_copylink",
             "fields": {
                 "appId": {
                     "label": "App ID",
