@@ -123,6 +123,16 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
       } else if (selectionAfterInputRef.current) {
         snapSel = selectionAfterInputRef.current;
         selectionAfterInputRef.current = null;
+      } else {
+        const lk = lastKnownSelectionRef.current;
+        if (lk) {
+          const max = value.length;
+          const lo = Math.max(0, Math.min(Math.min(lk.start, lk.end), max));
+          const hi = Math.max(0, Math.min(Math.max(lk.start, lk.end), max));
+          if (lo <= hi) {
+            snapSel = { start: lo, end: hi };
+          }
+        }
       }
       if (snapSel) {
         setSelectionFromOffsets(root, snapSel.start, snapSel.end);
