@@ -75,6 +75,10 @@ export const useEmployeesStore = create<EmployeesState>()(
         try {
           set({ isLoading: true });
 
+          const vibeRaw = employee.vibeZh ?? employee.vibe;
+          const vibePayload =
+            typeof vibeRaw === 'string' && vibeRaw.trim().length > 0 ? vibeRaw.trim() : undefined;
+
           const res = (await hostApiFetch('/api/employees/provision', {
             method: 'POST',
             body: JSON.stringify({
@@ -85,7 +89,7 @@ export const useEmployeesStore = create<EmployeesState>()(
               agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
               identityContent: (employee as EmployeeWithStatus).identityContent || '',
               emoji: employee.emoji,
-              vibe: employee.vibeZh ?? employee.vibe,
+              ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
             }),
           })) as {
             success?: boolean;

@@ -651,8 +651,9 @@ export async function provisionDigitalEmployeeAgent(
   if (typeof payload.agentsContent !== 'string') throw new Error('agentsContent must be a string');
   if (!payload.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
 
-  if (typeof payload.vibe !== 'string') throw new Error('vibe must be a string');
-  if (!payload.vibe.trim()) throw new Error('vibe must be non-empty (trimmed)');
+  if (payload.vibe != null && typeof payload.vibe !== 'string') {
+    throw new Error('vibe must be a string');
+  }
 
   onStage?.('create_agent');
   const { agentId } = await createAgentWithResult(nameZhTrimmed, { inheritWorkspace: false });
@@ -670,7 +671,7 @@ export async function provisionDigitalEmployeeAgent(
       agentsContent: payload.agentsContent,
       identityContent: payload.identityContent,
       emoji: payload.emoji,
-      vibe: payload.vibe,
+      vibe: payload.vibe?.trim() ? payload.vibe.trim() : undefined,
     });
   } catch (err) {
     const e = new Error(String(err)) as Error & { agentId?: string };

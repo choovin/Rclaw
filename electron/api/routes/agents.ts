@@ -295,7 +295,12 @@ export async function handleAgentRoutes(
       if (!body.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
       const agentsContent = body.agentsContent;
 
-      const vibe = mustTrimNonEmpty(body.vibe, 'vibe');
+      let vibe: string | undefined;
+      if (body.vibe !== undefined && body.vibe !== null) {
+        if (typeof body.vibe !== 'string') throw new Error('vibe must be a string');
+        const vibeTrimmed = body.vibe.trim();
+        vibe = vibeTrimmed.length > 0 ? vibeTrimmed : undefined;
+      }
 
       const identityContent =
         typeof body.identityContent === 'string' ? body.identityContent : '';

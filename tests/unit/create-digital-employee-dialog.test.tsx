@@ -69,4 +69,27 @@ describe('CreateDigitalEmployeeDialog', () => {
     expect(employee.soulContent).toBe('## soul');
     expect(employee.agentsContent).toBe('## agents');
   });
+
+  it('keeps submit disabled and does not addEmployee when one-line description (vibe) is empty', () => {
+    render(<CreateDigitalEmployeeDialog onClose={() => {}} />);
+
+    fireEvent.change(screen.getByTestId('create-digital-employee-name-input'), {
+      target: { value: '有名字无描述' },
+    });
+    fireEvent.change(screen.getByTestId('create-digital-employee-soul-textarea'), {
+      target: { value: '## soul' },
+    });
+    fireEvent.change(screen.getByTestId('create-digital-employee-agents-textarea'), {
+      target: { value: '## agents' },
+    });
+    fireEvent.click(screen.getByTestId('create-digital-employee-emoji-option-0'));
+    fireEvent.change(screen.getByTestId('create-digital-employee-color-input'), {
+      target: { value: '#D97706' },
+    });
+
+    const submit = screen.getByTestId('create-digital-employee-submit-button');
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(addEmployeeMock).not.toHaveBeenCalled();
+  });
 });

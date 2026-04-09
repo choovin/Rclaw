@@ -16,19 +16,5 @@ describe('digital employee provision validation', () => {
     ).rejects.toThrow(/soulContent/i);
   });
 
-  it('rejects missing vibe', async () => {
-    await expect(
-      provisionDigitalEmployeeAgent({
-        nameZh: '人类学家',
-        nameEn: 'Anthropologist',
-        soulContent: '## soul',
-        agentsContent: '## agents',
-        identityContent: 'vibe',
-        emoji: '🌍',
-        // @ts-expect-error - test missing vibe
-        vibe: undefined,
-      }),
-    ).rejects.toThrow(/vibe/i);
-  });
 });
 
