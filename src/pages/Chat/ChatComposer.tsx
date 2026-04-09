@@ -13,9 +13,12 @@ import {
 } from './chat-composer-plaintext';
 import {
   adjustCaretForComposerZwsp,
+  adjustCaretForComposerZwspBeforeSlashTokens,
   deleteTokenAtRange,
   ensureComposerZwspAfterSlashTokens,
+  ensureComposerZwspBeforeSlashTokens,
   findSlashTokenForBackspaceDelete,
+  resolveComposerArrowCaretOffset,
   stripSlashTokensFromRange,
   type SlashToken,
 } from './chat-skill-command';
@@ -158,23 +161,44 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         return;
       }
       const plain = getPlainTextFromRoot(root);
-      const normalized = ensureComposerZwspAfterSlashTokens(plain, slashChipCommandNames);
+      const afterBefore = ensureComposerZwspBeforeSlashTokens(plain, slashChipCommandNames);
+      const normalized = ensureComposerZwspAfterSlashTokens(afterBefore, slashChipCommandNames);
       const sel = getOffsetsFromSelection(root);
       if (sel) {
-        const adjStart = adjustCaretForComposerZwsp(plain, sel.start, slashChipCommandNames);
-        const adjEnd = adjustCaretForComposerZwsp(plain, sel.end, slashChipCommandNames);
+        const adjStart = adjustCaretForComposerZwsp(
+          afterBefore,
+          adjustCaretForComposerZwspBeforeSlashTokens(plain, sel.start, slashChipCommandNames),
+          slashChipCommandNames,
+        );
+        const adjEnd = adjustCaretForComposerZwsp(
+          afterBefore,
+          adjustCaretForComposerZwspBeforeSlashTokens(plain, sel.end, slashChipCommandNames),
+          slashChipCommandNames,
+        );
         selectionAfterInputRef.current = { start: adjStart, end: adjEnd };
         lastKnownSelectionRef.current = { start: adjStart, end: adjEnd };
       }
       const effectiveSel =
         sel ?? lastKnownSelectionRef.current ?? { start: plain.length, end: plain.length };
       const caretPlain = effectiveSel.end;
-      const outPlain = normalized !== plain ? normalized : plain;
+      const outPlain = normalized;
       let caret: number;
       if (sel) {
-        caret = adjustCaretForComposerZwsp(plain, caretPlain, slashChipCommandNames);
-      } else if (normalized !== plain) {
-        caret = adjustCaretForComposerZwsp(plain, Math.min(caretPlain, plain.length), slashChipCommandNames);
+        caret = adjustCaretForComposerZwsp(
+          afterBefore,
+          adjustCaretForComposerZwspBeforeSlashTokens(plain, caretPlain, slashChipCommandNames),
+          slashChipCommandNames,
+        );
+      } else if (afterBefore !== plain || normalized !== afterBefore) {
+        caret = adjustCaretForComposerZwsp(
+          afterBefore,
+          adjustCaretForComposerZwspBeforeSlashTokens(
+            plain,
+            Math.min(caretPlain, plain.length),
+            slashChipCommandNames,
+          ),
+          slashChipCommandNames,
+        );
       } else {
         caret = caretPlain;
       }
@@ -276,16 +300,42 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
     };
 
     const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Backspace' && !isComposing && !disabled && value) {
+      if (
+        (e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        !e.shiftKey &&
+        !isComposing &&
+        !disabled
+      ) {
         const root = rootRef.current;
         if (root) {
           const sel = getOffsetsFromSelection(root);
-          if (sel && sel.start === sel.end) {
-            const token = findSlashTokenForBackspaceDelete(value, sel.end, slashChipCommandNames);
+          const plainLive = getPlainTextFromRoot(root);
+          const dir = e.key === 'ArrowLeft' ? 'left' : 'right';
+          const pos = sel?.start ?? 0;
+          const nextOff =
+            sel && sel.start === sel.end
+              ? resolveComposerArrowCaretOffset(plainLive, pos, dir, slashChipCommandNames)
+              : null;
+          if (nextOff != null) {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectionFromOffsets(root, nextOff, nextOff);
+            lastKnownSelectionRef.current = { start: nextOff, end: nextOff };
+            return;
+          }
+        }
+      }
+      if (e.key === 'Backspace' && !isComposing && !disabled) {
+        const root = rootRef.current;
+        if (root) {
+          const sel = getOffsetsFromSelection(root);
+          const plainLive = getPlainTextFromRoot(root);
+          if (sel && sel.start === sel.end && plainLive) {
+            const token = findSlashTokenForBackspaceDelete(plainLive, sel.end, slashChipCommandNames);
             if (token) {
               e.preventDefault();
               e.stopPropagation();
-              const { nextValue, nextSelection } = deleteTokenAtRange(value, token, sel);
+              const { nextValue, nextSelection } = deleteTokenAtRange(plainLive, token, sel);
               pendingProgrammaticRef.current = { text: nextValue, sel: nextSelection };
               lastKnownSelectionRef.current = nextSelection;
               onChange(nextValue, { caret: nextSelection.end, caretRect: undefined });

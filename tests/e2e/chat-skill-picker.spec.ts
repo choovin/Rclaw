@@ -80,6 +80,103 @@ test.describe('Chat skill picker', () => {
     await expect(composer).toHaveText('hello world');
   });
 
+  test('typing before skill chip keeps chip; arrow and backspace skip/delete chip as one block', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    await skipSetupAndGoToChat(page);
+    const composer = page.getByTestId('chat-composer');
+    await expect(composer).toBeEnabled({ timeout: 15_000 });
+    await composer.click();
+    await composer.fill('hello world');
+    await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="chat-composer"]') as HTMLElement | null;
+      if (!root) return;
+      const range = document.createRange();
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let seen = 0;
+      const target = 6;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const tn = node as Text;
+        const len = tn.length;
+        if (target <= seen + len) {
+          range.setStart(tn, target - seen);
+          range.setEnd(tn, target - seen);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          return;
+        }
+        seen += len;
+      }
+    });
+
+    await page.getByTestId('chat-skill-picker-trigger').click();
+    await expect(page.getByTestId('chat-skill-picker-popover')).toBeVisible({ timeout: 15_000 });
+    const empty = page.getByTestId('chat-skill-picker-empty');
+    const firstOption = page.getByTestId('chat-skill-picker-option').first();
+    await Promise.race([
+      firstOption.waitFor({ state: 'visible', timeout: 45_000 }),
+      empty.waitFor({ state: 'visible', timeout: 45_000 }),
+    ]);
+    if (await empty.isVisible()) {
+      test.skip();
+    }
+    await firstOption.click();
+    await expect(page.getByTestId('chat-skill-chip')).toBeVisible({ timeout: 10_000 });
+
+    await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="chat-composer"]') as HTMLElement | null;
+      if (!root) return;
+      let raw = '';
+      const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n: Node | null;
+      while ((n = tw.nextNode())) {
+        raw += (n as Text).data;
+      }
+      const target = raw.indexOf('/');
+      if (target < 0) return;
+      const range = document.createRange();
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let seen = 0;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const tn = node as Text;
+        const len = tn.length;
+        if (target <= seen + len) {
+          range.setStart(tn, target - seen);
+          range.setEnd(tn, target - seen);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          return;
+        }
+        seen += len;
+      }
+    });
+    await composer.press('z');
+    await expect(page.getByTestId('chat-skill-chip')).toBeVisible();
+
+    await composer.press('ArrowRight');
+    await composer.press('ArrowLeft');
+    await expect(page.getByTestId('chat-skill-chip')).toBeVisible();
+
+    await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="chat-composer"]') as HTMLElement | null;
+      const chip = root?.querySelector('[data-testid="chat-skill-chip"]');
+      if (!root || !chip) return;
+      const range = document.createRange();
+      range.setStartAfter(chip);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    });
+    await composer.press('Backspace');
+    await expect(page.getByTestId('chat-skill-chip')).toHaveCount(0);
+  });
+
   test('typing / opens same skill picker popover as icon when enabled skills exist (smoke)', async ({ page }) => {
     test.setTimeout(180_000);
     await skipSetupAndGoToChat(page);

@@ -40,6 +40,81 @@ export function slashTokensForChipBehavior(value: string, chipCommandNames?: Rea
   return all.filter((t) => chipCommandNames.has(text.slice(t.startIndex + 1, t.endIndexExclusive)));
 }
 
+/**
+ * Positions of `/` that start a chip-eligible slash command but lack a prefix boundary (so
+ * {@link parseSlashTokens} would skip them). Inserting {@link COMPOSER_ZWSP} before `/` restores
+ * tokenization — e.g. `hello x/foo ` → `hello x\u200b/foo `.
+ */
+function slashIndicesNeedingLeadingZwspForChip(
+  value: string,
+  chipCommandNames?: ReadonlySet<string>,
+): number[] {
+  const text = value ?? '';
+  const out: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '/') continue;
+    const prev = i === 0 ? undefined : text[i - 1];
+    if (prev === COMPOSER_ZWSP) continue;
+    if (isPrefixBoundaryChar(prev)) continue;
+    let j = i + 1;
+    while (j < text.length) {
+      const ch = text[j]!;
+      if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t' || ch === COMPOSER_ZWSP) break;
+      if (!/[a-z0-9_]/.test(ch)) {
+        j = -1;
+        break;
+      }
+      j++;
+      if (j - (i + 1) > MAX_CMD_LEN) {
+        j = -1;
+        break;
+      }
+    }
+    if (j === -1) continue;
+    const cmd = text.slice(i + 1, j);
+    if (!CMD_RE.test(cmd)) continue;
+    if (chipCommandNames !== undefined && !chipCommandNames.has(cmd)) continue;
+    const next = j < text.length ? text[j] : undefined;
+    if (!isSuffixBoundaryChar(next)) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+/**
+ * Inserts ZWSP before slash commands that lost a prefix boundary so chip parsing works again.
+ */
+export function ensureComposerZwspBeforeSlashTokens(
+  value: string,
+  chipCommandNames?: ReadonlySet<string>,
+): string {
+  const idx = slashIndicesNeedingLeadingZwspForChip(value, chipCommandNames);
+  if (idx.length === 0) {
+    return value;
+  }
+  let out = value;
+  for (const i of [...idx].sort((a, b) => b - a)) {
+    out = out.slice(0, i) + COMPOSER_ZWSP + out.slice(i);
+  }
+  return out;
+}
+
+/** Maps caret offsets before {@link ensureComposerZwspBeforeSlashTokens} to after that pass. */
+export function adjustCaretForComposerZwspBeforeSlashTokens(
+  plainBefore: string,
+  caret: number,
+  chipCommandNames?: ReadonlySet<string>,
+): number {
+  const idx = slashIndicesNeedingLeadingZwspForChip(plainBefore, chipCommandNames).sort((a, b) => a - b);
+  let c = caret;
+  for (const s of idx) {
+    if (c >= s) {
+      c++;
+    }
+  }
+  return c;
+}
+
 export function parseSlashTokens(value: string): SlashToken[] {
   const text = value ?? '';
   const tokens: SlashToken[] = [];
@@ -202,6 +277,44 @@ export function adjustCaretForComposerZwsp(
     }
   }
   return caret + delta;
+}
+
+/** Deletion spans for chip tokens (ZWSP + token + trailing space/ZWSP), sorted by start. */
+export function getComposerSlashChipDeletionSpans(
+  v: string,
+  chipCommandNames?: ReadonlySet<string>,
+): { start: number; endExclusive: number }[] {
+  const tokens = slashTokensForChipBehavior(v ?? '', chipCommandNames);
+  return tokens.map((t) => getTokenDeletionSpan(v ?? '', t)).sort((a, b) => a.start - b.start);
+}
+
+/**
+ * If ArrowLeft/Right should jump over a chip block, returns the new caret offset; otherwise null.
+ */
+export function resolveComposerArrowCaretOffset(
+  plain: string,
+  pos: number,
+  direction: 'left' | 'right',
+  chipCommandNames?: ReadonlySet<string>,
+): number | null {
+  const spans = getComposerSlashChipDeletionSpans(plain, chipCommandNames);
+  if (direction === 'left') {
+    for (const sp of spans) {
+      if (pos > sp.start && pos <= sp.endExclusive) {
+        return sp.start;
+      }
+    }
+    return null;
+  }
+  for (const sp of spans) {
+    if (pos >= sp.start && pos < sp.endExclusive) {
+      return sp.endExclusive;
+    }
+    if (pos === sp.start - 1) {
+      return sp.endExclusive;
+    }
+  }
+  return null;
 }
 
 export function insertAtSelection(

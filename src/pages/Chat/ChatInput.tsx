@@ -26,6 +26,7 @@ import {
   formatComposerTextForSend,
   insertAtSelection,
   normalizeCommandName,
+  parseSlashTokens,
 } from './chat-skill-command';
 import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 
@@ -372,6 +373,25 @@ export function ChatInput({
         if (dismissedSlashIndexRef.current !== null && qu.slashIndex === dismissedSlashIndexRef.current) {
           setInput(plain);
           return;
+        }
+        const completedAtSlash = parseSlashTokens(plain).find((tok) => tok.startIndex === qu.slashIndex);
+        if (completedAtSlash && caret >= completedAtSlash.endIndexExclusive) {
+          const j = completedAtSlash.endIndexExclusive;
+          const ch = j < plain.length ? plain[j] : undefined;
+          const hasCmdDelimiterAfter =
+            ch === ' ' ||
+            ch === '\n' ||
+            ch === '\r' ||
+            ch === '\t' ||
+            ch === COMPOSER_ZWSP;
+          if (hasCmdDelimiterAfter) {
+            prevSlashPickerSlashIndexRef.current = null;
+            setInput(plain);
+            if (slashSession) {
+              closeSkillPickerUi();
+            }
+            return;
+          }
         }
         void fetchSkills();
         setSkillPickerOpen(true);

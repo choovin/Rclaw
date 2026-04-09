@@ -135,17 +135,11 @@ export class CloudAuthService {
     };
 
     let response = await cloudFetchLogged(logContext, url, merged);
-    // #region agent log
-    fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H2',location:'electron/services/cloud-auth.ts:fetchMemberAuthorized:1st-response',message:'authorized request first response',data:{logContext,status:response.status},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (response.status !== 401) {
       return response;
     }
 
     const refreshed = await this.refreshAccessToken();
-    // #region agent log
-    fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H2',location:'electron/services/cloud-auth.ts:fetchMemberAuthorized:after-refresh',message:'authorized request refresh result',data:{logContext,refreshed},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (!refreshed) {
       return response;
     }
@@ -387,9 +381,6 @@ export class CloudAuthService {
           ? (rawJson as Record<string, unknown>)
           : null;
       const bizCode = typeof root?.code === 'number' ? root.code : undefined;
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H4',location:'electron/services/cloud-auth.ts:refreshAccessTokenOnce:parsed',message:'refresh-token parsed result',data:{httpStatus:response.status,bizCode,ok:parsed.ok},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (!parsed.ok) {
         await this.clearTokens();
         broadcastCloudLoggedOut();
@@ -442,9 +433,6 @@ export class CloudAuthService {
       }
 
       const obj = json as { code?: number; data?: unknown };
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H1',location:'electron/services/cloud-auth.ts:fetchMemberUser:biz-code',message:'member user api business code observed',data:{httpStatus:response.status,bizCode:obj.code},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (obj.code !== undefined && obj.code !== 0) {
         return null;
       }
@@ -486,9 +474,6 @@ export class CloudAuthService {
       }
 
       const obj = json as { code?: number; data?: unknown };
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/d4cd7479-64e4-4e73-8b33-70df561970b3',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'584271'},body:JSON.stringify({sessionId:'584271',runId:'pre-fix',hypothesisId:'H1',location:'electron/services/cloud-auth.ts:fetchLoginUser:biz-code',message:'login-user api business code observed',data:{httpStatus:response.status,bizCode:obj.code},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (obj.code !== undefined && obj.code !== 0) {
         return null;
       }
