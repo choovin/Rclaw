@@ -1,6 +1,6 @@
 {
     "name": "rclaw",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "upstreamVersion": "0.3.3",
     "pnpm": {
         "onlyBuiltDependencies": [
