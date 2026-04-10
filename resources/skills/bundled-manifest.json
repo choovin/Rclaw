@@ -9,11 +9,27 @@
       "autoEnable": true
     },
     {
+      "slug": "brainstorming",
+      "autoEnable": true
+    },
+    {
       "slug": "canvas-design",
       "autoEnable": true
     },
     {
       "slug": "daily-news-briefing",
+      "autoEnable": true
+    },
+    {
+      "slug": "dispatching-parallel-agents",
+      "autoEnable": true
+    },
+    {
+      "slug": "executing-plans",
+      "autoEnable": true
+    },
+    {
+      "slug": "finishing-a-development-branch",
       "autoEnable": true
     },
     {
@@ -37,7 +53,35 @@
       "autoEnable": true
     },
     {
+      "slug": "receiving-code-review",
+      "autoEnable": true
+    },
+    {
+      "slug": "requesting-code-review",
+      "autoEnable": true
+    },
+    {
+      "slug": "subagent-driven-development",
+      "autoEnable": true
+    },
+    {
+      "slug": "systematic-debugging",
+      "autoEnable": true
+    },
+    {
+      "slug": "test-driven-development",
+      "autoEnable": true
+    },
+    {
       "slug": "tts",
+      "autoEnable": true
+    },
+    {
+      "slug": "using-git-worktrees",
+      "autoEnable": true
+    },
+    {
+      "slug": "using-superpowers",
       "autoEnable": true
     },
     {
@@ -45,7 +89,19 @@
       "autoEnable": true
     },
     {
+      "slug": "verification-before-completion",
+      "autoEnable": true
+    },
+    {
       "slug": "wechat-article",
+      "autoEnable": true
+    },
+    {
+      "slug": "writing-plans",
+      "autoEnable": true
+    },
+    {
+      "slug": "writing-skills",
       "autoEnable": true
     }
   ]
