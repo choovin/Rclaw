@@ -109,6 +109,8 @@ export function ChatInput({
   const { t } = useTranslation('chat');
   const navigate = useNavigate();
   const [input, setInput] = useState('');
+  const latestInputRef = useRef('');
+  latestInputRef.current = input;
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [targetAgentId, setTargetAgentId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -173,6 +175,16 @@ export function ChatInput({
     prevSlashPickerSlashIndexRef.current = null;
   }, []);
 
+  /** After closing the slash skill picker, re-apply composer selection (may have been skipped while search had focus). */
+  const restoreComposerCaretAfterSlashPickerClose = useCallback((ss: { slashIndex: number }) => {
+    queueMicrotask(() => {
+      const v = latestInputRef.current;
+      const j = Math.max(0, Math.min(ss.slashIndex + 1, v.length));
+      // `value` unchanged → `setPlainTextAndSelection` never flushes; must apply selection in DOM directly.
+      composerRef.current?.focusAndSelectPlainTextRange({ start: j, end: j });
+    });
+  }, []);
+
   // Focus composer on mount (avoids Windows focus loss after session delete + native dialog)
   useEffect(() => {
     if (!disabled) {
@@ -203,15 +215,19 @@ export function ChatInput({
         setPickerOpen(false);
       }
       if (skillPickerOpen && !skillPickerRef.current?.contains(target)) {
+        const ss = slashSessionRef.current;
         markSlashSkillDismissed();
         closeSkillPickerUi();
+        if (ss) {
+          restoreComposerCaretAfterSlashPickerClose(ss);
+        }
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
     };
-  }, [pickerOpen, skillPickerOpen, closeSkillPickerUi, markSlashSkillDismissed]);
+  }, [pickerOpen, skillPickerOpen, closeSkillPickerUi, markSlashSkillDismissed, restoreComposerCaretAfterSlashPickerClose]);
 
   // ── File staging via native dialog ─────────────────────────────
 
@@ -503,8 +519,12 @@ export function ChatInput({
       if (e.key === 'Escape') {
         if (skillPickerOpen) {
           e.preventDefault();
+          const ss = slashSessionRef.current;
           markSlashSkillDismissed();
           closeSkillPickerUi();
+          if (ss) {
+            restoreComposerCaretAfterSlashPickerClose(ss);
+          }
           return;
         }
       }
@@ -527,7 +547,15 @@ export function ChatInput({
         setTargetAgentId(null);
       }
     },
-    [handleSend, input, skillPickerOpen, targetAgentId, closeSkillPickerUi, markSlashSkillDismissed],
+    [
+      handleSend,
+      input,
+      skillPickerOpen,
+      targetAgentId,
+      closeSkillPickerUi,
+      markSlashSkillDismissed,
+      restoreComposerCaretAfterSlashPickerClose,
+    ],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -642,7 +670,11 @@ export function ChatInput({
                 )}
                 onClick={() => {
                   if (skillPickerOpen) {
+                    const ss = slashSessionRef.current;
                     closeSkillPickerUi();
+                    if (ss) {
+                      restoreComposerCaretAfterSlashPickerClose(ss);
+                    }
                     return;
                   }
                   void fetchSkills();
@@ -667,8 +699,12 @@ export function ChatInput({
                   closeSkillPickerUi();
                 }}
                 onClose={() => {
+                  const ss = slashSessionRef.current;
                   markSlashSkillDismissed();
                   closeSkillPickerUi();
+                  if (ss) {
+                    restoreComposerCaretAfterSlashPickerClose(ss);
+                  }
                 }}
                 searchQuery={skillPickerSearch}
                 onSearchChange={setSkillPickerSearch}

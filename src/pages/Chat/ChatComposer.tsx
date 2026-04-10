@@ -30,6 +30,11 @@ export type ChatComposerHandle = {
   /** Rect at a plain-text offset (for anchoring UI to `/`, not only the caret). */
   getRectAtPlainTextOffset: (offset: number) => DOMRect | null;
   setPlainTextAndSelection: (text: string, sel: { start: number; end: number }) => void;
+  /**
+   * Focus composer and set selection for the current `value` without changing text.
+   * Use when `value` is unchanged so `setPlainTextAndSelection` would not flush (layout effect would not run).
+   */
+  focusAndSelectPlainTextRange: (range: { start: number; end: number }) => void;
 };
 
 export type ChatComposerChangeMeta = { caret: number; caretRect?: DOMRect };
@@ -97,8 +102,25 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
           pendingProgrammaticRef.current = { text, sel };
           lastKnownSelectionRef.current = sel;
         },
+        focusAndSelectPlainTextRange: (range: { start: number; end: number }) => {
+          const root = rootRef.current;
+          if (!root || disabled) {
+            return;
+          }
+          lastKnownSelectionRef.current = range;
+          root.focus();
+          setSelectionFromOffsets(root, range.start, range.end);
+          let attempts = 0;
+          while (attempts < 3 && getPlainTextFromRoot(root) !== value) {
+            if (!repairComposerPlainTextIfCaretArtifact(root, value)) {
+              break;
+            }
+            setSelectionFromOffsets(root, range.start, range.end);
+            attempts++;
+          }
+        },
       }),
-      [],
+      [disabled, value],
     );
 
     useLayoutEffect(() => {
@@ -138,15 +160,21 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         }
       }
       if (snapSel) {
-        setSelectionFromOffsets(root, snapSel.start, snapSel.end);
         lastKnownSelectionRef.current = snapSel;
-        let attempts = 0;
-        while (attempts < 3 && getPlainTextFromRoot(root) !== value) {
-          if (!repairComposerPlainTextIfCaretArtifact(root, value)) {
-            break;
-          }
+        /** `setSelectionFromOffsets` uses Selection API; Chromium focuses the contenteditable host, stealing focus from the skill picker search input when skills load and this effect re-runs. */
+        const focusInSkillPicker =
+          typeof document !== 'undefined' &&
+          Boolean(document.activeElement?.closest?.('[data-testid="chat-skill-picker-popover"]'));
+        if (!focusInSkillPicker) {
           setSelectionFromOffsets(root, snapSel.start, snapSel.end);
-          attempts++;
+          let attempts = 0;
+          while (attempts < 3 && getPlainTextFromRoot(root) !== value) {
+            if (!repairComposerPlainTextIfCaretArtifact(root, value)) {
+              break;
+            }
+            setSelectionFromOffsets(root, snapSel.start, snapSel.end);
+            attempts++;
+          }
         }
       }
 
