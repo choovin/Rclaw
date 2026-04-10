@@ -1,0 +1,7 @@
+{
+  "icon": "https://aibot-data-cdn.claw.runnode.cn/public/skill/20260330/612912390664628639/reupload_17742390620907240.png",
+  "customTitle": "飞常准航班查询",
+  "customDescription": "基于飞常准官方接口的专业民航数据工具，支持按起降机场查询当日航班列表（含准点率）、按航班号查询实时动态，数据来源权威，适合对航班信息准确性有要求的场景。（需配置 API Key）",
+  "category": "生活",
+  "serviceId": "17742390620907240"
+}

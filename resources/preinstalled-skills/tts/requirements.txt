@@ -1,0 +1,4 @@
+# Python dependencies for tts-asr skill
+# Install with: pip install -r requirements.txt
+
+httpx>=0.24.0

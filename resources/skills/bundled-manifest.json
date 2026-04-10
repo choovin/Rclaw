@@ -1,9 +1,52 @@
 {
   "skills": [
     {
+      "slug": "adaptive-socratic-questioning",
+      "autoEnable": true
+    },
+    {
+      "slug": "baoyu-comic",
+      "autoEnable": true
+    },
+    {
       "slug": "canvas-design",
+      "autoEnable": true
+    },
+    {
+      "slug": "daily-news-briefing",
+      "autoEnable": true
+    },
+    {
+      "slug": "frontend-design-fusion",
+      "autoEnable": true
+    },
+    {
+      "slug": "frontend-slides-main",
+      "autoEnable": true
+    },
+    {
+      "slug": "github",
+      "autoEnable": true
+    },
+    {
+      "slug": "humanizer-zh",
+      "autoEnable": true
+    },
+    {
+      "slug": "image-gen",
+      "autoEnable": true
+    },
+    {
+      "slug": "tts",
+      "autoEnable": true
+    },
+    {
+      "slug": "variflight",
+      "autoEnable": true
+    },
+    {
+      "slug": "wechat-article",
       "autoEnable": true
     }
   ]
 }
-

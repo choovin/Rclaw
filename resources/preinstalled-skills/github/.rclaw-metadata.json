@@ -1,0 +1,7 @@
+{
+  "icon": "https://aibot-data-cdn.claw.runnode.cn/public/skill/20260330/612912384960375199/reupload_17709798474578673.png",
+  "customTitle": "GitHub命令行",
+  "customDescription": "集成 GitHub CLI 核心功能，支持在对话中直接管理 PR、追踪 Issue、搜索仓库，还可以代码审查、查询API。",
+  "category": "开发技术",
+  "serviceId": "17709798474578673"
+}

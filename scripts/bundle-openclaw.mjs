@@ -54,12 +54,25 @@ fs.cpSync(openclawReal, OUTPUT, { recursive: true, dereference: true });
 // 3b. Inject ClawX built-in skills into the bundled openclaw/skills directory.
 // These skills become truly "built-in" (bundled) at runtime because they ship
 // inside the OpenClaw package directory, not as user-installed skills.
-const CLAWX_BUILTIN_SKILLS = [
-  {
-    slug: 'canvas-design',
-    sourceDir: path.join(ROOT, 'resources', 'preinstalled-skills', 'canvas-design'),
-  },
+const PREINSTALLED_SKILLS_ROOT = path.join(ROOT, 'resources', 'preinstalled-skills');
+const CLAWX_BUILTIN_SKILL_SLUGS = [
+  'adaptive-socratic-questioning',
+  'baoyu-comic',
+  'canvas-design',
+  'daily-news-briefing',
+  'frontend-design-fusion',
+  'frontend-slides-main',
+  'github',
+  'humanizer-zh',
+  'image-gen',
+  'tts',
+  'variflight',
+  'wechat-article',
 ];
+const CLAWX_BUILTIN_SKILLS = CLAWX_BUILTIN_SKILL_SLUGS.map((slug) => ({
+  slug,
+  sourceDir: path.join(PREINSTALLED_SKILLS_ROOT, slug),
+}));
 
 for (const entry of CLAWX_BUILTIN_SKILLS) {
   const sourceDir = entry.sourceDir;

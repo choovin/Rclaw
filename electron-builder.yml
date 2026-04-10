@@ -127,6 +127,8 @@ win:
         - arm64
 
 nsis:
+  # Per-arch installers only; skip combined multi-arch setup exe (avoids huge makensis step).
+  buildUniversalInstaller: false
   oneClick: false
   perMachine: false
   warningsAsErrors: false

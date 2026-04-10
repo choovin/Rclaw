@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-Generate / edit images using RunNode/Doubao image models via OpenAI-compatible API.
-
-Supported tasks:
-  - Text-to-Image: /v1/images/generations
-      Primary: doubao-seedream-5-0-260128 (direct URL)
-      Fallback: doubao-seedream-4-5-251128 (direct URL, requires ≥ 1920x1920)
-  - Image-to-Image: /v1/images/edits
-      Primary: runnode/flux-2-klein-9b (async)
-      Fallback: runnode/qwen_image_edit_2511_fp8mixed (async)
+Generate images using Doubao/RunNode image models via OpenAI-compatible API.
 
 Usage (text-to-image):
-    python generate_image.py --prompt "your prompt" --filename "output.png" --resolution 2K
+    python generate_image.py --prompt "your description" --filename "output.jpg" --resolution 2K --aspect-ratio 16:9
 
-Usage (image-to-image / edits):
-    python generate_image.py --prompt "modify the image" --filename "output.png" -i input.png --resolution 2K
+Usage (image-to-image):
+    python generate_image.py --prompt "edit requirement" --filename "output.jpg" -i input.png
+
+Supported models:
+    Primary:   doubao-seedream-5-0-260128 (direct URL, synchronous)
+    Fallback:  doubao-seedream-4-5-251128 (direct URL, synchronous, requires ≥ 1920x1920)
 """
 
 from __future__ import annotations
@@ -22,6 +18,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import ssl
 import sys
 import time
 import urllib.error
@@ -30,17 +27,19 @@ from pathlib import Path
 
 from PIL import Image as PILImage
 
-TEXT_TO_IMAGE_MODEL = "doubao-seedream-5-0-260128"
-TEXT_TO_IMAGE_FALLBACK = "doubao-seedream-4-5-251128"
-IMAGE_TO_IMAGE_MODEL = "doubao-seedream-5-0-260128"
-IMAGE_TO_IMAGE_MODEL_FALLBACK = "doubao-seedream-4-5-251128"
-
-MAX_INPUT_PIXELS = 2_560_000
 SUPPORTED_OUTPUT_RESOLUTIONS = ["2K", "3K"]
 SUPPORTED_ASPECT_RATIOS = [
     "1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9",
 ]
-# Doubao T2I size map (must be ≥ 3,686,400 total pixels)
+
+# Default model (primary)
+MODEL_NAME = "doubao-seedream-5-0-260128"
+# Fallback model
+FALLBACK_MODEL = "doubao-seedream-4-5-251128"
+# API base URL (from openclaw.json -> custom-runnodec.baseUrl)
+API_BASE_URL = "https://api.runnode.cn/v1"
+
+# Doubao size map (must be ≥ 3,686,400 total pixels)
 DOUB_AO_SIZE_MAP = {
     "2K": "1920x1920",
     "3K": "1920x1920",
@@ -55,6 +54,8 @@ DOUB_AO_AR_SIZE_MAP = {
     "3:2":  "1920x1920",
     "21:9": "2560x1440",
 }
+MAX_INPUT_PIXELS = 2_560_000
+MAX_INPUT_IMAGES = 14
 
 
 class ConfigError(RuntimeError):
@@ -95,7 +96,7 @@ def resize_image_if_needed(image: PILImage.Image) -> tuple[PILImage.Image, bool]
     return resized, True
 
 
-def image_to_data_url(image_path: str) -> tuple[str, int]:
+def encode_image_to_data_url(image_path: str) -> tuple[str, int]:
     """Load an image, resize if needed, return data URL and max dimension."""
     try:
         with PILImage.open(image_path) as image:
@@ -118,17 +119,13 @@ def image_to_data_url(image_path: str) -> tuple[str, int]:
     return f"data:{mime_type};base64,{encoded}", max(width, height)
 
 
-# ─── Text-to-Image ────────────────────────────────────────────────────────────
-
 def submit_tti_request(base_url: str, api_key: str, model: str, prompt: str, size: str) -> str:
-    """Submit text-to-image request.
-    - Doubao: returns direct URL synchronously (no task_id)
-    - RunNode: returns task_id for async polling
-    """
+    """Submit text-to-image request. Returns 'direct:<url>' or task_id."""
     url = f"{base_url}/images/generations"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; RClaw/1.0)",
     }
     payload = {
         "model": model,
@@ -139,6 +136,7 @@ def submit_tti_request(base_url: str, api_key: str, model: str, prompt: str, siz
     }
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
             result = json.loads(response.read().decode("utf-8"))
@@ -152,7 +150,46 @@ def submit_tti_request(base_url: str, api_key: str, model: str, prompt: str, siz
             print(f"  Direct URL received [{model}]: {direct_url[:60]}...")
             return f"direct:{direct_url}"
 
-    # RunNode: async task ID
+    # Async task ID path (RunNode fallback)
+    task_id = result.get("id")
+    if not task_id:
+        raise RuntimeError(f"No task id in response: {result}")
+    print(f"  Task queued: {task_id}")
+    return task_id
+
+
+def submit_i2i_request(base_url: str, api_key: str, model: str, image_data_url: str, prompt: str) -> str:
+    """Submit image-to-image request via /images/generations (Doubao style)."""
+    url = f"{base_url}/images/generations"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; RClaw/1.0)",
+    }
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "image": image_data_url,
+        "response_format": "url",
+        "size": "adaptive",
+    }
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(f"API error ({error.code}): {error.read().decode(errors='replace')}") from error
+
+    # Doubao: direct URL
+    if result.get("data"):
+        direct_url = result["data"][0].get("url")
+        if direct_url:
+            print(f"  Direct URL received [{model}]: {direct_url[:60]}...")
+            return f"direct:{direct_url}"
+
+    # Async task ID
     task_id = result.get("id")
     if not task_id:
         raise RuntimeError(f"No task id in response: {result}")
@@ -173,16 +210,12 @@ def poll_result(base_url: str, api_key: str, task_id: str) -> str:
             raise RuntimeError(f"Polling error ({error.code}): {error.read().decode(errors='replace')}") from error
 
         data = result.get("data", [])
-        status = result.get("status")
-        result_url = result.get("result_url")
+        status = result.get("status", "")
 
         if data:
             image_url = data[0].get("url") or data[0].get("b64_json")
             if image_url:
                 return image_url
-
-        if result_url:
-            return result_url
 
         if status in ("failed", "error"):
             raise RuntimeError(f"Image generation failed: {result}")
@@ -193,51 +226,8 @@ def poll_result(base_url: str, api_key: str, task_id: str) -> str:
     raise RuntimeError("Timeout after 20 polls.")
 
 
-# ─── Image-to-Image ───────────────────────────────────────────────────────────
-
-def submit_i2i_request(base_url: str, api_key: str, model: str, image_url: str, prompt: str) -> str:
-    """Submit image-to-image request via /images/generations (Doubao style).
-    Returns 'direct:<url>' for Doubao sync response, or task_id for async polling.
-    """
-    url = f"{base_url}/images/generations"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "image": image_url,
-        "response_format": "url",
-        "size": "adaptive",
-    }
-    data = json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        raise RuntimeError(f"API error ({error.code}): {error.read().decode(errors='replace')}") from error
-
-    # Doubao: data[0].url returned directly (no task_id)
-    if result.get("data"):
-        direct_url = result["data"][0].get("url")
-        if direct_url:
-            print(f"  Direct URL received [{model}]: {direct_url[:60]}...")
-            return f"direct:{direct_url}"
-
-    # Async task ID path
-    task_id = result.get("id")
-    if not task_id:
-        raise RuntimeError(f"No task id in response: {result}")
-    print(f"  Task queued: {task_id}")
-    return task_id
-
-
-# ─── Download ────────────────────────────────────────────────────────────────
-
 def download_file(url: str, output_path: Path) -> Path:
-    """Download file, auto-detect format from Content-Type or URL extension."""
+    """Download file, auto-detect format."""
     request = urllib.request.Request(url, method="GET")
     try:
         with urllib.request.urlopen(request, timeout=300) as response:
@@ -260,71 +250,72 @@ def download_file(url: str, output_path: Path) -> Path:
     return final_path
 
 
-# ─── Resolution ──────────────────────────────────────────────────────────────
-
 def choose_output_resolution(requested_resolution: str | None) -> str:
     if requested_resolution in SUPPORTED_OUTPUT_RESOLUTIONS:
         return requested_resolution
     return "2K"
 
 
-# ─── Main ────────────────────────────────────────────────────────────────────
-
 def main() -> int:
-    import argparse as _argparse
-
-    parser = _argparse.ArgumentParser(
-        description="Generate or edit images using RunNode models"
+    parser = argparse.ArgumentParser(
+        description="Generate or edit images using Doubao models"
     )
     parser.add_argument("--prompt", "-p", required=True, help="Image description / edit instruction")
-    parser.add_argument("--filename", "-f", required=True, help="Output filename (e.g., output.png)")
+    parser.add_argument("--filename", "-f", required=True, help="Output filename (e.g., output.jpg)")
     parser.add_argument(
         "--resolution", "-r",
         choices=SUPPORTED_OUTPUT_RESOLUTIONS,
         default=None,
-        help="Output resolution: 2K or 3K. Defaults to 2K.",
+        help="Output resolution: 2K or 3K.",
     )
     parser.add_argument(
         "--aspect-ratio", "-a",
         choices=SUPPORTED_ASPECT_RATIOS,
         default=None,
-        help="Aspect ratio (accepted for compatibility).",
+        help="Aspect ratio (maps to Doubao size requirements ≥ 1920x1920).",
     )
     parser.add_argument(
         "--input-image", "-i",
-        action="append", dest="input_images", metavar="IMAGE",
-        help="Reference image(s) for image-to-image editing.",
+        action="append", dest="input_images",
+        metavar="IMAGE",
+        help="Input image(s) for editing/composition. Up to 14 images.",
     )
     parser.add_argument(
         "--model", "-m",
-        default=None,
-        help=f"T2I default: {TEXT_TO_IMAGE_MODEL} (primary) / {TEXT_TO_IMAGE_FALLBACK} (fallback). "
-             f"I2I default: {IMAGE_TO_IMAGE_MODEL} (primary) / {IMAGE_TO_IMAGE_MODEL_FALLBACK} (fallback).",
+        default=MODEL_NAME,
+        help=f"Model name (default: {MODEL_NAME}).",
     )
 
     args = parser.parse_args()
     output_path = Path(args.filename)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Validate output format
+    if not str(output_path).lower().endswith((".jpg", ".jpeg", ".png")):
+        print("Warning: output filename should end with .jpg or .png", file=sys.stderr)
+
     try:
         base_url, api_key = load_openclaw_config()
+        primary_model = args.model or MODEL_NAME
+        fallback_model = FALLBACK_MODEL
         output_resolution = choose_output_resolution(args.resolution)
+        ar = args.aspect_ratio
 
         if args.input_images:
-            # ── Image-to-Image mode ──────────────────────────────────────────────
-            first_data_url, _ = image_to_data_url(args.input_images[0])
-            primary_model = args.model or IMAGE_TO_IMAGE_MODEL
-            fallback_model = IMAGE_TO_IMAGE_MODEL_FALLBACK
-            print(f"Image-to-image mode: primary={primary_model}, fallback={fallback_model}")
+            # ── Image-to-Image mode ───────────────────────────────────────
+            if len(args.input_images) > MAX_INPUT_IMAGES:
+                print(f"Error: Too many input images ({len(args.input_images)}). Max is {MAX_INPUT_IMAGES}.", file=sys.stderr)
+                return 1
+
+            encoded, max_dim = encode_image_to_data_url(args.input_images[0])
+            print(f"Image-to-image mode: model={primary_model}, fallback={fallback_model}, images={len(args.input_images)}")
 
             last_error = None
-            for attempt_model in [m for m in [primary_model, fallback_model] if m]:
+            for attempt_model in [primary_model, fallback_model]:
                 if attempt_model != primary_model:
                     print(f"  [Fallback] Retrying with {attempt_model} ...")
                 try:
-                    result_data = submit_i2i_request(
-                        base_url, api_key, attempt_model, first_data_url, args.prompt
-                    )
+                    result_data = submit_i2i_request(base_url, api_key, attempt_model, encoded, args.prompt)
                     if result_data.startswith("direct:"):
                         image_url = result_data[7:]
                     else:
@@ -338,25 +329,18 @@ def main() -> int:
 
             if last_error is not None:
                 raise last_error
-        else:
-            # ── Text-to-Image mode ─────────────────────────────────────────────
-            primary_model = args.model or TEXT_TO_IMAGE_MODEL
-            fallback_model = TEXT_TO_IMAGE_FALLBACK
 
-            # Doubao uses ≥ 3.68 Mpx size map; RunNode uses 1024x1024
-            if "doubao" in primary_model.lower() or "seedream" in primary_model.lower():
-                ar = getattr(args, 'aspect_ratio', None)
-                if ar and ar in DOUB_AO_AR_SIZE_MAP:
-                    size = DOUB_AO_AR_SIZE_MAP[ar]
-                else:
-                    size = DOUB_AO_AR_SIZE_MAP.get(output_resolution, "1920x1920")
+        else:
+            # ── Text-to-Image mode ───────────────────────────────────────
+            if ar and ar in DOUB_AO_AR_SIZE_MAP:
+                size = DOUB_AO_AR_SIZE_MAP[ar]
             else:
-                size = {"2K": "1024x1024", "3K": "1024x1024"}.get(output_resolution, "1024x1024")
+                size = DOUB_AO_SIZE_MAP.get(output_resolution, "1920x1920")
 
             print(f"Text-to-image mode: primary={primary_model}, fallback={fallback_model}, size={size}")
 
             last_error = None
-            for attempt_model in [m for m in [primary_model, fallback_model] if m]:
+            for attempt_model in [primary_model, fallback_model]:
                 if attempt_model != primary_model:
                     print(f"  [Fallback] Retrying with {attempt_model} ...")
                 try:
