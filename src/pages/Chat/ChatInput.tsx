@@ -15,6 +15,8 @@ import { invokeIpc } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
+import { useEmployeesStore } from '@/stores/employees';
+import { formatAgentSessionDisplayName } from '@/lib/format-agent-session-display-name';
 import { useChatStore } from '@/stores/chat';
 import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
@@ -132,11 +134,17 @@ export function ChatInput({
   const fetchSkills = useSkillsStore((s) => s.fetchSkills);
   const gatewayStatus = useGatewayStore((s) => s.status);
   const agents = useAgentsStore((s) => s.agents);
+  const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const currentAgentId = useChatStore((s) => s.currentAgentId);
-  const currentAgentName = useMemo(
-    () => (agents ?? []).find((agent) => agent.id === currentAgentId)?.name ?? currentAgentId,
-    [agents, currentAgentId],
+  const formatAgentLabel = useCallback(
+    (agent: AgentSummary) => formatAgentSessionDisplayName(agent.id, agent.name, myEmployees),
+    [myEmployees],
   );
+  const currentAgentName = useMemo(() => {
+    const agent = (agents ?? []).find((a) => a.id === currentAgentId);
+    if (!agent) return currentAgentId;
+    return formatAgentLabel(agent);
+  }, [agents, currentAgentId, formatAgentLabel]);
   const mentionableAgents = useMemo(
     () => (agents ?? []).filter((agent) => agent.id !== currentAgentId),
     [agents, currentAgentId],
@@ -144,6 +152,10 @@ export function ChatInput({
   const selectedTarget = useMemo(
     () => (agents ?? []).find((agent) => agent.id === targetAgentId) ?? null,
     [agents, targetAgentId],
+  );
+  const selectedTargetDisplayName = useMemo(
+    () => (selectedTarget ? formatAgentLabel(selectedTarget) : ''),
+    [selectedTarget, formatAgentLabel],
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
@@ -640,7 +652,7 @@ export function ChatInput({
                 className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-secondary px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary/80"
                 title={t('composer.clearTarget')}
               >
-                <span>{t('composer.targetChip', { agent: selectedTarget.name })}</span>
+                <span>{t('composer.targetChip', { agent: selectedTargetDisplayName })}</span>
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </div>
@@ -744,6 +756,7 @@ export function ChatInput({
                         <AgentPickerItem
                           key={agent.id}
                           agent={agent}
+                          displayName={formatAgentLabel(agent)}
                           selected={agent.id === targetAgentId}
                           onSelect={() => {
                             setTargetAgentId(agent.id);
@@ -892,10 +905,12 @@ function AttachmentPreview({
 
 function AgentPickerItem({
   agent,
+  displayName,
   selected,
   onSelect,
 }: {
   agent: AgentSummary;
+  displayName: string;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -908,7 +923,7 @@ function AgentPickerItem({
         selected ? 'bg-primary/10 text-foreground' : 'hover:bg-black/5 dark:hover:bg-white/5'
       )}
     >
-      <span className="text-[14px] font-medium text-foreground">{agent.name}</span>
+      <span className="text-[14px] font-medium text-foreground">{displayName}</span>
       <span className="text-[11px] text-muted-foreground">
         {agent.modelDisplay}
       </span>

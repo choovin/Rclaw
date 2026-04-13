@@ -21,6 +21,8 @@ import { useSettingsStore } from '@/stores/settings';
 import { useChatStore } from '@/stores/chat';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
+import { useEmployeesStore } from '@/stores/employees';
+import { formatAgentSessionDisplayName } from '@/lib/format-agent-session-display-name';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -142,6 +144,7 @@ export function Sidebar() {
   }, [isGatewayRunning, loadHistory, loadSessions]);
   const agents = useAgentsStore((s) => s.agents);
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
+  const myEmployees = useEmployeesStore((s) => s.myEmployees);
 
   const navigate = useNavigate();
   const isOnChat = useLocation().pathname === '/';
@@ -164,9 +167,15 @@ export function Sidebar() {
     void fetchAgents();
   }, [fetchAgents]);
 
-  const agentNameById = useMemo(
-    () => Object.fromEntries((agents ?? []).map((agent) => [agent.id, agent.name])),
-    [agents],
+  const agentSessionDisplayNameById = useMemo(
+    () =>
+      Object.fromEntries(
+        (agents ?? []).map((agent) => [
+          agent.id,
+          formatAgentSessionDisplayName(agent.id, agent.name, myEmployees),
+        ]),
+      ),
+    [agents, myEmployees],
   );
   const sessionBuckets = useMemo((): Array<{ key: SessionBucketKey; label: string; sessions: typeof sessions }> => {
     const buckets: Array<{ key: SessionBucketKey; label: string; sessions: typeof sessions }> = [
@@ -293,7 +302,7 @@ export function Sidebar() {
                 </div>
                 {bucket.sessions.map((s) => {
                   const agentId = getAgentIdFromSessionKey(s.key);
-                  const agentName = agentNameById[agentId] || agentId;
+                  const agentName = agentSessionDisplayNameById[agentId] || agentId;
                   return (
                     <div key={s.key} className="group relative flex items-center">
                       <button

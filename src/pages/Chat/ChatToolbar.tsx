@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChatStore } from '@/stores/chat';
 import { useAgentsStore } from '@/stores/agents';
+import { useEmployeesStore } from '@/stores/employees';
+import { formatAgentSessionDisplayName } from '@/lib/format-agent-session-display-name';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -19,11 +21,13 @@ export function ChatToolbar() {
   const toggleThinking = useChatStore((s) => s.toggleThinking);
   const currentAgentId = useChatStore((s) => s.currentAgentId);
   const agents = useAgentsStore((s) => s.agents);
+  const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const { t } = useTranslation('chat');
-  const currentAgentName = useMemo(
-    () => (agents ?? []).find((agent) => agent.id === currentAgentId)?.name ?? currentAgentId,
-    [agents, currentAgentId],
-  );
+  const currentAgentName = useMemo(() => {
+    const agent = (agents ?? []).find((a) => a.id === currentAgentId);
+    if (!agent) return currentAgentId;
+    return formatAgentSessionDisplayName(agent.id, agent.name, myEmployees);
+  }, [agents, currentAgentId, myEmployees]);
 
   return (
     <div className="flex items-center gap-1.5">
