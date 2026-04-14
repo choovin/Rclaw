@@ -2,6 +2,7 @@ import { constants } from 'fs';
 import { access, copyFile, mkdir, readdir, rm } from 'fs/promises';
 import { join, normalize } from 'path';
 import { deleteAgentChannelAccounts, listConfiguredChannels, readOpenClawConfig, writeOpenClawConfig } from './channel-config';
+import type { OpenClawConfig } from './channel-config';
 import { withConfigLock } from './config-mutex';
 import { expandPath, getOpenClawConfigDir } from './paths';
 import { writeDigitalEmployeeWorkspaceFiles } from './digital-employee-workspace';
@@ -143,7 +144,7 @@ function slugifyAgentId(name: string): string {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
-  if (!normalized) return 'agent';
+  if (!normalized || /^\d+$/.test(normalized)) return 'agent';
   if (normalized === MAIN_AGENT_ID) return 'agent';
   return normalized;
 }
@@ -284,29 +285,33 @@ function upsertBindingsForChannel(
   agentId: string | null,
   accountId?: string,
 ): BindingConfig[] | undefined {
-  const normalizedAgentId = agentId ? normalizeAgentIdForBinding(agentId) : '';
+  const normalizedAccountId = accountId?.trim() || '';
   const nextBindings = Array.isArray(bindings)
     ? [...bindings as BindingConfig[]].filter((binding) => {
       if (!isChannelBinding(binding)) return true;
       if (binding.match?.channel !== channelType) return true;
-      // Keep a single account binding per (agent, channelType). Rebinding to
-      // another account should replace the previous one.
-      if (normalizedAgentId && normalizeAgentIdForBinding(binding.agentId || '') === normalizedAgentId) {
-        return false;
+
+      const bindingAccountId = typeof binding.match?.accountId === 'string'
+        ? binding.match.accountId.trim()
+        : '';
+
+      // Account-scoped updates must only replace the exact account owner.
+      // Otherwise rebinding one Feishu/Lark account can silently drop a
+      // sibling account binding on the same agent, which looks like routing
+      // or model config "drift" in multi-account setups.
+      if (normalizedAccountId) {
+        return bindingAccountId !== normalizedAccountId;
       }
-      // Only remove binding that matches the exact accountId scope
-      if (accountId) {
-        return binding.match?.accountId !== accountId;
-      }
+
       // No accountId: remove channel-wide binding (legacy)
-      return Boolean(binding.match?.accountId);
+      return Boolean(bindingAccountId);
     })
     : [];
 
   if (agentId) {
     const match: BindingMatch = { channel: channelType };
-    if (accountId) {
-      match.accountId = accountId;
+    if (normalizedAccountId) {
+      match.accountId = normalizedAccountId;
     }
     nextBindings.push({ agentId, match });
   }
@@ -466,9 +471,9 @@ function listConfiguredAccountIdsForChannel(config: AgentConfigDocument, channel
     });
 }
 
-async function buildSnapshotFromConfig(config: AgentConfigDocument): Promise<AgentsSnapshot> {
+async function buildSnapshotFromConfig(config: AgentConfigDocument, preloadedChannels?: string[]): Promise<AgentsSnapshot> {
   const { entries, defaultAgentId } = normalizeAgentsConfig(config);
-  const configuredChannels = await listConfiguredChannels();
+  const configuredChannels = preloadedChannels ?? await listConfiguredChannels();
   const { channelToAgent, accountToAgent } = getChannelBindingMap(config.bindings);
   const defaultAgentIdNorm = normalizeAgentIdForBinding(defaultAgentId);
   const channelOwners: Record<string, string> = {};
@@ -553,6 +558,10 @@ async function buildSnapshotFromConfig(config: AgentConfigDocument): Promise<Age
 export async function listAgentsSnapshot(): Promise<AgentsSnapshot> {
   const config = await readOpenClawConfig() as AgentConfigDocument;
   return buildSnapshotFromConfig(config);
+}
+
+export async function listAgentsSnapshotFromConfig(config: OpenClawConfig, configuredChannels?: string[]): Promise<AgentsSnapshot> {
+  return buildSnapshotFromConfig(config as AgentConfigDocument, configuredChannels);
 }
 
 export async function listConfiguredAgentIds(): Promise<string[]> {

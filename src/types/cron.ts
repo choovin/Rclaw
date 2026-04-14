@@ -58,6 +58,7 @@ export interface CronJob {
   updatedAt: string;
   lastRun?: CronJobLastRun;
   nextRun?: string;
+  agentId: string;
 }
 
 /**
@@ -71,6 +72,7 @@ export interface CronJobCreateInput {
   schedule: string;
   delivery?: CronJobDelivery;
   enabled?: boolean;
+  agentId?: string;
 }
 
 /**
@@ -82,6 +84,7 @@ export interface CronJobUpdateInput {
   schedule?: string;
   delivery?: CronJobDelivery;
   enabled?: boolean;
+  agentId?: string;
 }
 
 /**

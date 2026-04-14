@@ -28,7 +28,7 @@ export function Agents() {
       const response = await hostApiFetch<{ success: boolean; channels?: ChannelGroupItem[] }>('/api/channels/accounts');
       setChannelGroups(response.channels || []);
     } catch {
-      setChannelGroups([]);
+      // Keep the last rendered snapshot when channel account refresh fails.
     }
   }, []);
 

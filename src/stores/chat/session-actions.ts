@@ -1,5 +1,6 @@
 import { invokeIpc } from '@/lib/api-client';
 import { getCanonicalPrefixFromSessions, getMessageText, toMs } from './helpers';
+import { classifyHistoryStartupRetryError, sleep } from './history-startup-retry';
 import { DEFAULT_CANONICAL_PREFIX, DEFAULT_SESSION_KEY, type ChatSession, type RawMessage } from './types';
 import type { ChatGet, ChatSet, SessionHistoryActions } from './store-api';
 
@@ -111,38 +112,54 @@ export function createSessionActions(
           }
 
           // Background: fetch first user message for every non-main session to populate labels upfront.
-          // Uses a small limit so it's cheap; runs in parallel and doesn't block anything.
+          // Retries on "gateway startup" errors since the gateway may still be initializing.
           const sessionsToLabel = sessionsWithCurrent.filter((s) => !s.key.endsWith(':main'));
           if (sessionsToLabel.length > 0) {
-            void Promise.all(
-              sessionsToLabel.map(async (session) => {
-                try {
-                  const r = await invokeIpc(
-                    'gateway:rpc',
-                    'chat.history',
-                    { sessionKey: session.key, limit: 1000 },
-                  ) as { success: boolean; result?: Record<string, unknown> };
-                  if (!r.success || !r.result) return;
-                  const msgs = Array.isArray(r.result.messages) ? r.result.messages as RawMessage[] : [];
-                  const firstUser = msgs.find((m) => m.role === 'user');
-                  const lastMsg = msgs[msgs.length - 1];
-                  set((s) => {
-                    const next: Partial<typeof s> = {};
-                    if (firstUser) {
-                      const labelText = getMessageText(firstUser.content).trim();
-                      if (labelText) {
-                        const truncated = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
-                        next.sessionLabels = { ...s.sessionLabels, [session.key]: truncated };
+            const LABEL_RETRY_DELAYS = [2_000, 5_000, 10_000];
+            void (async () => {
+              let pending = sessionsToLabel;
+              for (let attempt = 0; attempt <= LABEL_RETRY_DELAYS.length; attempt += 1) {
+                const failed: typeof pending = [];
+                await Promise.all(
+                  pending.map(async (session) => {
+                    try {
+                      const r = await invokeIpc(
+                        'gateway:rpc',
+                        'chat.history',
+                        { sessionKey: session.key, limit: 1000 },
+                      ) as { success: boolean; result?: Record<string, unknown>; error?: string };
+                      if (!r.success) {
+                        if (classifyHistoryStartupRetryError(r.error) === 'gateway_startup') {
+                          failed.push(session);
+                        }
+                        return;
                       }
-                    }
-                    if (lastMsg?.timestamp) {
-                      next.sessionLastActivity = { ...s.sessionLastActivity, [session.key]: toMs(lastMsg.timestamp) };
-                    }
-                    return next;
-                  });
-                } catch { /* ignore per-session errors */ }
-              }),
-            );
+                      if (!r.result) return;
+                      const msgs = Array.isArray(r.result.messages) ? r.result.messages as RawMessage[] : [];
+                      const firstUser = msgs.find((m) => m.role === 'user');
+                      const lastMsg = msgs[msgs.length - 1];
+                      set((s) => {
+                        const next: Partial<typeof s> = {};
+                        if (firstUser) {
+                          const labelText = getMessageText(firstUser.content).trim();
+                          if (labelText) {
+                            const truncated = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
+                            next.sessionLabels = { ...s.sessionLabels, [session.key]: truncated };
+                          }
+                        }
+                        if (lastMsg?.timestamp) {
+                          next.sessionLastActivity = { ...s.sessionLastActivity, [session.key]: toMs(lastMsg.timestamp) };
+                        }
+                        return next;
+                      });
+                    } catch { /* ignore per-session errors */ }
+                  }),
+                );
+                if (failed.length === 0 || attempt >= LABEL_RETRY_DELAYS.length) break;
+                await sleep(LABEL_RETRY_DELAYS[attempt]!);
+                pending = failed;
+              }
+            })();
           }
         }
       } catch (err) {
@@ -154,9 +171,10 @@ export function createSessionActions(
 
     switchSession: (key: string) => {
       const { currentSessionKey, messages, sessionLastActivity, sessionLabels } = get();
-      // 仅将没有任何历史记录且无活动时间的会话视为空会话。
-      // 单纯依赖 messages.length 是不可靠的，因为 switchSession 会在真正调用 loadHistory 前抢先清空当前 messages，
-      // 造成竞争条件，使得带有真实历史的会话被判定为空并从侧边栏移除。
+      // Only treat sessions with no history records and no activity timestamp as empty.
+      // Relying solely on messages.length is unreliable because switchSession clears
+      // the current messages before loadHistory runs, creating a race condition that
+      // could cause sessions with real history to be incorrectly removed from the sidebar.
       const leavingEmpty = !currentSessionKey.endsWith(':main')
         && messages.length === 0
         && !sessionLastActivity[currentSessionKey]
@@ -253,7 +271,7 @@ export function createSessionActions(
       // sessions.reset archives (renames) the session JSONL file, making old
       // conversation history inaccessible when the user switches back to it.
       const { currentSessionKey, messages, sessionLastActivity, sessionLabels } = get();
-      // 仅将没有任何历史记录且无活动时间的会话视为空会话
+      // Only treat sessions with no history records and no activity timestamp as empty
       const leavingEmpty = !currentSessionKey.endsWith(':main')
         && messages.length === 0
         && !sessionLastActivity[currentSessionKey]
@@ -294,8 +312,8 @@ export function createSessionActions(
       // This mirrors the "leavingEmpty" logic in switchSession so that creating
       // a new session and immediately navigating away doesn't leave a ghost entry
       // in the sidebar.
-      // 同样需要综合检查 sessionLastActivity 和 sessionLabels，
-      // 防止因为 switchSession 抢先清空 messages 而误判有历史的会话为空。
+      // Also check sessionLastActivity and sessionLabels comprehensively to prevent
+      // falsely treating sessions with history as empty due to switchSession clearing messages early.
       const isEmptyNonMain = !currentSessionKey.endsWith(':main')
         && messages.length === 0
         && !sessionLastActivity[currentSessionKey]

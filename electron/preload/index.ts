@@ -102,7 +102,6 @@ const electronAPI = {
         'channel:listConfigured',
         'channel:setEnabled',
         'channel:validate',
-        'channel:validate',
         'channel:validateCredentials',
         // WhatsApp
         'channel:requestWhatsAppQr',
