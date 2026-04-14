@@ -275,6 +275,7 @@ RClaw employs a **dual-process architecture** with a unified host API layer. The
   - macOS/Linux: `lsof -nP -iTCP:18789 -sTCP:LISTEN`
   - Windows (PowerShell): `Get-NetTCPConnection -LocalPort 18789 -State Listen`
 - Clicking the window close button (`X`) hides RClaw to tray; it does **not** fully quit the app. Use tray menu **Quit RClaw** for complete shutdown.
+- **Windows**: When saving settings that write to `~/.openclaw/openclaw.json` (for example AI Providers), RClaw tries **hot-reloading** the Gateway first (config file touch plus a best-effort `secrets.reload` RPC) instead of always doing a full process restart; if that fails, it falls back to a full restart.
 
 ---
 

@@ -51,6 +51,7 @@ import {
 } from './reload-policy';
 import { classifyGatewayStderrMessage, recordGatewayStartupStderrLine } from './startup-stderr';
 import { runGatewayStartupSequence } from './startup-orchestrator';
+import { tryWindowsGatewayReload } from './windows-reload';
 
 export interface GatewayStatus {
   state: GatewayLifecycleState;
@@ -567,10 +568,16 @@ export class GatewayManager extends EventEmitter {
     }
 
     if (process.platform === 'win32') {
-      // Windows does not support SIGUSR1 for in-process reload.
-      // Fall back to a full restart.  The connectedForMs < 8000 guard above
-      // already skips unnecessary restarts for recently-started processes.
-      logger.warn('[gateway-refresh] mode=reload result=fallback_restart cause=windows');
+      const result = await tryWindowsGatewayReload({
+        rpc: (m, p, t) => this.rpc(m, p, t),
+      });
+      if (result.ok) {
+        logger.info(`[gateway-refresh] mode=reload result=applied_win via=${result.via}`);
+        return;
+      }
+      logger.warn(
+        `[gateway-refresh] mode=reload result=fallback_restart cause=windows_reload_failed reason=${result.reason}`,
+      );
       await this.restart();
       return;
     }

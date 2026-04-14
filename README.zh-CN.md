@@ -275,6 +275,7 @@ RClaw 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用
   - macOS/Linux：`lsof -nP -iTCP:18789 -sTCP:LISTEN`
   - Windows（PowerShell）：`Get-NetTCPConnection -LocalPort 18789 -State Listen`
 - 点击窗口关闭按钮（`X`）默认只是最小化到托盘，并不会完全退出应用。请在托盘菜单中选择 **Quit RClaw** 执行完整退出。
+- **Windows**：在保存 AI Provider 等会写入 `~/.openclaw/openclaw.json` 的配置时，应用会优先尝试 **热重载** Gateway（更新配置文件时间戳并最佳 effort 调用 `secrets.reload`），无需像以往那样频繁经历完整进程重启；若热重载失败仍会回退为全量重启。
 
 ---
 
