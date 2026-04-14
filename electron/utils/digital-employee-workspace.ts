@@ -88,5 +88,5 @@ export function writeDigitalEmployeeWorkspaceFiles(
 ---
 *由 RClaw 数字员工系统生成*
 `;
-  writeFileSync(join(absWorkspaceDir, 'todo.md'), todoContent, 'utf-8');
+  writeFileSync(join(absWorkspaceDir, 'TODO.md'), todoContent, 'utf-8');
 }

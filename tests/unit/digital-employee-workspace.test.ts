@@ -19,7 +19,7 @@ describe('buildIdentityMd', () => {
 });
 
 describe('writeDigitalEmployeeWorkspaceFiles', () => {
-  it('writes SOUL, AGENTS, IDENTITY, USER.md, todo under absDir', async () => {
+  it('writes SOUL, AGENTS, IDENTITY, USER.md, TODO.md under absDir', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'emp-ws-'));
     try {
       const { writeDigitalEmployeeWorkspaceFiles, OPENCLAW_USER_FILENAME } = await import(
@@ -49,7 +49,7 @@ describe('writeDigitalEmployeeWorkspaceFiles', () => {
       expect(user).toContain('关于使用本工作区的人类');
       expect(user).not.toContain('张三');
 
-      expect(await readFile(join(dir, 'todo.md'), 'utf8')).toContain('待办事项');
+      expect(await readFile(join(dir, 'TODO.md'), 'utf8')).toContain('待办事项');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
