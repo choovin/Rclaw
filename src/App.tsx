@@ -19,6 +19,7 @@ import { Settings } from './pages/Settings';
 import { Setup } from './pages/Setup';
 import { useSettingsStore } from './stores/settings';
 import { useGatewayStore } from './stores/gateway';
+import { useChatStore } from './stores/chat';
 import { useProviderStore } from './stores/providers';
 import { applyGatewayTransportPreference } from './lib/api-client';
 import { subscribeCloudSessionIpc, useAuthStore } from './stores/auth';
@@ -129,6 +130,9 @@ function App() {
   const language = useSettingsStore((state) => state.language);
   const setupComplete = useSettingsStore((state) => state.setupComplete);
   const initGateway = useGatewayStore((state) => state.init);
+  const mergeSessionsDiscoveredFromLocalDisk = useChatStore((state) => state.mergeSessionsDiscoveredFromLocalDisk);
+  const primeHistoryFromLocalDisk = useChatStore((state) => state.primeHistoryFromLocalDisk);
+  const gatewayState = useGatewayStore((state) => state.status.state);
   const initProviders = useProviderStore((state) => state.init);
   const syncAuthFromHost = useAuthStore((state) => state.syncAuthFromHost);
   const syncUserInfoFromHost = useAuthStore((state) => state.syncUserInfoFromHost);
@@ -164,6 +168,16 @@ function App() {
   useEffect(() => {
     initGateway();
   }, [initGateway]);
+
+  // Discover local session entries + prime current transcript only when Gateway is running
+  // (avoid loading session list / history while disconnected).
+  useEffect(() => {
+    if (gatewayState !== 'running') return;
+    void (async () => {
+      await mergeSessionsDiscoveredFromLocalDisk();
+      await primeHistoryFromLocalDisk();
+    })();
+  }, [gatewayState, mergeSessionsDiscoveredFromLocalDisk, primeHistoryFromLocalDisk]);
 
   // Initialize provider snapshot on mount
   useEffect(() => {

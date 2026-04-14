@@ -1,8 +1,9 @@
 import type { GatewayStatus } from '@/types/gateway';
 
-export const CHAT_HISTORY_RPC_TIMEOUT_MS = 35_000;
+/** Initial foreground `chat.history` can exceed the default 30s IPC limit while the gateway reads large JSONL on slow disks (especially Windows). */
+export const CHAT_HISTORY_RPC_TIMEOUT_MS = 75_000;
 export const CHAT_HISTORY_STARTUP_RETRY_DELAYS_MS = [800, 2_000, 4_000, 8_000] as const;
-export const CHAT_HISTORY_STARTUP_CONNECTION_GRACE_MS = 30_000;
+export const CHAT_HISTORY_STARTUP_CONNECTION_GRACE_MS = 60_000;
 export const CHAT_HISTORY_STARTUP_RUNNING_WINDOW_MS =
   CHAT_HISTORY_RPC_TIMEOUT_MS + CHAT_HISTORY_STARTUP_CONNECTION_GRACE_MS;
 export const CHAT_HISTORY_DEFAULT_LOADING_SAFETY_TIMEOUT_MS = 15_000;
@@ -67,6 +68,12 @@ export function shouldRetryStartupHistoryLoad(
 
   if (gatewayStatus.state !== 'running') {
     return false;
+  }
+
+  // Transcript reads can exceed the per-RPC timeout even when the gateway is up; keep retrying
+  // until the caller's attempt budget is exhausted (see loadHistory loop).
+  if (errorKind === 'timeout') {
+    return true;
   }
 
   if (gatewayStatus.connectedAt == null) {

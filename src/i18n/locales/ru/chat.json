@@ -68,5 +68,6 @@
         "withinTwoWeeks": "В течение 2 недель",
         "withinMonth": "В течение месяца",
         "older": "Старее месяца"
-    }
+    },
+    "sessionListWaitingForGateway": "Ожидание шлюза…"
 }

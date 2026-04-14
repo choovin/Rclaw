@@ -15,6 +15,7 @@ import {
   Plus,
   Trash2,
   Cpu,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settings';
@@ -128,19 +129,17 @@ export function Sidebar() {
 
   const gatewayStatus = useGatewayStore((s) => s.status);
   const isGatewayRunning = gatewayStatus.state === 'running';
+  const primeHistoryFromLocalDisk = useChatStore((s) => s.primeHistoryFromLocalDisk);
 
   useEffect(() => {
     if (!isGatewayRunning) return;
-    let cancelled = false;
+    void primeHistoryFromLocalDisk();
+  }, [currentSessionKey, isGatewayRunning, primeHistoryFromLocalDisk]);
+
+  useEffect(() => {
+    if (!isGatewayRunning) return;
     const hasExistingMessages = useChatStore.getState().messages.length > 0;
-    (async () => {
-      await loadSessions();
-      if (cancelled) return;
-      await loadHistory(hasExistingMessages);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void Promise.all([loadSessions(), loadHistory(hasExistingMessages)]);
   }, [isGatewayRunning, loadHistory, loadSessions]);
   const agents = useAgentsStore((s) => s.agents);
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
@@ -292,60 +291,74 @@ export function Sidebar() {
       </nav>
 
       {/* Session list — below primary nav, only when expanded */}
-      {!sidebarCollapsed && sessions.length > 0 && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 mt-3 space-y-0.5 pb-2">
-          {sessionBuckets.map((bucket) => (
-            bucket.sessions.length > 0 ? (
-              <div key={bucket.key} className="pt-2">
-                <div className="px-3 pb-1.5 text-[11px] font-medium text-muted-foreground/80 tracking-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  {bucket.label}
-                </div>
-                {bucket.sessions.map((s) => {
-                  const agentId = getAgentIdFromSessionKey(s.key);
-                  const agentName = agentSessionDisplayNameById[agentId] || agentId;
-                  return (
-                    <div key={s.key} className="group relative flex items-center">
-                      <button
-                        onClick={() => { switchSession(s.key); navigate('/'); }}
-                        className={cn(
-                          'w-full text-left rounded-lg px-3 py-1.5 text-[13px] transition-colors pr-7',
-                          'hover:bg-secondary',
-                          isOnChat && currentSessionKey === s.key
-                            ? 'bg-secondary text-foreground font-medium'
-                            : 'text-foreground/65',
-                        )}
-                        style={{ letterSpacing: '-0.005em' }}
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className="shrink-0 rounded-md bg-foreground px-2 py-0.5 text-xs font-semibold text-background">
-                            {agentName}
-                          </span>
-                          <span className="truncate">{getSessionLabel(s.key, s.displayName, s.label)}</span>
-                        </div>
-                      </button>
-                      <button
-                        aria-label="Delete session"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSessionToDelete({
-                            key: s.key,
-                            label: getSessionLabel(s.key, s.displayName, s.label),
-                          });
-                        }}
-                        className={cn(
-                          'absolute right-1.5 flex items-center justify-center rounded p-1 transition-opacity',
-                          'opacity-0 group-hover:opacity-100',
-                          'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
-                        )}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+      {!sidebarCollapsed && (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2.5 mt-3 pb-2">
+          {!isGatewayRunning ? (
+            <div
+              data-testid="sidebar-session-list-loading"
+              className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-muted-foreground"
+            >
+              <Loader2 className="h-6 w-6 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
+              <span className="text-center text-[12px] leading-snug px-1">
+                {t('chat:sessionListWaitingForGateway')}
+              </span>
+            </div>
+          ) : sessions.length > 0 ? (
+            <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0.5">
+              {sessionBuckets.map((bucket) => (
+                bucket.sessions.length > 0 ? (
+                  <div key={bucket.key} className="pt-2">
+                    <div className="px-3 pb-1.5 text-[11px] font-medium text-muted-foreground/80 tracking-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {bucket.label}
                     </div>
-                  );
-                })}
-              </div>
-            ) : null
-          ))}
+                    {bucket.sessions.map((s) => {
+                      const agentId = getAgentIdFromSessionKey(s.key);
+                      const agentName = agentSessionDisplayNameById[agentId] || agentId;
+                      return (
+                        <div key={s.key} className="group relative flex items-center">
+                          <button
+                            onClick={() => { switchSession(s.key); navigate('/'); }}
+                            className={cn(
+                              'w-full text-left rounded-lg px-3 py-1.5 text-[13px] transition-colors pr-7',
+                              'hover:bg-secondary',
+                              isOnChat && currentSessionKey === s.key
+                                ? 'bg-secondary text-foreground font-medium'
+                                : 'text-foreground/65',
+                            )}
+                            style={{ letterSpacing: '-0.005em' }}
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 rounded-md bg-foreground px-2 py-0.5 text-xs font-semibold text-background">
+                                {agentName}
+                              </span>
+                              <span className="truncate">{getSessionLabel(s.key, s.displayName, s.label)}</span>
+                            </div>
+                          </button>
+                          <button
+                            aria-label="Delete session"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSessionToDelete({
+                                key: s.key,
+                                label: getSessionLabel(s.key, s.displayName, s.label),
+                              });
+                            }}
+                            className={cn(
+                              'absolute right-1.5 flex items-center justify-center rounded p-1 transition-opacity',
+                              'opacity-0 group-hover:opacity-100',
+                              'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
+                            )}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 

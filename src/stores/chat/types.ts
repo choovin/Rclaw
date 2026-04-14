@@ -94,6 +94,10 @@ export interface ChatState {
   newSession: () => void;
   deleteSession: (key: string) => Promise<void>;
   cleanupEmptySession: () => void;
+  /** Merge session keys from all agents' sessions.json via Host API (no Gateway WS). Fills sidebar before sessions.list. */
+  mergeSessionsDiscoveredFromLocalDisk: () => Promise<void>;
+  /** Load last messages from on-disk JSONL via Host API (no Gateway WS). Best-effort before Gateway is up. */
+  primeHistoryFromLocalDisk: () => Promise<void>;
   loadHistory: (quiet?: boolean) => Promise<void>;
   sendMessage: (
     text: string,

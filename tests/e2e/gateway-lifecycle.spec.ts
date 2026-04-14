@@ -24,6 +24,8 @@ test.describe('ClawX gateway lifecycle resilience', () => {
     await page.getByTestId('sidebar-new-chat').click();
     // Verify the page didn't crash; main layout should still be stable
     await expect(page.getByTestId('main-layout')).toBeVisible();
+    // E2E starts with gateway stopped; session list area shows a spinner until running
+    await expect(page.getByTestId('sidebar-session-list-loading')).toBeVisible();
   });
 
   test('gateway status indicator updates when status transitions occur', async ({ electronApp, page }) => {

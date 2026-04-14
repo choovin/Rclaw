@@ -1,5 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { join } from 'node:path';
+import { discoverOpenClawSessionsFromDisk } from '../../utils/discover-openclaw-local-sessions';
+import { parseOpenClawTranscriptJsonlToMessages } from '../../utils/openclaw-transcript-jsonl';
+import { resolveAgentSessionJsonlPath } from '../../utils/openclaw-session-jsonl';
 import { getOpenClawConfigDir } from '../../utils/paths';
 import type { HostApiContext } from '../context';
 import { parseJsonBody, sendJson } from '../route-utils';
@@ -12,6 +15,40 @@ export async function handleSessionRoutes(
   url: URL,
   _ctx: HostApiContext,
 ): Promise<boolean> {
+  if (url.pathname === '/api/sessions/discover-local' && req.method === 'GET') {
+    try {
+      const sessions = await discoverOpenClawSessionsFromDisk();
+      sendJson(res, 200, { success: true, sessions });
+    } catch (error) {
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
+    return true;
+  }
+
+  if (url.pathname === '/api/sessions/transcript-by-key' && req.method === 'GET') {
+    const sessionKey = url.searchParams.get('sessionKey')?.trim() || '';
+    const limitRaw = url.searchParams.get('limit');
+    const limit = Math.min(500, Math.max(1, Number.parseInt(limitRaw || '200', 10) || 200));
+    if (!sessionKey.startsWith('agent:')) {
+      sendJson(res, 400, { success: false, error: 'Invalid sessionKey' });
+      return true;
+    }
+    try {
+      const resolved = await resolveAgentSessionJsonlPath(sessionKey);
+      if (!resolved) {
+        sendJson(res, 404, { success: false, error: 'Session transcript not found' });
+        return true;
+      }
+      const fsP = await import('node:fs/promises');
+      const raw = await fsP.readFile(resolved, 'utf8');
+      const messages = parseOpenClawTranscriptJsonlToMessages(raw, limit);
+      sendJson(res, 200, { success: true, messages });
+    } catch (error) {
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
+    return true;
+  }
+
   if (url.pathname === '/api/sessions/transcript' && req.method === 'GET') {
     try {
       const agentId = url.searchParams.get('agentId')?.trim() || '';
@@ -28,15 +65,7 @@ export async function handleSessionRoutes(
       const transcriptPath = join(getOpenClawConfigDir(), 'agents', agentId, 'sessions', `${sessionId}.jsonl`);
       const fsP = await import('node:fs/promises');
       const raw = await fsP.readFile(transcriptPath, 'utf8');
-      const lines = raw.split(/\r?\n/).filter(Boolean);
-      const messages = lines.flatMap((line) => {
-        try {
-          const entry = JSON.parse(line) as { type?: string; message?: unknown };
-          return entry.type === 'message' && entry.message ? [entry.message] : [];
-        } catch {
-          return [];
-        }
-      });
+      const messages = parseOpenClawTranscriptJsonlToMessages(raw, 100_000);
 
       sendJson(res, 200, { success: true, messages });
     } catch (error) {

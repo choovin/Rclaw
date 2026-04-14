@@ -1013,6 +1013,30 @@ function hasNonToolAssistantContent(message: RawMessage | undefined): boolean {
   return false;
 }
 
+/**
+ * If sessions.list failed or raced with history load, the sidebar can stay empty while
+ * chat.history succeeds. Ensure the active session appears and optionally resync the list.
+ */
+function ensureCurrentSessionListedAfterHistoryLoad(
+  get: () => ChatState,
+  set: (partial: Partial<ChatState> | ((state: ChatState) => Partial<ChatState>)) => void,
+  sessionKey: string,
+): void {
+  if (get().sessions.some((s) => s.key === sessionKey)) return;
+  set((s) => ({
+    sessions: [...s.sessions, { key: sessionKey, displayName: sessionKey }],
+  }));
+  void get().loadSessions();
+}
+
+/** Host API may briefly reject right after renderer load; 404 means no on-disk transcript — do not retry. */
+function isTranscriptHostNotFoundError(error: unknown): boolean {
+  const s = String(error).toLowerCase();
+  return s.includes('404') || s.includes('not found') || s.includes('transcript not found');
+}
+
+const PRIME_LOCAL_DISK_RETRY_DELAYS_MS = [0, 200, 500, 1_000, 2_000] as const;
+
 // ── Store ────────────────────────────────────────────────────────
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -1041,6 +1065,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // ── Load sessions via sessions.list ──
 
   loadSessions: async () => {
+    if (useGatewayStore.getState().status.state !== 'running') return;
     const now = Date.now();
     if (_loadSessionsInFlight) {
       await _loadSessionsInFlight;
@@ -1051,6 +1076,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     _loadSessionsInFlight = (async () => {
+      let sessionsRpcSucceeded = false;
       try {
         const data = await useGatewayStore.getState().rpc<Record<string, unknown>>('sessions.list', {});
         if (data) {
@@ -1174,11 +1200,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
               }
             })();
           }
+          sessionsRpcSucceeded = true;
         }
       } catch (err) {
         console.warn('Failed to load sessions:', err);
       } finally {
-        _lastLoadSessionsAt = Date.now();
+        if (sessionsRpcSucceeded) {
+          _lastLoadSessionsAt = Date.now();
+        }
       }
     })();
 
@@ -1332,6 +1361,93 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
 
+  mergeSessionsDiscoveredFromLocalDisk: async () => {
+    if (useGatewayStore.getState().status.state !== 'running') return;
+    try {
+      const res = await hostApiFetch<{
+        success?: boolean;
+        sessions?: Array<{ key: string; displayName?: string; label?: string }>;
+      }>('/api/sessions/discover-local');
+      if (res.success === false || !Array.isArray(res.sessions) || res.sessions.length === 0) return;
+      set((state) => {
+        const byKey = new Map(state.sessions.map((s) => [s.key, s]));
+        for (const d of res.sessions!) {
+          if (!d.key?.startsWith('agent:')) continue;
+          if (!byKey.has(d.key)) {
+            byKey.set(d.key, {
+              key: d.key,
+              displayName: d.displayName,
+              label: d.label,
+            });
+          }
+        }
+        return { sessions: [...byKey.values()] };
+      });
+    } catch {
+      // Host not ready
+    }
+  },
+
+  primeHistoryFromLocalDisk: async () => {
+    if (useGatewayStore.getState().status.state !== 'running') return;
+    const sessionKey = get().currentSessionKey;
+    if (!sessionKey.startsWith('agent:') || isCronSessionKey(sessionKey)) return;
+    if (get().messages.length > 0) return;
+
+    for (let attempt = 0; attempt < PRIME_LOCAL_DISK_RETRY_DELAYS_MS.length; attempt += 1) {
+      if (attempt > 0) {
+        await sleep(PRIME_LOCAL_DISK_RETRY_DELAYS_MS[attempt]!);
+      }
+      if (get().currentSessionKey !== sessionKey || get().messages.length > 0) return;
+
+      try {
+        const params = new URLSearchParams({ sessionKey, limit: '200' });
+        const prefetch = await hostApiFetch<{ success?: boolean; messages?: RawMessage[] }>(
+          `/api/sessions/transcript-by-key?${params.toString()}`,
+        );
+        if (get().currentSessionKey !== sessionKey) return;
+        if (
+          prefetch.success === false
+          || !Array.isArray(prefetch.messages)
+          || prefetch.messages.length === 0
+        ) {
+          return;
+        }
+        const messagesWithToolImages = enrichWithToolResultFiles(prefetch.messages);
+        const filteredMessages = messagesWithToolImages.filter(
+          (msg) => !isToolResultRole(msg.role) && !isInternalMessage(msg),
+        );
+        const enrichedMessages = enrichWithCachedImages(filteredMessages);
+        set({ messages: enrichedMessages, thinkingLevel: null, loading: false });
+        const isMainSession = sessionKey.endsWith(':main');
+        if (!isMainSession) {
+          const firstUserMsg = enrichedMessages.find((m) => m.role === 'user');
+          if (firstUserMsg) {
+            const labelText = getMessageText(firstUserMsg.content).trim();
+            if (labelText) {
+              const truncated = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
+              set((s) => ({
+                sessionLabels: { ...s.sessionLabels, [sessionKey]: truncated },
+              }));
+            }
+          }
+        }
+        const lastMsg = enrichedMessages[enrichedMessages.length - 1];
+        if (lastMsg?.timestamp) {
+          const lastAt = toMs(lastMsg.timestamp);
+          set((s) => ({
+            sessionLastActivity: { ...s.sessionLastActivity, [sessionKey]: lastAt },
+          }));
+        }
+        ensureCurrentSessionListedAfterHistoryLoad(get, set, sessionKey);
+        return;
+      } catch (error) {
+        if (isTranscriptHostNotFoundError(error)) return;
+        if (attempt === PRIME_LOCAL_DISK_RETRY_DELAYS_MS.length - 1) return;
+      }
+    }
+  },
+
   // ── Load chat history ──
 
   loadHistory: async (quiet = false) => {
@@ -1349,7 +1465,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    if (!quiet) set({ loading: true, error: null });
+    if (!quiet) {
+      set((state) => ({
+        error: null,
+        ...(state.messages.length === 0 ? { loading: true } : {}),
+      }));
+    }
 
     // Safety guard: if history loading takes too long, force loading to false
     // to prevent the UI from being stuck in a spinner forever.
@@ -1500,6 +1621,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           set({ sending: false, activeRunId: null, pendingFinal: false });
         }
       }
+      ensureCurrentSessionListedAfterHistoryLoad(get, set, currentSessionKey);
       return true;
       };
 

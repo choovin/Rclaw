@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  CHAT_HISTORY_LOADING_SAFETY_TIMEOUT_MS,
+  CHAT_HISTORY_RPC_TIMEOUT_MS,
+} from '@/stores/chat/history-startup-retry';
 
 const { gatewayRpcMock, agentsState, hostApiFetchMock } = vi.hoisted(() => ({
   gatewayRpcMock: vi.fn(),
@@ -35,7 +39,12 @@ describe('useChatStore startup history retry', () => {
     agentsState.agents = [];
     gatewayRpcMock.mockReset();
     hostApiFetchMock.mockReset();
-    hostApiFetchMock.mockResolvedValue({ messages: [] });
+    hostApiFetchMock.mockImplementation((path: string) => {
+      if (String(path).includes('transcript-by-key')) {
+        return Promise.resolve({ success: true, messages: [] });
+      }
+      return Promise.resolve({ messages: [] });
+    });
   });
 
   afterEach(() => {
@@ -82,7 +91,7 @@ describe('useChatStore startup history retry', () => {
       1,
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     );
     expect(gatewayRpcMock).toHaveBeenNthCalledWith(
       2,
@@ -90,7 +99,7 @@ describe('useChatStore startup history retry', () => {
       { sessionKey: 'agent:main:main', limit: 200 },
       undefined,
     );
-    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 191_800);
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), CHAT_HISTORY_LOADING_SAFETY_TIMEOUT_MS);
     setTimeoutSpy.mockRestore();
   });
 
@@ -197,17 +206,17 @@ describe('useChatStore startup history retry', () => {
     expect(gatewayRpcMock.mock.calls[0]).toEqual([
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     ]);
     expect(gatewayRpcMock.mock.calls[1]).toEqual([
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     ]);
     expect(gatewayRpcMock.mock.calls[2]).toEqual([
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     ]);
     expect(useChatStore.getState().messages.map((message) => message.content)).toEqual(['restored after retry']);
     expect(warnSpy).toHaveBeenCalledWith(

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CHAT_HISTORY_RPC_TIMEOUT_MS } from '@/stores/chat/history-startup-retry';
 
 const invokeIpcMock = vi.fn();
 const hostApiFetchMock = vi.fn();
@@ -204,14 +205,14 @@ describe('chat history actions', () => {
       'gateway:rpc',
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     );
     expect(invokeIpcMock).toHaveBeenNthCalledWith(
       2,
       'gateway:rpc',
       'chat.history',
       { sessionKey: 'agent:main:main', limit: 200 },
-      35_000,
+      CHAT_HISTORY_RPC_TIMEOUT_MS,
     );
     expect(h.read().messages.map((message) => message.content)).toEqual(['restored after retry']);
     expect(h.read().error).toBeNull();
