@@ -76,27 +76,34 @@ test.describe('Skills store grid cards', () => {
     }
   });
 
-  test('Skills 工具栏：点击“技能商店”打开安装 Sheet，关闭后自动回“我的技能”，且“打开技能文件夹”始终可见', async ({ page }) => {
+  test('Skills 工具栏：点击「技能商店」为内联商店视图，不打开安装 Sheet，分类筛选在商店 Tab 下隐藏，且「打开技能文件夹」始终可见', async ({
+    page,
+  }) => {
     test.setTimeout(180_000);
     await skipSetupAndGoToSkills(page);
 
-    // 工具栏/Tab：需要实现稳定定位（添加 testid）
     const tabMySkills = page.getByTestId('skills-tab-my-skills');
     const tabMarketplace = page.getByTestId('skills-tab-marketplace');
     await expect(tabMySkills).toBeVisible();
     await expect(tabMarketplace).toBeVisible();
 
-    // “打开技能文件夹”始终可见（不再依赖 hasInstalledSkills）
     await expect(page.getByTestId('skills-open-folder')).toBeVisible();
 
-    // 点击技能商店 -> Sheet 打开
     await tabMarketplace.click();
-    await expect(page.getByTestId('skills-install-sheet')).toBeVisible();
+    await expect(tabMarketplace).toHaveAttribute('data-state', 'active');
 
-    // 关闭 Sheet -> 自动回“我的技能”
-    await page.keyboard.press('Escape');
-    await expect(page.getByTestId('skills-install-sheet')).toBeHidden();
-    await expect(tabMySkills).toHaveAttribute('data-state', 'active');
+    // 已移除 ClawHub 安装 Sheet，DOM 中不应再出现该 testid
+    await expect(page.getByTestId('skills-install-sheet')).toHaveCount(0);
+
+    // 商店 Tab 下「全部 / 内置 / 市场」筛选区带 Tailwind `hidden`
+    await expect(page.getByTestId('skills-source-filters')).toBeHidden();
+
+    // 云端列表可用时会出现虚拟列表或卡片（CI 无网络时可能长期 loading/空态，不强制）
+    const skillhubGrid = page.getByTestId('skillhub-grid');
+    const skillhubCard = page.getByTestId('skillhub-card');
+    if ((await skillhubGrid.count()) > 0 || (await skillhubCard.count()) > 0) {
+      await expect(skillhubGrid.or(skillhubCard).first()).toBeVisible();
+    }
   });
 });
 
