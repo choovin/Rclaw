@@ -90,6 +90,8 @@ docs/*
 !docs/superpowers/specs/*.md
 !docs/superpowers/plans/
 !docs/superpowers/plans/*.md
+!docs/api-docs/
+!docs/api-docs/*.md
 agency-agents-zh
 
 temp/
