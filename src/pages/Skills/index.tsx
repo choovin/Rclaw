@@ -448,6 +448,7 @@ export function Skills() {
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [selectedSource, setSelectedSource] = useState<'all' | 'built-in' | 'marketplace'>('all');
   const [gridReady, setGridReady] = useState(false);
+  const prevSkillsTabRef = useRef<'mySkills' | 'marketplace'>(activeTab);
 
   const isGatewayRunning = gatewayStatus.state === 'running';
   const [showGatewayWarning, setShowGatewayWarning] = useState(false);
@@ -485,10 +486,29 @@ export function Skills() {
     };
   }, []);
 
+  // 从商店切回「我的技能」时在 effect 里再打开网格（setGridReady(false) 在 Tabs.onValueChange 同步执行，避免首帧仍挂载全部卡片）。
+  useEffect(() => {
+    const prev = prevSkillsTabRef.current;
+    prevSkillsTabRef.current = activeTab;
+    if (prev !== 'marketplace' || activeTab !== 'mySkills') return;
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return;
+      startTransition(() => setGridReady(true));
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [activeTab]);
+
   const safeSkills = useMemo(() => (Array.isArray(skills) ? skills : []), [skills]);
   const normalizedQuery = useMemo(() => deferredSearchQuery.toLowerCase().trim(), [deferredSearchQuery]);
 
   const filteredSkills = useMemo(() => {
+    if (activeTab !== 'mySkills') {
+      return [];
+    }
     const q = normalizedQuery;
     const selected = selectedSource;
 
@@ -516,7 +536,7 @@ export function Skills() {
         if (!a.isCore && b.isCore) return 1;
         return a.name.localeCompare(b.name);
       });
-  }, [normalizedQuery, safeSkills, selectedSource]);
+  }, [activeTab, normalizedQuery, safeSkills, selectedSource]);
 
   const sourceStats = useMemo(() => {
     let builtIn = 0;
@@ -592,9 +612,10 @@ export function Skills() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'marketplace') {
-      void useSkillhubListStore.getState().resetAndFetch();
-    }
+    if (activeTab !== 'marketplace') return;
+    const s = useSkillhubListStore.getState();
+    if (s.items.length > 0 || s.loading) return;
+    void s.resetAndFetch();
   }, [activeTab]);
 
   const handleInstall = useCallback(async (slug: string) => {
@@ -640,7 +661,11 @@ export function Skills() {
         <Tabs
           value={activeTab}
           onValueChange={(v) => {
-            setActiveTab(v as 'mySkills' | 'marketplace');
+            const next = v as 'mySkills' | 'marketplace';
+            if (next === 'mySkills' && activeTab === 'marketplace') {
+              setGridReady(false);
+            }
+            setActiveTab(next);
           }}
           className="mb-4 shrink-0"
         >
