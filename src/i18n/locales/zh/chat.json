@@ -77,5 +77,6 @@
         "withinMonth": "一个月内",
         "older": "一个月之前"
     },
-    "sessionListWaitingForGateway": "正在连接网关…"
+    "sessionListWaitingForGateway": "正在连接网关…",
+    "sessionListLoadingSessions": "正在加载会话列表…"
 }

@@ -77,5 +77,6 @@
         "withinMonth": "1か月以内",
         "older": "1か月より前"
     },
-    "sessionListWaitingForGateway": "ゲートウェイに接続しています…"
+    "sessionListWaitingForGateway": "ゲートウェイに接続しています…",
+    "sessionListLoadingSessions": "セッション一覧を読み込み中…"
 }

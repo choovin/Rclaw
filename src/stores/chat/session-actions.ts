@@ -1,5 +1,8 @@
 import { invokeIpc } from '@/lib/api-client';
+import { isCronSessionKey } from './cron-session-utils';
 import { getCanonicalPrefixFromSessions, getMessageText, toMs } from './helpers';
+import { maxRawMessageTimestampMs } from './message-time';
+import { fetchDiskLastActivityBySessionKeys } from './session-disk-activity';
 import { classifyHistoryStartupRetryError, sleep } from './history-startup-retry';
 import { DEFAULT_CANONICAL_PREFIX, DEFAULT_SESSION_KEY, type ChatSession, type RawMessage } from './types';
 import type { ChatGet, ChatSet, SessionHistoryActions } from './store-api';
@@ -97,69 +100,95 @@ export function createSessionActions(
               .map((session) => [session.key, session.updatedAt!]),
           );
 
-          set((state) => ({
-            sessions: sessionsWithCurrent,
-            currentSessionKey: nextSessionKey,
-            currentAgentId: getAgentIdFromSessionKey(nextSessionKey),
-            sessionLastActivity: {
-              ...state.sessionLastActivity,
-              ...discoveredActivity,
-            },
-          }));
+          const loadGatewayHydration = async (): Promise<{
+            activity: Record<string, number>;
+            labels: Record<string, string>;
+          }> => {
+            const activity: Record<string, number> = {};
+            const labels: Record<string, string> = {};
+            const targets = sessionsWithCurrent.filter((s) => !isCronSessionKey(s.key));
+            if (targets.length === 0) return { activity, labels };
+
+            const LABEL_RETRY_DELAYS = [2_000, 5_000, 10_000];
+            let pending = targets;
+            for (let attempt = 0; attempt <= LABEL_RETRY_DELAYS.length; attempt += 1) {
+              const failed: typeof pending = [];
+              await Promise.all(
+                pending.map(async (session) => {
+                  try {
+                    const r = await invokeIpc(
+                      'gateway:rpc',
+                      'chat.history',
+                      { sessionKey: session.key, limit: 1000 },
+                    ) as { success: boolean; result?: Record<string, unknown>; error?: string };
+                    if (!r.success) {
+                      if (classifyHistoryStartupRetryError(r.error) === 'gateway_startup') {
+                        failed.push(session);
+                      }
+                      return;
+                    }
+                    if (!r.result) return;
+                    const msgs = Array.isArray(r.result.messages) ? r.result.messages as RawMessage[] : [];
+                    const firstUser = msgs.find((m) => m.role === 'user');
+                    if (firstUser && !session.key.endsWith(':main')) {
+                      const labelText = getMessageText(firstUser.content).trim();
+                      if (labelText) {
+                        labels[session.key] = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
+                      }
+                    }
+                    const maxMs = maxRawMessageTimestampMs(msgs);
+                    if (maxMs != null) {
+                      activity[session.key] = maxMs;
+                    }
+                  } catch (err) {
+                    if (classifyHistoryStartupRetryError(err) === 'gateway_startup') {
+                      failed.push(session);
+                    }
+                  }
+                }),
+              );
+              if (failed.length === 0 || attempt >= LABEL_RETRY_DELAYS.length) break;
+              await sleep(LABEL_RETRY_DELAYS[attempt]!);
+              pending = failed;
+            }
+            return { activity, labels };
+          };
+
+          const [diskActivity, hydrated] = await Promise.all([
+            fetchDiskLastActivityBySessionKeys(sessionsWithCurrent.map((s) => s.key)),
+            loadGatewayHydration(),
+          ]);
+
+          const hydratedActivity = hydrated.activity;
+          const hydratedLabels = hydrated.labels;
+
+          set((state) => {
+            const mergedSessionLastActivity: Record<string, number> = { ...state.sessionLastActivity };
+            for (const session of sessionsWithCurrent) {
+              const k = session.key;
+              const candidates: number[] = [];
+              const d = discoveredActivity[k];
+              const h = hydratedActivity[k];
+              const disk = diskActivity[k];
+              const prev = mergedSessionLastActivity[k];
+              if (typeof d === 'number' && Number.isFinite(d)) candidates.push(d);
+              if (typeof h === 'number' && Number.isFinite(h)) candidates.push(h);
+              if (typeof disk === 'number' && Number.isFinite(disk)) candidates.push(disk);
+              if (typeof prev === 'number' && Number.isFinite(prev)) candidates.push(prev);
+              if (candidates.length === 0) continue;
+              mergedSessionLastActivity[k] = Math.max(...candidates);
+            }
+            return {
+              sessions: sessionsWithCurrent,
+              currentSessionKey: nextSessionKey,
+              currentAgentId: getAgentIdFromSessionKey(nextSessionKey),
+              sessionLastActivity: mergedSessionLastActivity,
+              sessionLabels: { ...state.sessionLabels, ...hydratedLabels },
+            };
+          });
 
           if (currentSessionKey !== nextSessionKey) {
             get().loadHistory();
-          }
-
-          // Background: fetch first user message for every non-main session to populate labels upfront.
-          // Retries on "gateway startup" errors since the gateway may still be initializing.
-          const sessionsToLabel = sessionsWithCurrent.filter((s) => !s.key.endsWith(':main'));
-          if (sessionsToLabel.length > 0) {
-            const LABEL_RETRY_DELAYS = [2_000, 5_000, 10_000];
-            void (async () => {
-              let pending = sessionsToLabel;
-              for (let attempt = 0; attempt <= LABEL_RETRY_DELAYS.length; attempt += 1) {
-                const failed: typeof pending = [];
-                await Promise.all(
-                  pending.map(async (session) => {
-                    try {
-                      const r = await invokeIpc(
-                        'gateway:rpc',
-                        'chat.history',
-                        { sessionKey: session.key, limit: 1000 },
-                      ) as { success: boolean; result?: Record<string, unknown>; error?: string };
-                      if (!r.success) {
-                        if (classifyHistoryStartupRetryError(r.error) === 'gateway_startup') {
-                          failed.push(session);
-                        }
-                        return;
-                      }
-                      if (!r.result) return;
-                      const msgs = Array.isArray(r.result.messages) ? r.result.messages as RawMessage[] : [];
-                      const firstUser = msgs.find((m) => m.role === 'user');
-                      const lastMsg = msgs[msgs.length - 1];
-                      set((s) => {
-                        const next: Partial<typeof s> = {};
-                        if (firstUser) {
-                          const labelText = getMessageText(firstUser.content).trim();
-                          if (labelText) {
-                            const truncated = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
-                            next.sessionLabels = { ...s.sessionLabels, [session.key]: truncated };
-                          }
-                        }
-                        if (lastMsg?.timestamp) {
-                          next.sessionLastActivity = { ...s.sessionLastActivity, [session.key]: toMs(lastMsg.timestamp) };
-                        }
-                        return next;
-                      });
-                    } catch { /* ignore per-session errors */ }
-                  }),
-                );
-                if (failed.length === 0 || attempt >= LABEL_RETRY_DELAYS.length) break;
-                await sleep(LABEL_RETRY_DELAYS[attempt]!);
-                pending = failed;
-              }
-            })();
           }
         }
       } catch (err) {

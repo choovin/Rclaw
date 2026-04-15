@@ -69,5 +69,6 @@
         "withinMonth": "В течение месяца",
         "older": "Старее месяца"
     },
-    "sessionListWaitingForGateway": "Ожидание шлюза…"
+    "sessionListWaitingForGateway": "Ожидание шлюза…",
+    "sessionListLoadingSessions": "Загрузка списка сессий…"
 }

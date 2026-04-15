@@ -77,5 +77,6 @@
         "withinMonth": "Within 1 Month",
         "older": "Older than 1 Month"
     },
-    "sessionListWaitingForGateway": "Waiting for gateway…"
+    "sessionListWaitingForGateway": "Waiting for gateway…",
+    "sessionListLoadingSessions": "Loading sessions…"
 }

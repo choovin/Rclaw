@@ -16,6 +16,8 @@ import {
   shouldRetryStartupHistoryLoad,
   sleep,
 } from './chat/history-startup-retry';
+import { maxRawMessageTimestampMs } from './chat/message-time';
+import { fetchDiskLastActivityBySessionKeys } from './chat/session-disk-activity';
 import {
   DEFAULT_CANONICAL_PREFIX,
   DEFAULT_SESSION_KEY,
@@ -1140,66 +1142,93 @@ export const useChatStore = create<ChatState>((set, get) => ({
               .map((session) => [session.key, session.updatedAt!]),
           );
 
-          set((state) => ({
-            sessions: sessionsWithCurrent,
-            currentSessionKey: nextSessionKey,
-            currentAgentId: getAgentIdFromSessionKey(nextSessionKey),
-            sessionLastActivity: {
-              ...state.sessionLastActivity,
-              ...discoveredActivity,
-            },
-          }));
+          // Await last-activity + labels before first paint. Merge: (1) local transcript tail via Host API
+          // (slice last N lines — true recency), (2) gateway chat.history (may be a truncated window —
+          // use max timestamp over messages, not only the last array element), (3) sessions.list
+          // updatedAt (often stale).
+          const loadGatewayHydration = async (): Promise<{
+            activity: Record<string, number>;
+            labels: Record<string, string>;
+          }> => {
+            const activity: Record<string, number> = {};
+            const labels: Record<string, string> = {};
+            const targets = sessionsWithCurrent.filter((s) => !isCronSessionKey(s.key));
+            if (targets.length === 0) return { activity, labels };
+
+            const LABEL_RETRY_DELAYS = [2_000, 5_000, 10_000];
+            let pending = targets;
+            for (let attempt = 0; attempt <= LABEL_RETRY_DELAYS.length; attempt += 1) {
+              const failed: typeof pending = [];
+              await Promise.all(
+                pending.map(async (session) => {
+                  try {
+                    const r = await useGatewayStore.getState().rpc<Record<string, unknown>>(
+                      'chat.history',
+                      { sessionKey: session.key, limit: 1000 },
+                    );
+                    const msgs = Array.isArray(r.messages) ? r.messages as RawMessage[] : [];
+                    const firstUser = msgs.find((m) => m.role === 'user');
+                    if (firstUser && !session.key.endsWith(':main')) {
+                      const labelText = getMessageText(firstUser.content).trim();
+                      if (labelText) {
+                        labels[session.key] = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
+                      }
+                    }
+                    const maxMs = maxRawMessageTimestampMs(msgs);
+                    if (maxMs != null) {
+                      activity[session.key] = maxMs;
+                    }
+                  } catch (err) {
+                    if (classifyHistoryStartupRetryError(err) === 'gateway_startup') {
+                      failed.push(session);
+                    }
+                  }
+                }),
+              );
+              if (failed.length === 0 || attempt >= LABEL_RETRY_DELAYS.length) break;
+              await sleep(LABEL_RETRY_DELAYS[attempt]!);
+              pending = failed;
+            }
+            return { activity, labels };
+          };
+
+          const [diskActivity, hydrated] = await Promise.all([
+            fetchDiskLastActivityBySessionKeys(sessionsWithCurrent.map((s) => s.key)),
+            loadGatewayHydration(),
+          ]);
+
+          const hydratedActivity = hydrated.activity;
+          const hydratedLabels = hydrated.labels;
+
+          set((state) => {
+            const mergedSessionLastActivity: Record<string, number> = { ...state.sessionLastActivity };
+            for (const session of sessionsWithCurrent) {
+              const k = session.key;
+              const candidates: number[] = [];
+              const d = discoveredActivity[k];
+              const h = hydratedActivity[k];
+              const disk = diskActivity[k];
+              const prev = mergedSessionLastActivity[k];
+              if (typeof d === 'number' && Number.isFinite(d)) candidates.push(d);
+              if (typeof h === 'number' && Number.isFinite(h)) candidates.push(h);
+              if (typeof disk === 'number' && Number.isFinite(disk)) candidates.push(disk);
+              if (typeof prev === 'number' && Number.isFinite(prev)) candidates.push(prev);
+              if (candidates.length === 0) continue;
+              mergedSessionLastActivity[k] = Math.max(...candidates);
+            }
+            return {
+              sessions: sessionsWithCurrent,
+              currentSessionKey: nextSessionKey,
+              currentAgentId: getAgentIdFromSessionKey(nextSessionKey),
+              sessionLastActivity: mergedSessionLastActivity,
+              sessionLabels: { ...state.sessionLabels, ...hydratedLabels },
+            };
+          });
 
           if (currentSessionKey !== nextSessionKey) {
             void get().loadHistory();
           }
 
-          // Background: fetch first user message for every non-main session to populate labels upfront.
-          // Retries on "gateway startup" errors since the gateway may still be initializing.
-          const sessionsToLabel = sessionsWithCurrent.filter((s) => !s.key.endsWith(':main'));
-          if (sessionsToLabel.length > 0) {
-            const LABEL_RETRY_DELAYS = [2_000, 5_000, 10_000];
-            void (async () => {
-              let pending = sessionsToLabel;
-              for (let attempt = 0; attempt <= LABEL_RETRY_DELAYS.length; attempt += 1) {
-                const failed: typeof pending = [];
-                await Promise.all(
-                  pending.map(async (session) => {
-                    try {
-                      const r = await useGatewayStore.getState().rpc<Record<string, unknown>>(
-                        'chat.history',
-                        { sessionKey: session.key, limit: 1000 },
-                      );
-                      const msgs = Array.isArray(r.messages) ? r.messages as RawMessage[] : [];
-                      const firstUser = msgs.find((m) => m.role === 'user');
-                      const lastMsg = msgs[msgs.length - 1];
-                      set((s) => {
-                        const next: Partial<typeof s> = {};
-                        if (firstUser) {
-                          const labelText = getMessageText(firstUser.content).trim();
-                          if (labelText) {
-                            const truncated = labelText.length > 50 ? `${labelText.slice(0, 50)}…` : labelText;
-                            next.sessionLabels = { ...s.sessionLabels, [session.key]: truncated };
-                          }
-                        }
-                        if (lastMsg?.timestamp) {
-                          next.sessionLastActivity = { ...s.sessionLastActivity, [session.key]: toMs(lastMsg.timestamp) };
-                        }
-                        return next;
-                      });
-                    } catch (err) {
-                      if (classifyHistoryStartupRetryError(err) === 'gateway_startup') {
-                        failed.push(session);
-                      }
-                    }
-                  }),
-                );
-                if (failed.length === 0 || attempt >= LABEL_RETRY_DELAYS.length) break;
-                await sleep(LABEL_RETRY_DELAYS[attempt]!);
-                pending = failed;
-              }
-            })();
-          }
           sessionsRpcSucceeded = true;
         }
       } catch (err) {
@@ -1369,19 +1398,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sessions?: Array<{ key: string; displayName?: string; label?: string }>;
       }>('/api/sessions/discover-local');
       if (res.success === false || !Array.isArray(res.sessions) || res.sessions.length === 0) return;
-      set((state) => {
-        const byKey = new Map(state.sessions.map((s) => [s.key, s]));
-        for (const d of res.sessions!) {
-          if (!d.key?.startsWith('agent:')) continue;
-          if (!byKey.has(d.key)) {
-            byKey.set(d.key, {
-              key: d.key,
-              displayName: d.displayName,
-              label: d.label,
-            });
-          }
+      const state = get();
+      const byKey = new Map(state.sessions.map((s) => [s.key, s]));
+      const addedKeys: string[] = [];
+      for (const d of res.sessions) {
+        if (!d.key?.startsWith('agent:')) continue;
+        if (!byKey.has(d.key)) {
+          byKey.set(d.key, {
+            key: d.key,
+            displayName: d.displayName,
+            label: d.label,
+          });
+          addedKeys.push(d.key);
         }
-        return { sessions: [...byKey.values()] };
+      }
+      if (addedKeys.length === 0) {
+        set({ sessions: [...byKey.values()] });
+        return;
+      }
+      const diskActivity = await fetchDiskLastActivityBySessionKeys(addedKeys);
+      set((s) => {
+        const nextActivity = { ...s.sessionLastActivity };
+        for (const [k, v] of Object.entries(diskActivity)) {
+          const prev = nextActivity[k];
+          nextActivity[k] = prev === undefined ? v : Math.max(prev, v);
+        }
+        return { sessions: [...byKey.values()], sessionLastActivity: nextActivity };
       });
     } catch {
       // Host not ready
@@ -1432,9 +1474,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
           }
         }
-        const lastMsg = enrichedMessages[enrichedMessages.length - 1];
-        if (lastMsg?.timestamp) {
-          const lastAt = toMs(lastMsg.timestamp);
+        const lastAt = maxRawMessageTimestampMs(enrichedMessages);
+        if (lastAt != null) {
           set((s) => ({
             sessionLastActivity: { ...s.sessionLastActivity, [sessionKey]: lastAt },
           }));
@@ -1570,10 +1611,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
 
-      // Record last activity time from the last message in history
-      const lastMsg = finalMessages[finalMessages.length - 1];
-      if (lastMsg?.timestamp) {
-        const lastAt = toMs(lastMsg.timestamp);
+      // Record last activity time from loaded history (max timestamp — truncated windows may be non-monotonic).
+      const lastAt = maxRawMessageTimestampMs(finalMessages);
+      if (lastAt != null) {
         set((s) => ({
           sessionLastActivity: { ...s.sessionLastActivity, [currentSessionKey]: lastAt },
         }));

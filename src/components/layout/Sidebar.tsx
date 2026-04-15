@@ -131,16 +131,24 @@ export function Sidebar() {
   const isGatewayRunning = gatewayStatus.state === 'running';
   const primeHistoryFromLocalDisk = useChatStore((s) => s.primeHistoryFromLocalDisk);
 
+  // Must be one async chain: a second useEffect would still run in the same commit as the first,
+  // so `void (async () => { await loadSessions(); ... })` returns immediately and primeHistory could
+  // run before loadSessions finished — ensureCurrentSessionListedAfterHistoryLoad then shows one row.
   useEffect(() => {
     if (!isGatewayRunning) return;
-    void primeHistoryFromLocalDisk();
-  }, [currentSessionKey, isGatewayRunning, primeHistoryFromLocalDisk]);
-
-  useEffect(() => {
-    if (!isGatewayRunning) return;
-    const hasExistingMessages = useChatStore.getState().messages.length > 0;
-    void Promise.all([loadSessions(), loadHistory(hasExistingMessages)]);
-  }, [isGatewayRunning, loadHistory, loadSessions]);
+    let cancelled = false;
+    void (async () => {
+      await loadSessions();
+      if (cancelled) return;
+      const hasExistingMessages = useChatStore.getState().messages.length > 0;
+      await loadHistory(hasExistingMessages);
+      if (cancelled) return;
+      await primeHistoryFromLocalDisk();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSessionKey, isGatewayRunning, loadHistory, loadSessions, primeHistoryFromLocalDisk]);
   const agents = useAgentsStore((s) => s.agents);
   const fetchAgents = useAgentsStore((s) => s.fetchAgents);
   const myEmployees = useEmployeesStore((s) => s.myEmployees);
@@ -154,6 +162,10 @@ export function Sidebar() {
   const { t } = useTranslation(['common', 'chat']);
   const [sessionToDelete, setSessionToDelete] = useState<{ key: string; label: string } | null>(null);
   const [nowMs, setNowMs] = useState(INITIAL_NOW_MS);
+
+  useEffect(() => {
+    setNowMs(Date.now());
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -358,7 +370,17 @@ export function Sidebar() {
                 ) : null
               ))}
             </div>
-          ) : null}
+          ) : (
+            <div
+              data-testid="sidebar-session-list-fetching"
+              className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-muted-foreground"
+            >
+              <Loader2 className="h-6 w-6 shrink-0 animate-spin" strokeWidth={2} aria-hidden />
+              <span className="text-center text-[12px] leading-snug px-1">
+                {t('chat:sessionListLoadingSessions')}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

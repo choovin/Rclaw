@@ -130,6 +130,7 @@ function App() {
   const language = useSettingsStore((state) => state.language);
   const setupComplete = useSettingsStore((state) => state.setupComplete);
   const initGateway = useGatewayStore((state) => state.init);
+  const loadSessions = useChatStore((state) => state.loadSessions);
   const mergeSessionsDiscoveredFromLocalDisk = useChatStore((state) => state.mergeSessionsDiscoveredFromLocalDisk);
   const primeHistoryFromLocalDisk = useChatStore((state) => state.primeHistoryFromLocalDisk);
   const gatewayState = useGatewayStore((state) => state.status.state);
@@ -169,15 +170,16 @@ function App() {
     initGateway();
   }, [initGateway]);
 
-  // Discover local session entries + prime current transcript only when Gateway is running
-  // (avoid loading session list / history while disconnected).
+  // Load gateway session list + activity first, then merge disk-only discoveries, then prime current transcript.
+  // Otherwise discover-local can append sessions before sessionLastActivity exists → wrong sidebar time buckets.
   useEffect(() => {
     if (gatewayState !== 'running') return;
     void (async () => {
+      await loadSessions();
       await mergeSessionsDiscoveredFromLocalDisk();
       await primeHistoryFromLocalDisk();
     })();
-  }, [gatewayState, mergeSessionsDiscoveredFromLocalDisk, primeHistoryFromLocalDisk]);
+  }, [gatewayState, loadSessions, mergeSessionsDiscoveredFromLocalDisk, primeHistoryFromLocalDisk]);
 
   // Initialize provider snapshot on mount
   useEffect(() => {
