@@ -113,5 +113,12 @@
         "noResults": "未找到匹配的技能。",
         "emptyPrompt": "搜索新技能以扩展您的能力。",
         "searchError": "ClawHub 搜索失败。请检查您的连接或安装。"
+    },
+    "skillhub": {
+        "added": "已添加",
+        "loadMoreError": "加载更多失败",
+        "missingHubUrl": "未配置 Skill Hub 站点地址（VITE_SKILL_HUB_BASE_URL）。",
+        "empty": "暂无技能",
+        "loading": "加载中…"
     }
 }
