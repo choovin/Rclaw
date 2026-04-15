@@ -49,7 +49,6 @@ export function SkillhubMarketplace({ scrollElementRef, skills, onInstall }: Ski
   const loading = useSkillhubListStore((s) => s.loading);
   const loadingMore = useSkillhubListStore((s) => s.loadingMore);
   const error = useSkillhubListStore((s) => s.error);
-  const loadMore = useSkillhubListStore((s) => s.loadMore);
   const installing = useSkillsStore((s) => s.installing);
 
   const columnsPerRow = useSkillhubColumnsPerRow();
@@ -72,41 +71,58 @@ export function SkillhubMarketplace({ scrollElementRef, skills, onInstall }: Ski
   });
 
   const lastBottomLoadRef = useRef(0);
+  const loadSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const scheduleLoadMore = useCallback(() => {
+    const now = Date.now();
+    if (now - lastBottomLoadRef.current < 400) return;
+    lastBottomLoadRef.current = now;
+    void useSkillhubListStore.getState().loadMore();
+  }, []);
 
   useEffect(() => {
     const el = scrollElementRef.current;
     if (!el) return;
     const onScroll = () => {
-      const { scrollTop, clientHeight, scrollHeight } = el;
-      const nearBottom = scrollTop + clientHeight > scrollHeight - 200;
-      if (!nearBottom) return;
-      const now = Date.now();
-      if (now - lastBottomLoadRef.current < 500) return;
-      lastBottomLoadRef.current = now;
-      void loadMore();
+      const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (gap > 400) return;
+      scheduleLoadMore();
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [scrollElementRef, loadMore]);
+  }, [scrollElementRef, scheduleLoadMore]);
+
+  /** 以滚动容器为 root 的哨兵：虚拟列表 + 触底判断在部分环境下不可靠，IO 更稳 */
+  useEffect(() => {
+    const el = scrollElementRef.current;
+    const sentinel = loadSentinelRef.current;
+    if (!el || !sentinel) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        scheduleLoadMore();
+      },
+      { root: el, rootMargin: '0px 0px 520px 0px', threshold: 0 },
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [scrollElementRef, scheduleLoadMore, items.length, rows.length, total]);
 
   useEffect(() => {
     const el = scrollElementRef.current;
-    if (!el || loading || loadingMore) return;
-    if (items.length >= total) return;
+    if (!el) return;
     const fill = () => {
-      if (items.length === 0) return;
-      if (el.scrollHeight <= el.clientHeight + 100) {
-        const now = Date.now();
-        if (now - lastBottomLoadRef.current < 500) return;
-        lastBottomLoadRef.current = now;
-        void loadMore();
+      const s = useSkillhubListStore.getState();
+      if (s.loading || s.loadingMore || s.items.length === 0 || s.items.length >= s.total) return;
+      if (el.scrollHeight <= el.clientHeight + 160) {
+        scheduleLoadMore();
       }
     };
     fill();
     const ro = new ResizeObserver(fill);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [items.length, total, loading, loadingMore, loadMore, scrollElementRef]);
+  }, [items.length, total, loading, loadingMore, scrollElementRef, scheduleLoadMore]);
 
   const isInstalled = useCallback(
     (item: SkillhubListItem) => skills.some((s) => s.slug === item.slug || s.id === item.slug),
@@ -208,11 +224,29 @@ export function SkillhubMarketplace({ scrollElementRef, skills, onInstall }: Ski
           );
         })}
       </div>
-      {loadingMore && (
-        <div className="flex justify-center py-4">
-          <LoadingSpinner size="sm" />
-        </div>
-      )}
+      {items.length < total ? (
+        <div
+          ref={loadSentinelRef}
+          className="h-px w-full shrink-0"
+          aria-hidden
+          data-testid="skillhub-load-sentinel"
+        />
+      ) : null}
+      <div
+        data-testid="skillhub-list-footer"
+        className="flex flex-col items-center justify-center gap-2 py-6 text-sm text-muted-foreground"
+      >
+        {loadingMore ? (
+          <>
+            <LoadingSpinner size="sm" data-testid="skillhub-footer-loading" />
+            <span>{t('skillhub.loadingMore')}</span>
+          </>
+        ) : items.length < total ? (
+          <span data-testid="skillhub-footer-hint">{t('skillhub.scrollForMore')}</span>
+        ) : (
+          <span data-testid="skillhub-footer-end">{t('skillhub.noMore')}</span>
+        )}
+      </div>
     </>
   );
 }

@@ -9,6 +9,19 @@ const SEARCH_DEBOUNCE_MS = 400;
 
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** 将接口 total 规范为数字；缺省或非数字时用「已加载 +1」占位，避免 0 导致误停分页 */
+function normalizeSkillhubTotal(raw: unknown, loadedCount: number): number {
+  if (loadedCount === 0) {
+    const n = raw === null || raw === undefined || raw === '' ? NaN : Number(raw as number | string);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+  const n = raw === null || raw === undefined || raw === '' ? NaN : Number(raw as number | string);
+  if (Number.isFinite(n) && n >= loadedCount) {
+    return n;
+  }
+  return Math.max(loadedCount + 1, 1);
+}
+
 interface SkillhubListState {
   items: SkillhubListItem[];
   total: number;
@@ -56,9 +69,10 @@ export const useSkillhubListStore = create<SkillhubListState>((set, get) => ({
     try {
       const res = await fetchSkillhubPage(q, 1);
       if (res.code === 0) {
+        const list = res.data.list ?? [];
         set({
-          items: res.data.list,
-          total: res.data.total,
+          items: list,
+          total: normalizeSkillhubTotal(res.data.total, list.length),
           nextPageToFetch: 2,
           loading: false,
           error: null,
@@ -87,9 +101,21 @@ export const useSkillhubListStore = create<SkillhubListState>((set, get) => ({
     try {
       const res = await fetchSkillhubPage(q, nextPageToFetch);
       if (res.code === 0) {
+        const pageList = res.data.list ?? [];
+        const prev = get().items;
+        if (pageList.length === 0) {
+          set({
+            loadingMore: false,
+            total: prev.length,
+            nextPageToFetch: nextPageToFetch + 1,
+            error: null,
+          });
+          return;
+        }
+        const merged = [...prev, ...pageList];
         set({
-          items: [...get().items, ...res.data.list],
-          total: res.data.total,
+          items: merged,
+          total: normalizeSkillhubTotal(res.data.total, merged.length),
           nextPageToFetch: nextPageToFetch + 1,
           loadingMore: false,
           error: null,

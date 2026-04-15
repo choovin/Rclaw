@@ -119,6 +119,9 @@
         "loadMoreError": "加载更多失败",
         "missingHubUrl": "未配置 Skill Hub 站点地址（VITE_SKILL_HUB_BASE_URL）。",
         "empty": "暂无技能",
-        "loading": "加载中…"
+        "loading": "加载中…",
+        "loadingMore": "正在加载更多…",
+        "scrollForMore": "下拉加载更多",
+        "noMore": "没有更多了"
     }
 }

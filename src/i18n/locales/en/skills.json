@@ -119,6 +119,9 @@
         "loadMoreError": "Failed to load more. Please try again.",
         "missingHubUrl": "Skill Hub URL is not configured (VITE_SKILL_HUB_BASE_URL).",
         "empty": "No skills to show yet.",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "loadingMore": "Loading more…",
+        "scrollForMore": "Scroll down to load more",
+        "noMore": "No more to load"
     }
 }

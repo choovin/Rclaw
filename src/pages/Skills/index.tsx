@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 import type { Skill } from '@/types/skill';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { normalizeCommandName } from '@/pages/Chat/chat-skill-command';
 import { SkillhubMarketplace } from './SkillhubMarketplace';
 
@@ -438,12 +438,14 @@ export function Skills() {
   const toggling = useSkillsStore((s) => s.toggling);
   const { t } = useTranslation('skills');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: 'mySkills' | 'marketplace' =
+    searchParams.get('tab') === 'marketplace' ? 'marketplace' : 'mySkills';
   const gatewayStatus = useGatewayStore((state) => state.status);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const skillhubSearchQuery = useSkillhubListStore((s) => s.searchQuery);
   const setSkillhubSearchQuery = useSkillhubListStore((s) => s.setSearchQuery);
-  const [activeTab, setActiveTab] = useState<'mySkills' | 'marketplace'>('mySkills');
   const skillsContentScrollRef = useRef<HTMLDivElement | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [selectedSource, setSelectedSource] = useState<'all' | 'built-in' | 'marketplace'>('all');
@@ -665,7 +667,18 @@ export function Skills() {
             if (next === 'mySkills' && activeTab === 'marketplace') {
               setGridReady(false);
             }
-            setActiveTab(next);
+            setSearchParams(
+              (prev) => {
+                const p = new URLSearchParams(prev);
+                if (next === 'marketplace') {
+                  p.set('tab', 'marketplace');
+                } else {
+                  p.delete('tab');
+                }
+                return p;
+              },
+              { replace: true },
+            );
           }}
           className="mb-4 shrink-0"
         >
@@ -675,11 +688,11 @@ export function Skills() {
           >
             <div className="flex items-center flex-wrap gap-4 text-[14px] min-w-0">
               <TabsList className="shrink-0">
-                <TabsTrigger value="mySkills" data-testid="skills-tab-my-skills">
-                  我的技能
-                </TabsTrigger>
                 <TabsTrigger value="marketplace" data-testid="skills-tab-marketplace">
                   技能商店
+                </TabsTrigger>
+                <TabsTrigger value="mySkills" data-testid="skills-tab-my-skills">
+                  我的技能
                 </TabsTrigger>
               </TabsList>
 

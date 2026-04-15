@@ -113,6 +113,9 @@
         "loadMoreError": "Не удалось загрузить ещё. Попробуйте снова.",
         "missingHubUrl": "Не задан адрес Skill Hub (VITE_SKILL_HUB_BASE_URL).",
         "empty": "Нет навыков для отображения",
-        "loading": "Загрузка…"
+        "loading": "Загрузка…",
+        "loadingMore": "Загрузка ещё…",
+        "scrollForMore": "Прокрутите вниз, чтобы загрузить ещё",
+        "noMore": "Больше нет записей"
     }
 }

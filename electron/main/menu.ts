@@ -130,7 +130,7 @@ export function createMenu(): void {
           accelerator: 'CmdOrCtrl+4',
           click: () => {
             const win = BrowserWindow.getFocusedWindow();
-            win?.webContents.send('navigate', '/skills');
+            win?.webContents.send('navigate', '/skills?tab=marketplace');
           },
         },
         {

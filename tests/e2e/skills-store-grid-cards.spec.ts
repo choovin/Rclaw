@@ -14,6 +14,16 @@ async function skipSetupAndGoToSkills(page: Page): Promise<void> {
 }
 
 test.describe('Skills store grid cards', () => {
+  test('侧边栏「技能」进入 /skills?tab=marketplace，默认选中技能商店 Tab', async ({ page }) => {
+    test.setTimeout(180_000);
+    await completeSetup(page);
+    const base = getBaseUrl(page);
+    await page.goto(`${base}#/`);
+    await page.getByTestId('sidebar-nav-skills').click();
+    await expect(page.getByTestId('skills-page')).toBeVisible();
+    await expect(page.getByTestId('skills-tab-marketplace')).toHaveAttribute('data-state', 'active');
+  });
+
   test('Skills 页存在 cards 时，skills-grid 可见，skills-card-no-more 可见', async ({ page }) => {
     test.setTimeout(180_000);
     await skipSetupAndGoToSkills(page);
@@ -103,6 +113,7 @@ test.describe('Skills store grid cards', () => {
     const skillhubCard = page.getByTestId('skillhub-card');
     if ((await skillhubGrid.count()) > 0 || (await skillhubCard.count()) > 0) {
       await expect(skillhubGrid.or(skillhubCard).first()).toBeVisible();
+      await expect(page.getByTestId('skillhub-list-footer')).toBeVisible();
     }
   });
 });
