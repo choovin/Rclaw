@@ -831,8 +831,10 @@ export function Skills() {
                         tabIndex={0}
                         className={cn(
                           'group rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-card/40',
-                          'hover:bg-white/60 dark:hover:bg-card/60 transition-colors cursor-pointer',
-                          'p-4 flex flex-col min-h-0'
+                          'transition-colors duration-200',
+                          'hover:bg-secondary hover:text-foreground',
+                          'cursor-pointer',
+                          'p-4 flex flex-col min-h-0',
                         )}
                         onClick={() => setSelectedSkill(skill)}
                         onKeyDown={(e) => {

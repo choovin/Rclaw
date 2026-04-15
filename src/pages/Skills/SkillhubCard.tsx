@@ -31,8 +31,10 @@ export function SkillhubCard({ item, installed, installing, onOpenDetail, onDown
         }
       }}
       className={cn(
-        'group rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-card/40',
-        'hover:bg-white/60 dark:hover:bg-card/60 transition-colors cursor-pointer',
+        'rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-card/40',
+        'transition-colors duration-200',
+        'hover:bg-secondary hover:text-foreground',
+        'cursor-pointer',
         'p-4 flex flex-col',
       )}
     >
@@ -54,15 +56,19 @@ export function SkillhubCard({ item, installed, installing, onOpenDetail, onDown
           </div>
           <div className="shrink-0 flex items-start" onClick={(e) => e.stopPropagation()}>
             {installed ? (
-              <Badge variant="secondary" className="text-[10px] font-medium px-2 py-0 h-5 border-0 shadow-none">
+              <Badge variant="success" className="text-[10px] font-medium px-2 py-0 h-5 border-0 shadow-none">
                 {t('skillhub.added')}
               </Badge>
             ) : (
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-8 w-8 rounded-full"
+                className={cn(
+                  // 与「我的技能」卡片上的删除按钮一致：卡片 hover 为 secondary，按钮 hover 为黑/白半透明叠层
+                  'h-8 w-8 shrink-0 rounded-full border-black/10 dark:border-white/10 bg-transparent text-muted-foreground shadow-none',
+                  'hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5',
+                )}
                 onClick={onDownload}
                 disabled={installing}
                 aria-label={t('marketplace.install')}
