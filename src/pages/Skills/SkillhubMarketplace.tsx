@@ -88,8 +88,18 @@ export function SkillhubMarketplace({ scrollElementRef, skills, onInstall }: Ski
       if (gap > 400) return;
       scheduleLoadMore();
     };
+    /** 已触底时 scroll 不再触发，用户继续滚轮只会产生 wheel —— 需与 onScroll 同条件触发加载 */
+    const onWheel = () => {
+      const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (gap > 400) return;
+      scheduleLoadMore();
+    };
     el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
+    el.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', onWheel);
+    };
   }, [scrollElementRef, scheduleLoadMore]);
 
   /** 以滚动容器为 root 的哨兵：虚拟列表 + 触底判断在部分环境下不可靠，IO 更稳 */

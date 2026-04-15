@@ -116,5 +116,36 @@ test.describe('Skills store grid cards', () => {
       await expect(page.getByTestId('skillhub-list-footer')).toBeVisible();
     }
   });
+
+  test('技能商店：触底后 wheel 仍可触发加载更多（有「加载更多」提示时）', async ({ page }) => {
+    test.setTimeout(180_000);
+    await skipSetupAndGoToSkills(page);
+    await page.getByTestId('skills-tab-marketplace').click();
+
+    const hint = page.getByTestId('skillhub-footer-hint');
+    await hint.waitFor({ state: 'visible', timeout: 90_000 }).catch(() => null);
+    if ((await hint.count()) === 0) {
+      test.skip();
+    }
+
+    const scroll = page.getByTestId('skills-content-scroll');
+    await expect(scroll).toBeVisible();
+
+    const before = await page.getByTestId('skillhub-card').count();
+    if (before === 0) {
+      test.skip();
+    }
+
+    await scroll.evaluate((el: HTMLElement) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await scroll.dispatchEvent('wheel', { deltaY: 400, deltaMode: 0 });
+
+    await expect(async () => {
+      const after = await page.getByTestId('skillhub-card').count();
+      const loading = await page.getByTestId('skillhub-footer-loading').isVisible().catch(() => false);
+      expect(after > before || loading).toBe(true);
+    }).toPass({ timeout: 45_000, intervals: [400, 800, 1600] });
+  });
 });
 

@@ -788,7 +788,11 @@ export function Skills() {
         {/* Header title removed: toolbar contains tabs/search/filter/actions */}
 
         {/* Content Area */}
-        <div ref={skillsContentScrollRef} className="flex-1 overflow-y-auto pr-2 pb-10 min-h-0 -mr-2">
+        <div
+          ref={skillsContentScrollRef}
+          data-testid="skills-content-scroll"
+          className="flex-1 overflow-y-auto pr-2 pb-10 min-h-0 -mr-2"
+        >
           {error && (
             <div className="mb-4 p-4 rounded-xl border border-destructive/50 bg-destructive/10 text-destructive text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-5 w-5 shrink-0" />
