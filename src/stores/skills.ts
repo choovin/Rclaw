@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { hostApiFetch } from '@/lib/host-api';
 import { AppError, normalizeAppError } from '@/lib/error-model';
 import { useGatewayStore } from './gateway';
-import type { Skill, MarketplaceSkill } from '../types/skill';
+import type { Skill } from '../types/skill';
 
 type GatewaySkillStatus = {
   skillKey: string;
@@ -50,41 +50,25 @@ function enabledForDiskOnly(cfg: SkillConfigEntry | undefined): boolean {
   return true;
 }
 
-function mapErrorCodeToSkillErrorKey(
-  code: AppError['code'],
-  operation: 'fetch' | 'search' | 'install',
-): string {
+function mapErrorCodeToSkillErrorKey(code: AppError['code'], operation: 'fetch' | 'install'): string {
   if (code === 'TIMEOUT') {
-    return operation === 'search'
-      ? 'searchTimeoutError'
-      : operation === 'install'
-        ? 'installTimeoutError'
-        : 'fetchTimeoutError';
+    return operation === 'install' ? 'installTimeoutError' : 'fetchTimeoutError';
   }
   if (code === 'RATE_LIMIT') {
-    return operation === 'search'
-      ? 'searchRateLimitError'
-      : operation === 'install'
-        ? 'installRateLimitError'
-        : 'fetchRateLimitError';
+    return operation === 'install' ? 'installRateLimitError' : 'fetchRateLimitError';
   }
   return 'rateLimitError';
 }
 
 interface SkillsState {
   skills: Skill[];
-  searchResults: MarketplaceSkill[];
   loading: boolean;
-  searching: boolean;
-  searchError: string | null;
   installing: Record<string, boolean>; // slug -> boolean
   toggling: Record<string, boolean>; // skillId -> boolean
   error: string | null;
 
   // Actions
   fetchSkills: () => Promise<void>;
-  searchSkills: (query: string) => Promise<void>;
-  clearSearchResults: () => void;
   installSkill: (slug: string, version?: string) => Promise<void>;
   uninstallSkill: (slug: string) => Promise<void>;
   enableSkill: (skillId: string) => Promise<void>;
@@ -95,10 +79,7 @@ interface SkillsState {
 
 export const useSkillsStore = create<SkillsState>((set, get) => ({
   skills: [],
-  searchResults: [],
   loading: false,
-  searching: false,
-  searchError: null,
   installing: {},
   toggling: {},
   error: null,
@@ -207,33 +188,6 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     } else {
       set({ skills: combinedSkills, loading: false, error: null });
     }
-  },
-
-  searchSkills: async (query: string) => {
-    set({ searching: true, searchError: null });
-    try {
-      const result = await hostApiFetch<{ success: boolean; results?: MarketplaceSkill[]; error?: string }>('/api/clawhub/search', {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-      });
-      if (result.success) {
-        set({ searchResults: result.results || [] });
-      } else {
-        throw normalizeAppError(new Error(result.error || 'Search failed'), {
-          module: 'skills',
-          operation: 'search',
-        });
-      }
-    } catch (error) {
-      const appError = normalizeAppError(error, { module: 'skills', operation: 'search' });
-      set({ searchError: mapErrorCodeToSkillErrorKey(appError.code, 'search') });
-    } finally {
-      set({ searching: false });
-    }
-  },
-
-  clearSearchResults: () => {
-    set({ searchResults: [], searching: false, searchError: null });
   },
 
   installSkill: async (slug: string, version?: string) => {
