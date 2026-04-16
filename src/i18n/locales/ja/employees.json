@@ -66,6 +66,10 @@
     "removed": "削除しました",
     "removeSuccess": "従業員と関連 Agent を削除しました",
     "openRuntimeSettings": "ランタイム設定",
+    "skillAllowlistSectionTitle": "利用可能なスキル",
+    "skillAllowlistInheritHint": "メイン Agent のスキル設定を継承します",
+    "skillAllowlistNotInstalled": "未インストール",
+    "skillAllowlistDisabled": "無効",
     "removeDialog": {
         "title": "デジタル従業員を削除しますか？",
         "intro": "ローカルの OpenClaw 設定から関連 Agent を削除し、ワークスペースディレクトリを削除します。",

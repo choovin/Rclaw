@@ -66,6 +66,10 @@
     "removed": "已移除",
     "removeSuccess": "已移除员工及对应 Agent",
     "openRuntimeSettings": "运行时设置",
+    "skillAllowlistSectionTitle": "可用技能",
+    "skillAllowlistInheritHint": "继承主 Agent 技能配置",
+    "skillAllowlistNotInstalled": "未安装",
+    "skillAllowlistDisabled": "已禁用",
     "removeDialog": {
         "title": "确认移除数字员工",
         "intro": "将从本机 OpenClaw 配置中移除该员工对应的 Agent，并删除其工作区目录。",

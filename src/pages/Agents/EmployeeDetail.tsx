@@ -8,6 +8,8 @@ import type { Employee } from '@/types/employee';
 import type { AgentSummary } from '@/types/agent';
 import type { GatewayStatus } from '@/types/gateway';
 import { useEmployeesStore } from '@/stores/employees';
+import { useSkillsStore } from '@/stores/skills';
+import { getEmployeeSkillAllowlistRows } from '@/lib/employee-skill-allowlist-rows';
 import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
@@ -64,6 +66,13 @@ export function EmployeeDetail({
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const linkedRow = myEmployees.find((e) => e.id === employee.id);
+  const skillsWhitelist = linkedRow?.skills ?? employee.skills;
+  const skillsFromStore = useSkillsStore((s) => s.skills);
+  const allowlistRows = useMemo(() => {
+    if (!skillsWhitelist?.length) return null;
+    return getEmployeeSkillAllowlistRows(skillsWhitelist, skillsFromStore);
+  }, [skillsWhitelist, skillsFromStore]);
+
   const linkedAgentId = linkedRow?.linkedAgentId?.trim();
   const isAdded = isEmployeeAdded(employee.id);
   const [addProgress, setAddProgress] = useState<number | null>(null);
@@ -216,6 +225,50 @@ export function EmployeeDetail({
             {t('description')}
           </h4>
           <p className="text-[14px] text-foreground leading-relaxed">{employee.descriptionZh || employee.description}</p>
+        </div>
+
+        {/* Skill allowlist / inherit */}
+        <div data-testid="employee-detail-skill-section">
+          {!skillsWhitelist?.length ? (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                {t('skills')}
+              </h4>
+              <p
+                data-testid="employee-detail-skill-inherit"
+                className="text-[14px] text-foreground/90 leading-relaxed"
+              >
+                {t('skillAllowlistInheritHint')}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                {t('skillAllowlistSectionTitle')}
+              </h4>
+              <div data-testid="employee-detail-skill-allowlist" className="space-y-2">
+                {allowlistRows?.map((row, i) => (
+                  <div
+                    key={`${row.whitelistSlug}-${i}`}
+                    data-testid="employee-detail-skill-row"
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-foreground"
+                  >
+                    <span className="min-w-0 break-words">{row.primaryLabel}</span>
+                    {row.state === 'missing' && (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {t('skillAllowlistNotInstalled')}
+                      </span>
+                    )}
+                    {row.state === 'installedDisabled' && (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {t('skillAllowlistDisabled')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ID */}

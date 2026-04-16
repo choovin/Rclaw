@@ -66,6 +66,10 @@
     "removed": "Removed",
     "removeSuccess": "Employee and linked Agent removed",
     "openRuntimeSettings": "Runtime settings",
+    "skillAllowlistSectionTitle": "Available skills",
+    "skillAllowlistInheritHint": "Inherits main Agent skill settings",
+    "skillAllowlistNotInstalled": "Not installed",
+    "skillAllowlistDisabled": "Disabled",
     "removeDialog": {
         "title": "Remove digital employee?",
         "intro": "This will remove the linked OpenClaw Agent from your local config and delete its workspace directory.",
