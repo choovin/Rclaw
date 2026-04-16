@@ -34,42 +34,50 @@ export function filterLocalSkillsForPicker(skills: Skill[], queryTrimmed: string
 }
 
 /**
- * Hub 行保持接口顺序；随后追加「仅本地匹配、未出现在当前 Hub 列表中的」行（补漏）。
+ * **本地优先**：先输出 `localFiltered` 中的技能（与 Hub 同 slug 时只保留本地这一行，标题用本地 `name`）；
+ * 再按 Hub 接口顺序追加「尚未出现过的」商店条目。
  */
 export function mergeSkillhubRowsWithLocal(
   hubItems: SkillhubListItem[],
   localFiltered: Skill[],
   installedKeys: Set<string>,
 ): CreateEmployeeSkillOptionRow[] {
-  const out: CreateEmployeeSkillOptionRow[] = [];
   const hubSlugKeys = new Set<string>();
+  for (const h of hubItems) {
+    const slug = (h.slug ?? '').trim();
+    if (!slug) continue;
+    hubSlugKeys.add(normalizeCommandName(slug));
+  }
+
+  const emittedKeys = new Set<string>();
+  const out: CreateEmployeeSkillOptionRow[] = [];
+
+  for (const s of localFiltered) {
+    const raw = (s.slug ?? s.id ?? '').trim();
+    if (!raw) continue;
+    const k = normalizeCommandName(raw);
+    if (emittedKeys.has(k)) continue;
+    emittedKeys.add(k);
+    const inHub = hubSlugKeys.has(k);
+    out.push({
+      slug: raw,
+      title: (s.name?.trim() || raw).trim() || raw,
+      installed: true,
+      section: inHub ? 'hub' : 'local-only',
+    });
+  }
 
   for (const h of hubItems) {
     const slug = (h.slug ?? '').trim();
     if (!slug) continue;
     const k = normalizeCommandName(slug);
-    hubSlugKeys.add(k);
+    if (emittedKeys.has(k)) continue;
+    emittedKeys.add(k);
     out.push({
       slug,
       title: (h.displayName?.trim() || slug).trim() || slug,
       installed: installedKeys.has(k),
       section: 'hub',
-    });
-  }
-
-  const seenLocalOnly = new Set<string>();
-  for (const s of localFiltered) {
-    const raw = (s.slug ?? s.id ?? '').trim();
-    if (!raw) continue;
-    const k = normalizeCommandName(raw);
-    if (hubSlugKeys.has(k)) continue;
-    if (seenLocalOnly.has(k)) continue;
-    seenLocalOnly.add(k);
-    out.push({
-      slug: raw,
-      title: (s.name?.trim() || raw).trim() || raw,
-      installed: true,
-      section: 'local-only',
     });
   }
 

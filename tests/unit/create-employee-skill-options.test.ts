@@ -70,6 +70,7 @@ describe('create-employee-skill-options', () => {
     const keys = buildInstalledSlugKeySet(local);
     const filtered = filterLocalSkillsForPicker(local, 'bar');
     const rows = mergeSkillhubRowsWithLocal(hub, filtered, keys);
+    expect(rows.map((r) => r.slug)).toEqual(['bar', 'foo']);
     const hubRow = rows.find((r) => r.slug === 'foo');
     const localOnly = rows.find((r) => r.slug === 'bar');
     expect(hubRow?.section).toBe('hub');
