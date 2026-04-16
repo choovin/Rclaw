@@ -9,6 +9,19 @@ export type EmployeeSkillAllowlistRow = {
   state: EmployeeSkillAllowlistRowState;
 };
 
+/** Normalized keys for matching a local skill to catalog / CLI slugs (may include path-like ids). */
+function normalizeKeysForSkill(skill: Skill): string[] {
+  const raw = (skill.slug ?? skill.id) as string;
+  const keys = new Set<string>();
+  keys.add(normalizeCommandName(raw));
+  const slash = raw.replace(/\\/g, '/');
+  const last = slash.includes('/') ? slash.split('/').pop() : undefined;
+  if (last && last !== raw) {
+    keys.add(normalizeCommandName(last));
+  }
+  return [...keys];
+}
+
 /**
  * Maps catalog / employee whitelist slugs to display rows using the same
  * {@link normalizeCommandName} matching rules as chat allowlist filtering.
@@ -22,9 +35,7 @@ export function getEmployeeSkillAllowlistRows(
 
   for (const slug of whitelistSlugs) {
     const key = normalizeCommandName(slug);
-    const skill = list.find(
-      (s) => normalizeCommandName((s.slug ?? s.id) as string) === key,
-    );
+    const skill = list.find((s) => normalizeKeysForSkill(s).some((k) => k === key));
     if (!skill) {
       rows.push({ whitelistSlug: slug, primaryLabel: slug, state: 'missing' });
       continue;

@@ -18,7 +18,10 @@ test.describe('Employee detail skill section', () => {
     await expect(page.getByTestId('employee-detail-sheet')).toBeVisible();
     await expect(page.getByTestId('employee-detail-skill-section')).toBeVisible();
     await expect(
-      page.getByTestId('employee-detail-skill-inherit').or(page.getByTestId('employee-detail-skill-allowlist')),
+      page
+        .getByTestId('employee-detail-skill-inherit')
+        .or(page.getByTestId('employee-detail-skill-allowlist-loading'))
+        .or(page.getByTestId('employee-detail-skill-allowlist')),
     ).toBeVisible();
   });
 });

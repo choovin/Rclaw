@@ -2,7 +2,7 @@
  * Employee Detail Component
  * Displays detailed information about an employee in a sidebar
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Employee } from '@/types/employee';
 import type { AgentSummary } from '@/types/agent';
@@ -62,12 +62,40 @@ export function EmployeeDetail({
   onRefreshAgents,
 }: EmployeeDetailProps) {
   const { t } = useTranslation('employees');
+  const { t: tCommon } = useTranslation('common');
   const { t: tAgents } = useTranslation('agents');
   const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
   const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const linkedRow = myEmployees.find((e) => e.id === employee.id);
   const skillsWhitelist = linkedRow?.skills ?? employee.skills;
+  const whitelistKey = useMemo(() => {
+    const w = linkedRow?.skills ?? employee.skills;
+    return w?.length ? w.join('\0') : '';
+  }, [linkedRow?.skills, employee.skills]);
+
+  const fetchSkills = useSkillsStore((s) => s.fetchSkills);
   const skillsFromStore = useSkillsStore((s) => s.skills);
+  const [allowlistSkillsReady, setAllowlistSkillsReady] = useState(() => whitelistKey === '');
+
+  useEffect(() => {
+    if (!whitelistKey) {
+      setAllowlistSkillsReady(true);
+      return;
+    }
+    setAllowlistSkillsReady(false);
+    let cancelled = false;
+    void (async () => {
+      try {
+        await fetchSkills();
+      } finally {
+        if (!cancelled) setAllowlistSkillsReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchSkills, whitelistKey]);
+
   const allowlistRows = useMemo(() => {
     if (!skillsWhitelist?.length) return null;
     return getEmployeeSkillAllowlistRows(skillsWhitelist, skillsFromStore);
@@ -246,27 +274,37 @@ export function EmployeeDetail({
               <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
                 {t('skillAllowlistSectionTitle')}
               </h4>
-              <div data-testid="employee-detail-skill-allowlist" className="space-y-2">
-                {allowlistRows?.map((row, i) => (
-                  <div
-                    key={`${row.whitelistSlug}-${i}`}
-                    data-testid="employee-detail-skill-row"
-                    className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-foreground"
-                  >
-                    <span className="min-w-0 break-words">{row.primaryLabel}</span>
-                    {row.state === 'missing' && (
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {t('skillAllowlistNotInstalled')}
-                      </span>
-                    )}
-                    {row.state === 'installedDisabled' && (
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {t('skillAllowlistDisabled')}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {!allowlistSkillsReady ? (
+                <div
+                  data-testid="employee-detail-skill-allowlist-loading"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  <span>{tCommon('status.loading')}</span>
+                </div>
+              ) : (
+                <div data-testid="employee-detail-skill-allowlist" className="space-y-2">
+                  {allowlistRows?.map((row, i) => (
+                    <div
+                      key={`${row.whitelistSlug}-${i}`}
+                      data-testid="employee-detail-skill-row"
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-foreground"
+                    >
+                      <span className="min-w-0 break-words">{row.primaryLabel}</span>
+                      {row.state === 'missing' && (
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {t('skillAllowlistNotInstalled')}
+                        </span>
+                      )}
+                      {row.state === 'installedDisabled' && (
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {t('skillAllowlistDisabled')}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

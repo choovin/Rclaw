@@ -62,4 +62,13 @@ describe('getEmployeeSkillAllowlistRows', () => {
       { whitelistSlug: 'b', primaryLabel: 'b', state: 'missing' },
     ]);
   });
+
+  it('matches whitelist slug to skill id last path segment when gateway uses path-like keys', () => {
+    const rows = getEmployeeSkillAllowlistRows(['debridge-mcp'], [
+      sk({ id: 'some-scope/debridge-mcp', slug: 'some-scope/debridge-mcp', name: 'Debridge', enabled: true }),
+    ]);
+    expect(rows).toEqual([
+      { whitelistSlug: 'debridge-mcp', primaryLabel: 'Debridge', state: 'installed' },
+    ]);
+  });
 });
