@@ -14,6 +14,7 @@ test.describe('Digital employee creation', () => {
     await page.getByTestId('create-digital-employee-button').click();
     await expect(page.getByTestId('create-digital-employee-dialog')).toBeVisible();
     await expect(page.getByTestId('create-digital-employee-skills-section')).toBeVisible();
+    await expect(page.getByTestId('create-digital-employee-select-skills-button')).toBeVisible();
 
     const nameZh = '测试人类学家';
     await page.getByTestId('create-digital-employee-name-input').fill(nameZh);
@@ -45,6 +46,7 @@ test.describe('Digital employee creation', () => {
     await page.getByTestId('create-digital-employee-button').click();
     await expect(page.getByTestId('create-digital-employee-dialog')).toBeVisible();
     await expect(page.getByTestId('create-digital-employee-skills-section')).toBeVisible();
+    await expect(page.getByTestId('create-digital-employee-select-skills-button')).toBeVisible();
 
     await page.getByTestId('create-digital-employee-name-input').fill('测试必填描述');
     await page.getByTestId('create-digital-employee-soul-textarea').fill('## soul');
