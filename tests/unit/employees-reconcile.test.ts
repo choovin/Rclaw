@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { reconcileEmployeeRowsWithAgentIds } from '@/stores/employees';
-import type { Employee, EmployeeWithStatus } from '@/types/employee';
+import { reconcileMyEmployeesWithOpenClawAgentIds } from '@/stores/employees';
+import type { Employee } from '@/types/employee';
 
-describe('reconcileEmployeeRowsWithAgentIds', () => {
+describe('reconcileMyEmployeesWithOpenClawAgentIds', () => {
   it('removes myEmployees whose linkedAgentId is not in OpenClaw', () => {
     const myEmployees: Employee[] = [
       {
@@ -28,15 +28,9 @@ describe('reconcileEmployeeRowsWithAgentIds', () => {
         linkedAgentId: 'still-here',
       },
     ];
-    const catalog: EmployeeWithStatus[] = [
-      { ...myEmployees[0], isAdded: true },
-      { ...myEmployees[1], isAdded: true },
-    ];
-    const next = reconcileEmployeeRowsWithAgentIds(myEmployees, catalog, ['still-here'], null);
+    const next = reconcileMyEmployeesWithOpenClawAgentIds(myEmployees, ['still-here'], null);
     expect(next.myEmployees).toHaveLength(1);
     expect(next.myEmployees[0].linkedAgentId).toBe('still-here');
-    expect(next.employees.find((e) => e.id === 'e1')?.isAdded).toBe(false);
-    expect(next.employees.find((e) => e.id === 'e2')?.isAdded).toBe(true);
   });
 
   it('clears selectedEmployee when that row is removed', () => {
@@ -51,7 +45,7 @@ describe('reconcileEmployeeRowsWithAgentIds', () => {
       department: 'custom',
       linkedAgentId: 'gone',
     };
-    const next = reconcileEmployeeRowsWithAgentIds([row], [], [], row);
+    const next = reconcileMyEmployeesWithOpenClawAgentIds([row], [], row);
     expect(next.selectedEmployee).toBeNull();
   });
 
@@ -68,7 +62,7 @@ describe('reconcileEmployeeRowsWithAgentIds', () => {
         department: 'custom',
       },
     ];
-    const next = reconcileEmployeeRowsWithAgentIds(myEmployees, [], ['main'], null);
+    const next = reconcileMyEmployeesWithOpenClawAgentIds(myEmployees, ['main'], null);
     expect(next.myEmployees).toHaveLength(0);
   });
 });

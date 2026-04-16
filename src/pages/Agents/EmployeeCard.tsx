@@ -97,6 +97,7 @@ export function EmployeeCard({
   return (
     <>
     <div
+      data-testid="employee-card"
       onClick={onClick}
       className={cn(
         'employee-card flex h-full flex-col bg-card border border-border/40 rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer',

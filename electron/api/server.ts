@@ -6,6 +6,7 @@ import type { HostApiContext } from './context';
 import { handleAppRoutes } from './routes/app';
 import { handleCloudAuthRoutes } from './routes/cloud-auth';
 import { handleCloudSkillhubRoutes } from './routes/cloud-skillhub';
+import { handleCloudClawCatalogRoutes } from './routes/cloud-claw-catalog';
 import { handleGatewayRoutes } from './routes/gateway';
 import { handleSettingsRoutes } from './routes/settings';
 import { handleProviderRoutes } from './routes/providers';
@@ -29,6 +30,7 @@ type RouteHandler = (
 const routeHandlers: RouteHandler[] = [
   handleCloudAuthRoutes,
   handleCloudSkillhubRoutes,
+  handleCloudClawCatalogRoutes,
   handleAppRoutes,
   handleGatewayRoutes,
   handleSettingsRoutes,

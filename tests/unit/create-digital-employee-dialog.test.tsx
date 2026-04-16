@@ -68,6 +68,7 @@ describe('CreateDigitalEmployeeDialog', () => {
     expect(employee.description).toBe('一句话 vibe');
     expect(employee.soulContent).toBe('## soul');
     expect(employee.agentsContent).toBe('## agents');
+    expect(employee.skipCatalogDetailFetch).toBe(true);
   });
 
   it('keeps submit disabled and does not addEmployee when one-line description (vibe) is empty', () => {

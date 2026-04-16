@@ -31,13 +31,18 @@ export interface Employee {
   emoji: string;
   vibe: string;
   vibeZh?: string; // Chinese vibe
-  department: Department;
+  /** Department code from catalog or a fixed label for custom entries */
+  department: string;
+  /** Claw Catalog department id when sourced from cloud */
+  departmentId?: number;
   skills?: string[];
   channels?: string[];
   // Enhanced fields from conversion script
   soulContent?: string;
   agentsContent?: string;
   identityContent?: string;
+  /** When true, `addEmployee` skips `GET .../catalog/agent/{bundleId}` (custom create dialog). */
+  skipCatalogDetailFetch?: boolean;
   /** OpenClaw agent id after provisioning (slug); may differ from `id`. */
   linkedAgentId?: string;
 }

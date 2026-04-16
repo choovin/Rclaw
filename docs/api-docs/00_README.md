@@ -5,3 +5,4 @@
 | 文件 | 说明 |
 |------|------|
 | [06_Skillhub_API.md](./06_Skillhub_API.md) | `/app-api/skillhub/*`：Skillhub 技能商店列表等 |
+| [07_Claw_Catalog_API.md](./07_Claw_Catalog_API.md) | `/app-api/claw/catalog/*`：数字员工市场部门、分页列表、详情 |

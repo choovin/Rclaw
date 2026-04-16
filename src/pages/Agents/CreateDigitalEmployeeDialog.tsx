@@ -75,6 +75,7 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
         identityContent: vibeTrimmed,
         description: vibeTrimmed,
         descriptionZh: vibeTrimmed,
+        skipCatalogDetailFetch: true,
       };
 
       const ok = await addEmployee(employee);

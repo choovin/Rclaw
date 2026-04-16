@@ -4,10 +4,12 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Employee, EmployeeWithStatus, Department } from '@/types/employee';
-import { DEPARTMENT_MAP } from '@/types/employee';
+import { toast } from 'sonner';
+import type { Employee } from '@/types/employee';
 import { hostApiFetch } from '@/lib/host-api';
 import { useAgentsStore } from '@/stores/agents';
+import { fetchClawCatalogAgentDetail } from '@/lib/claw-catalog-api';
+import { mapCatalogAgentToEmployee } from '@/lib/claw-catalog-map';
 
 /** Thrown when myEmployees row has no linkedAgentId (legacy / corrupt); UI should show errors.missingLinkedAgent. */
 export class MissingLinkedAgentError extends Error {
@@ -18,78 +20,49 @@ export class MissingLinkedAgentError extends Error {
 }
 
 interface EmployeesState {
-  // All available employees from marketplace
-  employees: EmployeeWithStatus[];
-
-  // My employees (added by user)
   myEmployees: Employee[];
 
-  // Selected department filter
-  selectedDepartment: Department | 'all';
-
-  // Selected employee for detail view
   selectedEmployee: Employee | null;
 
-  // Loading state
   isLoading: boolean;
 
-  // Actions
-  setEmployees: (employees: EmployeeWithStatus[]) => void;
   addEmployee: (employee: Employee, onProvisionStage?: (stage: string) => void) => Promise<boolean>;
   removeEmployee: (employeeId: string) => Promise<void>;
-  setSelectedDepartment: (department: Department | 'all') => void;
   setSelectedEmployee: (employee: Employee | null) => void;
   isEmployeeAdded: (employeeId: string) => boolean;
-  getEmployeesByDepartment: (department: Department) => EmployeeWithStatus[];
-  getFilteredEmployees: () => EmployeeWithStatus[];
   /** Drop myEmployees rows whose linkedAgentId no longer exists in OpenClaw (e.g. user edited ~/.openclaw manually). */
   reconcileWithOpenClawAgentIds: (agentIds: string[]) => void;
 }
 
-/** Exported for unit tests — keeps marketplace `isAdded` in sync with `myEmployees`. */
-export function reconcileEmployeeRowsWithAgentIds(
+/** Exported for unit tests — trims myEmployees to valid OpenClaw agent ids. */
+export function reconcileMyEmployeesWithOpenClawAgentIds(
   myEmployees: Employee[],
-  catalog: EmployeeWithStatus[],
   agentIds: string[],
   selectedEmployee: Employee | null,
-): {
-  myEmployees: Employee[];
-  employees: EmployeeWithStatus[];
-  selectedEmployee: Employee | null;
-} {
+): { myEmployees: Employee[]; selectedEmployee: Employee | null } {
   const valid = new Set(agentIds.map((id) => id.trim()).filter(Boolean));
   const filtered = myEmployees.filter((e) => {
     const lid = e.linkedAgentId?.trim();
     return Boolean(lid && valid.has(lid));
   });
-  const keptCatalogIds = new Set(filtered.map((e) => e.id));
-  const updatedEmployees = catalog.map((emp) => ({
-    ...emp,
-    isAdded: keptCatalogIds.has(emp.id),
-    ...(keptCatalogIds.has(emp.id) ? {} : { addedAt: undefined }),
-  }));
   const selected =
     selectedEmployee && filtered.some((e) => e.id === selectedEmployee.id) ? selectedEmployee : null;
-  return { myEmployees: filtered, employees: updatedEmployees, selectedEmployee: selected };
+  return { myEmployees: filtered, selectedEmployee: selected };
 }
 
 export const useEmployeesStore = create<EmployeesState>()(
   persist(
     (set, get) => ({
-      employees: [],
       myEmployees: [],
-      selectedDepartment: 'all',
       selectedEmployee: null,
       isLoading: false,
-
-      setEmployees: (employees) => set({ employees }),
 
       addEmployee: async (employee, onProvisionStage) => {
         if (get().isEmployeeAdded(employee.id)) {
           return false;
         }
 
-        const { employees, myEmployees } = get();
+        const { myEmployees } = get();
 
         let unsubscribe: (() => void) | undefined;
         if (typeof window !== 'undefined' && window.electron?.ipcRenderer?.on) {
@@ -104,20 +77,39 @@ export const useEmployeesStore = create<EmployeesState>()(
         try {
           set({ isLoading: true });
 
-          const vibeRaw = employee.vibeZh ?? employee.vibe;
+          let payload = employee;
+
+          if (!employee.skipCatalogDetailFetch) {
+            try {
+              const detailRes = await fetchClawCatalogAgentDetail(employee.id.trim());
+              if (detailRes.code !== 0) {
+                toast.error(detailRes.msg?.trim() || '无法获取员工详情');
+                set({ isLoading: false });
+                return false;
+              }
+              const mapped = mapCatalogAgentToEmployee(detailRes.data);
+              payload = { ...employee, ...mapped };
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : '无法获取员工详情');
+              set({ isLoading: false });
+              return false;
+            }
+          }
+
+          const vibeRaw = payload.vibeZh ?? payload.vibe;
           const vibePayload =
             typeof vibeRaw === 'string' && vibeRaw.trim().length > 0 ? vibeRaw.trim() : undefined;
 
           const res = (await hostApiFetch('/api/employees/provision', {
             method: 'POST',
             body: JSON.stringify({
-              employeeId: employee.id,
-              nameZh: employee.nameZh,
-              nameEn: employee.name,
-              soulContent: (employee as EmployeeWithStatus).soulContent || '',
-              agentsContent: (employee as EmployeeWithStatus).agentsContent || '',
-              identityContent: (employee as EmployeeWithStatus).identityContent || '',
-              emoji: employee.emoji,
+              employeeId: payload.id,
+              nameZh: payload.nameZh,
+              nameEn: payload.name,
+              soulContent: payload.soulContent ?? '',
+              agentsContent: payload.agentsContent ?? '',
+              identityContent: payload.identityContent ?? '',
+              emoji: payload.emoji,
               ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
             }),
           })) as {
@@ -138,15 +130,11 @@ export const useEmployeesStore = create<EmployeesState>()(
 
           useAgentsStore.getState().fetchAgents();
 
-          const withLink: Employee = { ...employee, linkedAgentId: res.agentId };
+          const withLink: Employee = { ...payload, linkedAgentId: res.agentId };
           const newMyEmployees = [...myEmployees, withLink];
-          const updatedEmployees = employees.map((emp) =>
-            emp.id === employee.id ? { ...emp, isAdded: true, addedAt: Date.now() } : emp
-          );
 
           set({
             myEmployees: newMyEmployees,
-            employees: updatedEmployees,
             isLoading: false,
           });
 
@@ -161,7 +149,7 @@ export const useEmployeesStore = create<EmployeesState>()(
       },
 
       removeEmployee: async (employeeId) => {
-        const { employees, myEmployees, selectedEmployee } = get();
+        const { myEmployees, selectedEmployee } = get();
         const row = myEmployees.find((e) => e.id === employeeId);
         const linkedAgentId = row?.linkedAgentId?.trim();
         if (!linkedAgentId) {
@@ -171,18 +159,12 @@ export const useEmployeesStore = create<EmployeesState>()(
         await useAgentsStore.getState().deleteAgent(linkedAgentId);
 
         const newMyEmployees = myEmployees.filter((emp) => emp.id !== employeeId);
-        const updatedEmployees = employees.map((emp) =>
-          emp.id === employeeId ? { ...emp, isAdded: false, addedAt: undefined } : emp
-        );
 
         set({
           myEmployees: newMyEmployees,
-          employees: updatedEmployees,
           selectedEmployee: selectedEmployee?.id === employeeId ? null : selectedEmployee,
         });
       },
-
-      setSelectedDepartment: (department) => set({ selectedDepartment: department }),
 
       setSelectedEmployee: (employee) => set({ selectedEmployee: employee }),
 
@@ -191,24 +173,10 @@ export const useEmployeesStore = create<EmployeesState>()(
         return myEmployees.some((emp) => emp.id === employeeId);
       },
 
-      getEmployeesByDepartment: (department) => {
-        const { employees } = get();
-        return employees.filter((emp) => emp.department === department);
-      },
-
-      getFilteredEmployees: () => {
-        const { employees, selectedDepartment } = get();
-        if (selectedDepartment === 'all') {
-          return employees;
-        }
-        return employees.filter((emp) => emp.department === selectedDepartment);
-      },
-
       reconcileWithOpenClawAgentIds: (agentIds) => {
         set((state) =>
-          reconcileEmployeeRowsWithAgentIds(
+          reconcileMyEmployeesWithOpenClawAgentIds(
             state.myEmployees,
-            state.employees,
             agentIds,
             state.selectedEmployee,
           ),
@@ -220,10 +188,6 @@ export const useEmployeesStore = create<EmployeesState>()(
       partialize: (state) => ({
         myEmployees: state.myEmployees,
       }),
-      /**
-       * Rehydrate from localStorage can run after the first `/api/agents` fetch and overwrite
-       * `myEmployees` with stale rows. Re-fetch agents so `fetchAgents` → reconcile runs again.
-       */
       onRehydrateStorage: () => (rehydrateError) => {
         if (rehydrateError) return;
         queueMicrotask(() => {
@@ -233,13 +197,3 @@ export const useEmployeesStore = create<EmployeesState>()(
     }
   )
 );
-
-// Helper function to get department info
-export const getDepartmentInfo = (department: Department) => {
-  return DEPARTMENT_MAP[department];
-};
-
-// Helper function to get all departments
-export const getAllDepartments = () => {
-  return Object.values(DEPARTMENT_MAP);
-};

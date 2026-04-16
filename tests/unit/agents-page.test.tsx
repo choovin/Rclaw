@@ -84,6 +84,28 @@ vi.mock('sonner', () => ({
   },
 }));
 
+vi.mock('@/stores/claw-catalog-market', () => ({
+  useClawCatalogMarketStore: (selector: (state: Record<string, unknown>) => unknown) =>
+    selector({
+      departments: [],
+      departmentsLoading: false,
+      departmentsError: null,
+      items: [],
+      total: 0,
+      nextPageToFetch: 1,
+      loading: false,
+      loadingMore: false,
+      listError: null,
+      searchQuery: '',
+      selectedDepartmentId: 'all',
+      loadDepartments: vi.fn().mockResolvedValue(undefined),
+      setSelectedDepartmentId: vi.fn(),
+      applyDebouncedSearch: vi.fn(),
+      resetAndFetch: vi.fn().mockResolvedValue(undefined),
+      loadMore: vi.fn().mockResolvedValue(undefined),
+    }),
+}));
+
 describe('Agents page status refresh', () => {
   beforeEach(() => {
     vi.clearAllMocks();
