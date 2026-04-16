@@ -1,5 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
+  applyAgentSkillAllowlist,
+  ensureSlugsViaClawHub,
+  normalizeProvisionSkillSlugs,
+} from '../../utils/agent-skill-allowlist';
+import {
   assignChannelToAgent,
   createAgent,
   clearChannelBinding,
@@ -274,6 +279,7 @@ export async function handleAgentRoutes(
         identityContent: string;
         emoji?: string;
         vibe?: string;
+        skills?: string[];
       }>(req);
 
       const mustTrimNonEmpty = (value: unknown, fieldName: string): string => {
@@ -305,6 +311,17 @@ export async function handleAgentRoutes(
       const identityContent =
         typeof body.identityContent === 'string' ? body.identityContent : '';
 
+      if (body.skills !== undefined && body.skills !== null) {
+        if (!Array.isArray(body.skills)) {
+          throw new Error('skills must be an array');
+        }
+        for (const s of body.skills) {
+          if (typeof s !== 'string') {
+            throw new Error('skills must be an array of strings');
+          }
+        }
+      }
+
       const result = await provisionDigitalEmployeeAgent(
         {
           nameZh,
@@ -317,6 +334,23 @@ export async function handleAgentRoutes(
         },
         (stage) => emitProvisionStage(ctx, stage),
       );
+
+      const requested = normalizeProvisionSkillSlugs(body.skills);
+      if (requested.length > 0) {
+        const resolved = await ensureSlugsViaClawHub(requested, ctx.clawHubService, {
+          employeeId,
+          agentId: result.agentId,
+        });
+        if (resolved.length > 0) {
+          await applyAgentSkillAllowlist(result.agentId, resolved);
+        } else {
+          await applyAgentSkillAllowlist(result.agentId, null);
+          console.warn('[agents] All skill slugs failed to install; agent inherits default skill policy', {
+            employeeId,
+            agentId: result.agentId,
+          });
+        }
+      }
 
       emitProvisionStage(ctx, 'sync_reload');
       syncAllProviderAuthToRuntime().catch((err) => {

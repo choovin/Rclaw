@@ -111,6 +111,7 @@ export const useEmployeesStore = create<EmployeesState>()(
               identityContent: payload.identityContent ?? '',
               emoji: payload.emoji,
               ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
+              ...(Array.isArray(payload.skills) && payload.skills.length > 0 ? { skills: payload.skills } : {}),
             }),
           })) as {
             success?: boolean;
