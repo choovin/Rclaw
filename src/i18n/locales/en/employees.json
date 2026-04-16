@@ -21,7 +21,19 @@
         "colorLabel": "Color",
         "submit": "Create",
         "creating": "Creating…",
-        "fillRequired": "Fill all required fields (non-blank)"
+        "fillRequired": "Fill all required fields (non-blank)",
+        "skillsLabel": "Available skills (optional)",
+        "skillsHint": "Leave empty to allow all skills. If you pick skills below, only those will be available after provision.",
+        "skillSearchPlaceholder": "Search the skill marketplace and installed skills…",
+        "skillInstalled": "Installed",
+        "skillNotInstalled": "Not installed",
+        "skillLocalOnly": "Local only",
+        "skillsEmpty": "No installed skills found. Open the Skills page or type a keyword to search the marketplace.",
+        "loadMoreSkills": "Load more",
+        "skillhubError": "Could not search the marketplace",
+        "skillsLoading": "Loading skills…",
+        "skillhubSearching": "Searching marketplace…",
+        "removeSkillChip": "Remove skill"
     },
     "allDepartments": "All Departments",
     "departments": {

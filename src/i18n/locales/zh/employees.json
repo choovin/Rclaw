@@ -21,7 +21,19 @@
         "colorLabel": "color",
         "submit": "创建",
         "creating": "创建中...",
-        "fillRequired": "请填写所有必填项（并确保非空白）"
+        "fillRequired": "请填写所有必填项（并确保非空白）",
+        "skillsLabel": "可用技能（可选）",
+        "skillsHint": "不选则该员工可使用全部技能；选择后仅可使用所选技能（未安装的会在创建时自动安装）。",
+        "skillSearchPlaceholder": "搜索技能商店与已安装技能…",
+        "skillInstalled": "已安装",
+        "skillNotInstalled": "未安装",
+        "skillLocalOnly": "仅本地",
+        "skillsEmpty": "暂无已安装技能。请前往技能页安装，或输入关键词搜索商店。",
+        "loadMoreSkills": "加载更多",
+        "skillhubError": "无法搜索技能商店",
+        "skillsLoading": "正在加载技能…",
+        "skillhubSearching": "正在搜索商店…",
+        "removeSkillChip": "移除技能"
     },
     "allDepartments": "全部",
     "departments": {

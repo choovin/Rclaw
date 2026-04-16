@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useEmployeesStore } from '@/stores/employees';
 import type { Department, Employee } from '@/types/employee';
+import { CreateEmployeeSkillField } from '@/pages/Agents/CreateEmployeeSkillField';
 
 const EMOJI_OPTIONS = ['🌍', '🧠', '📚', '🗺️', '🎓', '🧪', '⭐', '🎨', '🎮', '💻', '🧬', '🤖'] as const;
 const DEFAULT_COLOR = '#1feadd';
@@ -39,6 +40,7 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
   const [emoji, setEmoji] = useState<(typeof EMOJI_OPTIONS)[number]>('🌍');
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [saving, setSaving] = useState(false);
+  const [skillSlugs, setSkillSlugs] = useState<string[]>([]);
 
   const isValid = useMemo(() => {
     return (
@@ -76,6 +78,7 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
         description: vibeTrimmed,
         descriptionZh: vibeTrimmed,
         skipCatalogDetailFetch: true,
+        ...(skillSlugs.length > 0 ? { skills: skillSlugs } : {}),
       };
 
       const ok = await addEmployee(employee);
@@ -228,6 +231,8 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
                 />
               </div>
             </div>
+
+            <CreateEmployeeSkillField selectedSlugs={skillSlugs} onSelectedSlugsChange={setSkillSlugs} />
 
             <div className="space-y-2.5">
               <Label htmlFor="ded-soul" className="text-[14px] text-black/80 dark:text-white/80 font-bold">
