@@ -9,14 +9,14 @@
 ## 目标
 
 1. 用户点击员工详情中的「编辑内容」后、**弹窗打开前**：从磁盘读取 **`SOUL.md`、`AGENTS.md`**（UTF-8），作为表单中对应两个大文本框的**初值**。
-2. **读盘成功后不**将 `soulContent` / `agentsContent` 写回 `myEmployees`（用户选择 **否**）；仅影响**本次会话**表单。用户点**保存**仍走现有 `POST /api/employees/update`，成功后 store 与工作区与现网一致。
+2. **读盘成功后**：将读到的字符串 **立即写回** `myEmployees` 中对应员工的 **`soulContent`、`agentsContent`**（并同步 **`selectedEmployee`** 若指向同一 `employeeId`），使持久化 store 与磁盘 SOUL/AGENTS **对齐**；然后再打开编辑弹窗（表单初值与 store 一致）。
 3. 读盘失败时：**降级**为使用当前 `Employee` 中的 `soulContent` / `agentsContent` 打开弹窗，并 **toast** 提示（文案 i18n），避免阻断编辑。
 
 ## 非目标
 
 - 不反向解析 `IDENTITY.md`，不新增「从磁盘恢复 vibe」等字段。
 - 不在本需求中同步 `USER.md`、`TODO.md` 到 `Employee`。
-- 不在读盘时自动覆盖持久化 store（除非用户显式保存）。
+- 读盘成功**仅**更新 `soulContent` / `agentsContent` 两个字段，不因读盘而改写 `nameZh`、`description`、`vibe`、`identityContent` 等（除非用户随后在弹窗内编辑并保存）。
 
 ## 架构与数据流
 
@@ -32,18 +32,21 @@
 
 - **入口**：`EmployeeDetail` 中点击「编辑内容」时，不立即 `setEditDialogOpen(true)`；先调用 **`hostApiFetch`** 读上述 API（可封装为 `fetchEmployeeWorkspaceMd(linkedAgentId)` 置于 `src/lib/` 或紧邻 employees 的 api 模块）。
 - **加载态**：请求期间按钮 loading / disabled，避免重复点击。
-- **成功**：将返回的 `soulContent`、`agentsContent` 以 **props** 传入 `CreateDigitalEmployeeDialog`（例如 `workspaceSoulAgents?: { soulContent: string; agentsContent: string }`），**优先**用于初始化 SOUL/AGENTS 两个受控字段；其余字段仍来自 `initialEmployee` / `editTarget`。
-- **失败**：toast；打开弹窗时 **不传** `workspaceSoulAgents`，对话框内 `useEffect` 与现网一致，仅用 `initialEmployee.soulContent` / `agentsContent` 初始化。
+- **成功**：
+  1. 调用 `useEmployeesStore` 新增方法（例如 **`applyWorkspaceSoulAgentsFromDisk(employeeId, { soulContent, agentsContent })`**）或等价逻辑：在 `myEmployees` 中按 `id` 合并上述两字段并 `set`；若 `selectedEmployee?.id === employeeId` 则一并更新。
+  2. 再 `setEditDialogOpen(true)`。弹窗内 `initialEmployee` 应来自更新后的 store（`linkedRow`），使 SOUL/AGENTS 与刚写入的 store 一致。
+- **失败**：toast；**不**改 store；打开弹窗时仅用当前 `initialEmployee.soulContent` / `agentsContent` 初始化。
 
 ### 与保存的关系
 
-- 保存逻辑、请求体、`writeDigitalEmployeeWorkspaceFiles` 行为**不变**。
+- 保存逻辑、请求体、`writeDigitalEmployeeWorkspaceFiles` 行为**不变**。读盘成功后的 store 更新**不**等同于一次「保存」：未改动的字段不会发往 update API，直至用户点击保存（届时仍提交完整表单）。
 
 ## 错误处理与边界
 
 - **无 linkedAgentId**：不应发起读盘；沿用既有「缺少关联」错误处理。
 - **空磁盘文件**：视为合法，表单可为空（若与「必填」校验冲突，以实现阶段与现表单校验对齐为准）。
 - **并发**：快速连点「编辑」应防抖或忽略重复请求。
+- **读盘成功但未保存即关闭弹窗**：`myEmployees` 中 SOUL/AGENTS 已与磁盘一致；其它表单字段若曾修改但未保存则丢弃（与现网「关闭不提交」一致）。
 
 ## 测试
 
