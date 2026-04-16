@@ -12,6 +12,20 @@ describe('host-api', () => {
     window.localStorage.removeItem('clawx:allow-localhost-fallback');
   });
 
+  it('throws on unified envelope HTTP 401', async () => {
+    invokeIpcMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        status: 401,
+        ok: false,
+        json: { error: 'Unauthorized' },
+      },
+    });
+
+    const { hostApiFetch } = await import('@/lib/host-api');
+    await expect(hostApiFetch('/api/cloud/test')).rejects.toThrow();
+  });
+
   it('uses IPC proxy and returns unified envelope json', async () => {
     invokeIpcMock.mockResolvedValueOnce({
       ok: true,

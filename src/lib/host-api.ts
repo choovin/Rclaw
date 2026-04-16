@@ -1,6 +1,7 @@
 import { invokeIpc } from '@/lib/api-client';
+import { AppError, normalizeAppError } from './error-model';
 import { trackUiEvent } from './telemetry';
-import { normalizeAppError } from './error-model';
+import { shouldInvalidateMemberSessionOnAuthError } from './host-api-member-session';
 
 const HOST_API_PORT = 13210;
 const HOST_API_BASE = `http://127.0.0.1:${HOST_API_PORT}`;
@@ -89,6 +90,23 @@ function parseUnifiedProxyResponse<T>(
   }
 
   const data: HostApiProxyData = response.data ?? {};
+
+  if (data.status === 204) return undefined as T;
+
+  if (data.status !== undefined && data.status >= 400) {
+    let message = `HTTP ${data.status}`;
+    if (
+      typeof data.json === 'object'
+      && data.json !== null
+      && 'error' in (data.json as Record<string, unknown>)
+    ) {
+      message = `${message}: ${String((data.json as Record<string, unknown>).error)}`;
+    } else if (typeof data.text === 'string' && data.text.length > 0) {
+      message = `${message}: ${data.text}`;
+    }
+    throw new Error(message);
+  }
+
   trackUiEvent('hostapi.fetch', {
     path,
     method,
@@ -97,9 +115,17 @@ function parseUnifiedProxyResponse<T>(
     status: data.status ?? 200,
   });
 
-  if (data.status === 204) return undefined as T;
   if (data.json !== undefined) return data.json as T;
   return data.text as T;
+}
+
+function handleMemberSessionInvalidIfNeeded(err: unknown, path: string, method: string): void {
+  if (!(err instanceof AppError)) return;
+  if (err.code !== 'AUTH_INVALID') return;
+  if (!shouldInvalidateMemberSessionOnAuthError(path, method)) return;
+  void import('@/stores/auth').then(({ useAuthStore }) => {
+    useAuthStore.getState().invalidateMemberSessionAndOpenLogin();
+  });
 }
 
 function parseLegacyProxyResponse<T>(
@@ -178,6 +204,7 @@ export async function hostApiFetch<T>(path: string, init?: RequestInit): Promise
       message,
       code: normalized.code,
     });
+    handleMemberSessionInvalidIfNeeded(normalized, path, method);
     if (!shouldFallbackToBrowser(message)) {
       throw normalized;
     }
@@ -214,7 +241,9 @@ export async function hostApiFetch<T>(path: string, init?: RequestInit): Promise
   try {
     return await parseResponse<T>(response);
   } catch (error) {
-    throw normalizeAppError(error, { source: 'browser-fallback', path, method });
+    const normalized = normalizeAppError(error, { source: 'browser-fallback', path, method });
+    handleMemberSessionInvalidIfNeeded(normalized, path, method);
+    throw normalized;
   }
 }
 

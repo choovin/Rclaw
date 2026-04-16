@@ -10,7 +10,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useChatStore, type RawMessage } from '@/stores/chat';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
-import { useAuthStore } from '@/stores/auth';
 import type { FileAttachment } from './ChatInput';
 import { hostApiFetch } from '@/lib/host-api';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -68,11 +67,7 @@ export function Chat() {
     );
   }, [navigate, location.hash, location.pathname, location.search]);
 
-  // Gate: 检查登录状态，未登录则弹出登录框
-  const handleSend = async (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {
-    if (!(await useAuthStore.getState().requireAuth())) {
-      return; // 未登录，登录框已弹出
-    }
+  const handleSend = (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => {
     sendMessage(text, attachments, targetAgentId);
   };
   const [childTranscripts, setChildTranscripts] = useState<Record<string, RawMessage[]>>({});

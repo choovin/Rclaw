@@ -18,6 +18,7 @@ import { useAgentsStore } from '@/stores/agents';
 import { useEmployeesStore } from '@/stores/employees';
 import { formatAgentSessionDisplayName } from '@/lib/format-agent-session-display-name';
 import { useChatStore } from '@/stores/chat';
+import { useAuthStore } from '@/stores/auth';
 import { useSkillsStore } from '@/stores/skills';
 import type { AgentSummary } from '@/types/agent';
 import { useTranslation } from 'react-i18next';
@@ -501,8 +502,9 @@ export function ChatInput({
     onPrefillConsumed?.();
   }, [applySkillPick, disabled, onPrefillConsumed, prefillSkillCommand, sending]);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     if (!canSend) return;
+    if (!(await useAuthStore.getState().requireAuth())) return;
     const readyAttachments = attachments.filter(a => a.status === 'ready');
     // Capture values before clearing — clear input immediately for snappy UX,
     // but keep attachments available for the async send
@@ -557,7 +559,7 @@ export function ChatInput({
           return;
         }
         e.preventDefault();
-        handleSend();
+        void handleSend();
         return;
       }
 
@@ -798,7 +800,8 @@ export function ChatInput({
 
             {/* Send Button */}
             <Button
-              onClick={sending ? handleStop : handleSend}
+              data-testid="chat-send-button"
+              onClick={sending ? handleStop : () => void handleSend()}
               disabled={sending ? !canStop : !canSend}
               size="icon"
               className={`shrink-0 h-11 w-11 rounded-xl transition-all ${

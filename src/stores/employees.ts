@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import type { Employee } from '@/types/employee';
 import { hostApiFetch } from '@/lib/host-api';
 import { useAgentsStore } from '@/stores/agents';
+import { useAuthStore } from '@/stores/auth';
 import { fetchClawCatalogAgentDetail } from '@/lib/claw-catalog-api';
 import { mapCatalogAgentToEmployee } from '@/lib/claw-catalog-map';
 
@@ -85,6 +86,9 @@ export const useEmployeesStore = create<EmployeesState>()(
 
       addEmployee: async (employee, onProvisionStage) => {
         if (get().isEmployeeAdded(employee.id)) {
+          return false;
+        }
+        if (!(await useAuthStore.getState().requireAuth())) {
           return false;
         }
 
@@ -179,6 +183,9 @@ export const useEmployeesStore = create<EmployeesState>()(
         const linked = patch.linkedAgentId?.trim();
         if (!linked) {
           console.error('[employees] updateEmployee: missing linkedAgentId');
+          return false;
+        }
+        if (!(await useAuthStore.getState().requireAuth())) {
           return false;
         }
 

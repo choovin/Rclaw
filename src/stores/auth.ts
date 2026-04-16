@@ -4,6 +4,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserInfo } from '@/lib/cloud-api';
 
+/** Debounce toast when parallel requests return 401 */
+let lastMemberSessionToastAt = 0;
+
 interface AuthState {
   isLoggedIn: boolean;
   userInfo: UserInfo | null;
@@ -21,6 +24,9 @@ interface AuthState {
 
   // Gate 函数
   requireAuth: () => Promise<boolean>;
+
+  /** 会员会话在云端已失效：清本地展示态并打开登录（hostApiFetch 全局分支） */
+  invalidateMemberSessionAndOpenLogin: () => void;
 }
 
 /** Main 在 refresh 失败清 token 后广播 `cloud:logged-out`，同步清除 persist 中的登录 UI 状态 */
@@ -107,6 +113,16 @@ export const useAuthStore = create<AuthState>()(
         if (get().isLoggedIn) return true;
         set({ loginModalOpen: true });
         return false;
+      },
+
+      invalidateMemberSessionAndOpenLogin: () => {
+        set({ isLoggedIn: false, userInfo: null, loginModalOpen: true });
+        const now = Date.now();
+        if (now - lastMemberSessionToastAt < 2000) return;
+        lastMemberSessionToastAt = now;
+        void import('sonner').then(({ toast }) => {
+          toast.error('登录已失效，请重新登录');
+        });
       },
     }),
     {

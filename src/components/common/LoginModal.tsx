@@ -301,7 +301,10 @@ export const LoginModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={closeLoginModal} />
-      <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-[460px] max-h-[90vh] overflow-hidden">
+      <div
+        className="relative bg-background rounded-2xl shadow-2xl w-full max-w-[460px] max-h-[90vh] overflow-hidden"
+        data-testid="login-modal"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-foreground">云账号登录</h2>

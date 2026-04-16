@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { hostApiFetch } from '@/lib/host-api';
 import { AppError, normalizeAppError } from '@/lib/error-model';
+import { useAuthStore } from '@/stores/auth';
 import { useGatewayStore } from './gateway';
 import type { Skill } from '../types/skill';
 
@@ -191,6 +192,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   },
 
   installSkill: async (slug: string, version?: string) => {
+    if (!(await useAuthStore.getState().requireAuth())) return;
     set((state) => ({ installing: { ...state.installing, [slug]: true } }));
     try {
       const result = await hostApiFetch<{ success: boolean; error?: string }>('/api/clawhub/install', {
