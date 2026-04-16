@@ -40,7 +40,7 @@
 1. 校验参数与工作区路径可写。
 2. **`writeDigitalEmployeeWorkspaceFiles`**（`electron/utils/digital-employee-workspace.ts`）向 **`~/.openclaw/workspace-${linkedAgentId}`** 写入/更新 Markdown；`IDENTITY.md` 通过既有 `buildIdentityMd` 使用新 `nameZh`、vibe、emoji 等。
 3. **`updateAgentName(linkedAgentId, nameZh)`**（或等价展示名）同步 OpenClaw 配置中的展示名。
-4. 技能白名单：与 **`POST /api/employees/provision`** 中 **`normalizeProvisionSkillSlugs` / `ensureSlugsViaClawHub` / `applyAgentSkillAllowlist`** 行为 **一致**（非空则解析并应用；空或未传则按产品规则继承或清空——与 provision 对齐，避免两套语义）。
+4. 技能白名单：与 **`normalizeProvisionSkillSlugs` / `ensureSlugsViaClawHub` / `applyAgentSkillAllowlist`** 的组合语义 **一致**。注意与 **首次 provision** 的差异：首次创建时若请求 **未带** `skills`（表示用户未选白名单），路由可不写入 per-agent `skills`（继承默认）；**编辑保存**时若用户 **主动清空** 技能选择（等价于提交空数组 / 与创建弹窗「不选技能」一致），应调用 **`applyAgentSkillAllowlist(linkedAgentId, null)`**，以移除既有 per-agent 白名单并恢复继承。非空数组时路径与 provision 相同。
 5. **`scheduleGatewayReload`** 及与 provision 尾部一致的 **`syncAllProviderAuthToRuntime`**（若适用）保持与现网一致。
 
 错误时返回明确 `success: false` 与 `error` 字符串；前端 toast 并 **保留弹窗内编辑内容**（不强制关闭）。
