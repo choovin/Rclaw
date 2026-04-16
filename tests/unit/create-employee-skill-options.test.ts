@@ -3,6 +3,7 @@ import {
   buildInstalledSlugKeySet,
   filterLocalSkillsForPicker,
   mergeSkillhubRowsWithLocal,
+  resolveLocalSkillInstallStatus,
   toggleSelectedSkillRow,
   truncateSkillDescription,
   type CreateEmployeeSkillOptionRow,
@@ -141,5 +142,15 @@ describe('create-employee-skill-options', () => {
     ];
     const out = filterLocalSkillsForPicker(skills, 'alp');
     expect(out.map((s) => s.slug)).toEqual(['alpha']);
+  });
+
+  it('resolveLocalSkillInstallStatus reflects local skill presence and enabled', () => {
+    const skills: Skill[] = [
+      skill({ id: '1', name: 'A', slug: 'on', enabled: true }),
+      skill({ id: '2', name: 'B', slug: 'off', enabled: false }),
+    ];
+    expect(resolveLocalSkillInstallStatus('on', skills)).toBe('installed');
+    expect(resolveLocalSkillInstallStatus('off', skills)).toBe('disabled');
+    expect(resolveLocalSkillInstallStatus('missing', skills)).toBe('not_installed');
   });
 });

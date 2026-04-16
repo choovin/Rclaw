@@ -113,6 +113,17 @@ export function isSlugInSelectedSkills(rawSlug: string, selected: SelectedEmploy
   return selected.some((s) => normalizeCommandName(s.slug) === k);
 }
 
+/** 根据当前 `useSkillsStore.skills` 判断 slug 在本地的启用状态（用于已选列表展示）。 */
+export type LocalSkillInstallStatus = 'installed' | 'disabled' | 'not_installed';
+
+export function resolveLocalSkillInstallStatus(slug: string, skills: Skill[]): LocalSkillInstallStatus {
+  const k = normalizeCommandName(slug);
+  const s = skills.find((row) => normalizeCommandName(row.slug ?? row.id) === k);
+  if (!s) return 'not_installed';
+  if (!s.enabled) return 'disabled';
+  return 'installed';
+}
+
 /** 在弹窗中点选一行：已选则移除，未选则加入（含标题与描述摘要）。 */
 export function toggleSelectedSkillRow(
   row: CreateEmployeeSkillOptionRow,

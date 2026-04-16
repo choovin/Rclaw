@@ -28,6 +28,7 @@
         "skillSearchPlaceholder": "マーケットプレイスとインストール済みスキルを検索…",
         "skillInstalled": "インストール済み",
         "skillNotInstalled": "未インストール",
+        "skillNotEnabled": "無効",
         "skillLocalOnly": "ローカルのみ",
         "skillsEmpty": "インストール済みスキルがありません。スキルページへ行くか、キーワードでマーケットを検索してください。",
         "loadMoreSkills": "さらに読み込む",

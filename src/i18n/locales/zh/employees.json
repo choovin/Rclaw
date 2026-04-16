@@ -28,6 +28,7 @@
         "skillSearchPlaceholder": "搜索技能商店与已安装技能…",
         "skillInstalled": "已安装",
         "skillNotInstalled": "未安装",
+        "skillNotEnabled": "未启用",
         "skillLocalOnly": "仅本地",
         "skillsEmpty": "暂无已安装技能。请前往技能页安装，或输入关键词搜索商店。",
         "loadMoreSkills": "加载更多",

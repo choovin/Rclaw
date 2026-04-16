@@ -28,6 +28,7 @@
         "skillSearchPlaceholder": "Search the skill marketplace and installed skills…",
         "skillInstalled": "Installed",
         "skillNotInstalled": "Not installed",
+        "skillNotEnabled": "Disabled",
         "skillLocalOnly": "Local only",
         "skillsEmpty": "No installed skills found. Open the Skills page or type a keyword to search the marketplace.",
         "loadMoreSkills": "Load more",

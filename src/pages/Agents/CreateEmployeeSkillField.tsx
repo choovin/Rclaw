@@ -12,6 +12,7 @@ import {
   filterLocalSkillsForPicker,
   isSlugInSelectedSkills,
   mergeSkillhubRowsWithLocal,
+  resolveLocalSkillInstallStatus,
   toggleSelectedSkillRow,
   type CreateEmployeeSkillOptionRow,
   type SelectedEmployeeSkill,
@@ -349,7 +350,13 @@ function CreateEmployeeSkillPickerModal({
 
 export function CreateEmployeeSkillField({ selectedSkills, onSelectedSkillsChange }: CreateEmployeeSkillFieldProps) {
   const { t } = useTranslation('employees');
+  const skills = useSkillsStore((s) => s.skills);
+  const fetchSkills = useSkillsStore((s) => s.fetchSkills);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    void fetchSkills();
+  }, [fetchSkills]);
 
   const removeSlug = (slug: string) => {
     const k = normalizeCommandName(slug);
@@ -372,32 +379,51 @@ export function CreateEmployeeSkillField({ selectedSkills, onSelectedSkillsChang
 
       {selectedSkills.length > 0 ? (
         <ul className="rounded-xl border border-black/10 dark:border-white/10 divide-y divide-black/10 dark:divide-white/10 overflow-hidden">
-          {selectedSkills.map((item) => (
-            <li key={item.slug} className="flex items-start gap-2 px-3 py-2.5 bg-black/[0.02] dark:bg-white/[0.03]">
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium text-black dark:text-white truncate">{item.title}</div>
-                <div className="text-[11px] text-black/55 dark:text-white/45 mt-0.5 break-words">
-                  <span className="font-mono">{item.slug}</span>
-                  {item.description ? (
-                    <>
-                      <span className="mx-1 opacity-50">·</span>
-                      <span>{item.description}</span>
-                    </>
-                  ) : null}
+          {selectedSkills.map((item) => {
+            const runtime = resolveLocalSkillInstallStatus(item.slug, skills);
+            const statusLabel =
+              runtime === 'installed'
+                ? t('createDigitalEmployee.skillInstalled')
+                : runtime === 'disabled'
+                  ? t('createDigitalEmployee.skillNotEnabled')
+                  : t('createDigitalEmployee.skillNotInstalled');
+            return (
+              <li key={item.slug} className="flex items-start gap-2 px-3 py-2.5 bg-black/[0.02] dark:bg-white/[0.03]">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium text-black dark:text-white truncate">{item.title}</div>
+                  <div className="text-[11px] text-black/55 dark:text-white/45 mt-0.5 break-words">
+                    <span className="font-mono">{item.slug}</span>
+                    {item.description ? (
+                      <>
+                        <span className="mx-1 opacity-50">·</span>
+                        <span>{item.description}</span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
-                aria-label={t('createDigitalEmployee.removeSkillRow')}
-                onClick={() => removeSlug(item.slug)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </li>
-          ))}
+                <span
+                  className={cn(
+                    'shrink-0 text-right text-[11px] font-medium leading-snug pt-0.5',
+                    runtime === 'installed' && 'text-emerald-700 dark:text-emerald-400',
+                    runtime === 'disabled' && 'text-amber-800 dark:text-amber-300',
+                    runtime === 'not_installed' && 'text-black/55 dark:text-white/45',
+                  )}
+                >
+                  {statusLabel}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
+                  aria-label={t('createDigitalEmployee.removeSkillRow')}
+                  onClick={() => removeSlug(item.slug)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 
