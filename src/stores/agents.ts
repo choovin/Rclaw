@@ -51,6 +51,9 @@ export const useAgentsStore = create<AgentsState>((set) => ({
         ...applySnapshot(snapshot),
         loading: false,
       });
+      const agentIds = (snapshot.agents ?? []).map((a) => a.id);
+      const { useEmployeesStore } = await import('@/stores/employees');
+      useEmployeesStore.getState().reconcileWithOpenClawAgentIds(agentIds);
     } catch (error) {
       set({ loading: false, error: String(error) });
     }

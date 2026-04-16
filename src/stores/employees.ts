@@ -42,6 +42,35 @@ interface EmployeesState {
   isEmployeeAdded: (employeeId: string) => boolean;
   getEmployeesByDepartment: (department: Department) => EmployeeWithStatus[];
   getFilteredEmployees: () => EmployeeWithStatus[];
+  /** Drop myEmployees rows whose linkedAgentId no longer exists in OpenClaw (e.g. user edited ~/.openclaw manually). */
+  reconcileWithOpenClawAgentIds: (agentIds: string[]) => void;
+}
+
+/** Exported for unit tests — keeps marketplace `isAdded` in sync with `myEmployees`. */
+export function reconcileEmployeeRowsWithAgentIds(
+  myEmployees: Employee[],
+  catalog: EmployeeWithStatus[],
+  agentIds: string[],
+  selectedEmployee: Employee | null,
+): {
+  myEmployees: Employee[];
+  employees: EmployeeWithStatus[];
+  selectedEmployee: Employee | null;
+} {
+  const valid = new Set(agentIds.map((id) => id.trim()).filter(Boolean));
+  const filtered = myEmployees.filter((e) => {
+    const lid = e.linkedAgentId?.trim();
+    return Boolean(lid && valid.has(lid));
+  });
+  const keptCatalogIds = new Set(filtered.map((e) => e.id));
+  const updatedEmployees = catalog.map((emp) => ({
+    ...emp,
+    isAdded: keptCatalogIds.has(emp.id),
+    ...(keptCatalogIds.has(emp.id) ? {} : { addedAt: undefined }),
+  }));
+  const selected =
+    selectedEmployee && filtered.some((e) => e.id === selectedEmployee.id) ? selectedEmployee : null;
+  return { myEmployees: filtered, employees: updatedEmployees, selectedEmployee: selected };
 }
 
 export const useEmployeesStore = create<EmployeesState>()(
@@ -174,12 +203,33 @@ export const useEmployeesStore = create<EmployeesState>()(
         }
         return employees.filter((emp) => emp.department === selectedDepartment);
       },
+
+      reconcileWithOpenClawAgentIds: (agentIds) => {
+        set((state) =>
+          reconcileEmployeeRowsWithAgentIds(
+            state.myEmployees,
+            state.employees,
+            agentIds,
+            state.selectedEmployee,
+          ),
+        );
+      },
     }),
     {
       name: 'rclaw-employees-storage',
       partialize: (state) => ({
         myEmployees: state.myEmployees,
       }),
+      /**
+       * Rehydrate from localStorage can run after the first `/api/agents` fetch and overwrite
+       * `myEmployees` with stale rows. Re-fetch agents so `fetchAgents` → reconcile runs again.
+       */
+      onRehydrateStorage: () => (rehydrateError) => {
+        if (rehydrateError) return;
+        queueMicrotask(() => {
+          void useAgentsStore.getState().fetchAgents();
+        });
+      },
     }
   )
 );
