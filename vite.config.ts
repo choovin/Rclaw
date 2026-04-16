@@ -18,10 +18,14 @@ export default defineConfig(({ mode }) => {
     env.VITE_CLOUD_API_BASE_URL?.trim() ||
     (mode === 'production' ? 'https://www.runnode.cn' : 'https://staging-www.runnode.cn');
   const wechatAppId = env.VITE_CLOUD_WECHAT_APP_ID?.trim() || '';
+  const skillHubBase =
+    env.VITE_SKILL_HUB_BASE_URL?.trim() ||
+    (mode === 'production' ? 'https://skillhub.runnode.cn' : 'https://staging-skillhub.runnode.cn');
 
   const electronMainDefine = {
     __RCLAW_BUILD_CLOUD_API_BASE__: JSON.stringify(cloudApiBase),
     __RCLAW_BUILD_CLOUD_WECHAT_APP_ID__: JSON.stringify(wechatAppId),
+    __RCLAW_BUILD_SKILL_HUB_BASE_URL__: JSON.stringify(skillHubBase),
   } as const;
 
   return {

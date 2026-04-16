@@ -6,8 +6,8 @@ import { join } from 'path';
 let dotEnvMerged = false;
 
 /**
- * Main 进程从仓库根目录按 Vite 相近顺序合并 `VITE_CLOUD_*`（后者覆盖前者）。
- * 另见构建期注入：`vite.config.ts` → `__RCLAW_BUILD_CLOUD_*__`（打包后 cwd 常无 .env）。
+ * Main 进程从仓库根目录按 Vite 相近顺序合并部分 `VITE_*`（后者覆盖前者）。
+ * 另见构建期注入：`vite.config.ts` → `__RCLAW_BUILD_*__`（打包后 cwd 常无 .env）。
  */
 function mergeCloudKeysFromDotEnvFiles(): void {
   if (dotEnvMerged) return;
@@ -31,9 +31,16 @@ function mergeCloudKeysFromDotEnvFiles(): void {
         const eq = trimmed.indexOf('=');
         if (eq <= 0) continue;
         const key = trimmed.slice(0, eq).trim();
-        if (key !== 'VITE_CLOUD_API_BASE_URL' && key !== 'VITE_CLOUD_WECHAT_APP_ID') continue;
+        if (
+          key !== 'VITE_CLOUD_API_BASE_URL' &&
+          key !== 'VITE_CLOUD_WECHAT_APP_ID' &&
+          key !== 'VITE_SKILL_HUB_BASE_URL'
+        ) {
+          continue;
+        }
         if (key === 'VITE_CLOUD_API_BASE_URL' && process.env.VITE_CLOUD_API_BASE_URL) continue;
         if (key === 'VITE_CLOUD_WECHAT_APP_ID' && process.env.VITE_CLOUD_WECHAT_APP_ID) continue;
+        if (key === 'VITE_SKILL_HUB_BASE_URL' && process.env.VITE_SKILL_HUB_BASE_URL) continue;
         let val = trimmed.slice(eq + 1).trim();
         if (
           (val.startsWith('"') && val.endsWith('"')) ||
@@ -78,4 +85,17 @@ export function getWechatOAuthRedirectUriFallback(): string {
   } catch {
     return 'http://localhost:5173';
   }
+}
+
+/**
+ * Skill Hub 站点根地址（与渲染层 `VITE_SKILL_HUB_BASE_URL` 一致）。
+ * 供 ClawHub CLI `install --registry` 使用。
+ */
+export function getSkillHubBaseUrl(): string {
+  mergeCloudKeysFromDotEnvFiles();
+  const raw =
+    process.env.VITE_SKILL_HUB_BASE_URL ||
+    __RCLAW_BUILD_SKILL_HUB_BASE_URL__ ||
+    'https://staging-www.runnode.cn';
+  return raw.replace(/\/+$/, '');
 }

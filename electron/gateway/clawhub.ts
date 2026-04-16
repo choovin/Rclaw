@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { app, shell } from 'electron';
+import { getSkillHubBaseUrl } from '../utils/cloud-config';
 import { getOpenClawConfigDir, ensureDir, getClawHubCliBinPath, getClawHubCliEntryPath, quoteForCmd } from '../utils/paths';
 
 export interface ClawHubSearchParams {
@@ -302,6 +303,11 @@ export class ClawHubService {
      */
     async install(params: ClawHubInstallParams): Promise<void> {
         const args = ['install', params.slug];
+
+        const registry = getSkillHubBaseUrl();
+        if (registry) {
+            args.push('--registry', registry);
+        }
 
         if (params.version) {
             args.push('--version', params.version);
