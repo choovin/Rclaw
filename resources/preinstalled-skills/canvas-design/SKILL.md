@@ -45,8 +45,8 @@ python {skillDir}/scripts/generate_image.py --prompt "your detailed visual promp
 - Output format is **auto-detected** PNG or JPEG
 - Resolutions: `2K` (default) or `3K`
 - Aspect ratios: `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `9:16`, `16:9`, `21:9`
-- Image-to-image: pass `--input-image <ref.png>` (uses `/v1/images/edits`, primary: `runnode/flux-2-klein-9b`, fallback: `runnode/qwen_image_edit_2511_fp8mixed`)
-- Text-to-image: omit `--input-image` (uses `/v1/images/generations`, model: `runnode/z_image_turbo_bf16`)
+- Image-to-image: pass `--input-image <ref.png>` (uses `/v1/images/generations`, primary `doubao-seedream-5-0-260128`, fallback `doubao-seedream-4-5-251128`)
+- Text-to-image: omit `--input-image` (uses `/v1/images/generations`, primary `doubao-seedream-5-0-260128`, fallback `doubao-seedream-4-5-251128`)
 - Only report the saved path, **do not read the image content back**
 
 ---

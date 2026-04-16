@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 """
-Generate / edit images using RunNode/Doubao image models via OpenAI-compatible API.
+Generate images using Doubao image models via OpenAI-compatible API.
 
-Supported tasks:
-  - Text-to-Image: /v1/images/generations
-      Primary: doubao-seedream-5-0-260128 (direct URL)
-      Fallback: doubao-seedream-4-5-251128 (direct URL, requires ≥ 1920x1920)
-  - Image-to-Image: /v1/images/edits
-      Primary: runnode/flux-2-klein-9b (async)
-      Fallback: runnode/qwen_image_edit_2511_fp8mixed (async)
+Both T2I and I2I use the same:
+  - API:          POST /v1/images/generations
+  - Primary:      doubao-seedream-5-0-260128
+  - Fallback:     doubao-seedream-4-5-251128
+  - Response:     data[0].url (synchronous, no polling)
 
 Usage (text-to-image):
     python generate_image.py --prompt "your prompt" --filename "output.png" --resolution 2K
 
-Usage (image-to-image / edits):
-    python generate_image.py --prompt "modify the image" --filename "output.png" -i input.png --resolution 2K
+Usage (image-to-image):
+    python generate_image.py --prompt "modify the image" --filename "output.png" -i input.png
 """
 
 from __future__ import annotations
@@ -207,9 +205,8 @@ def submit_i2i_request(base_url: str, api_key: str, model: str, image_url: str, 
     payload = {
         "model": model,
         "prompt": prompt,
-        "image": image_url,
+        "image": [image_url],
         "response_format": "url",
-        "size": "adaptive",
     }
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=headers, method="POST")

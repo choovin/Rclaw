@@ -103,6 +103,10 @@
     {
       "slug": "writing-skills",
       "autoEnable": true
+    },
+    {
+      "slug": "wechat-assistant-skill",
+      "autoEnable": true
     }
   ]
 }

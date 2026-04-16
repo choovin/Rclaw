@@ -291,7 +291,7 @@ cover: C:/Users/ADMIN/.openclaw/skills/wechat-article/output/covers/cover_xxx.jp
 - **分辨率**：`2K`（默认）或 `3K`
 - **宽高比**：封面固定 `16:9`，正文配图默认 `16:9`
 - **输出格式**：自动检测 PNG/JPEG
-- **模型**：默认 `runnode/z_image_turbo_bf16`
+- **模型**：默认 `doubao-seedream-5-0-260128`，备用 `doubao-seedream-4-5-251128`
 - 只报告保存路径，不回读图片内容
 
 ---

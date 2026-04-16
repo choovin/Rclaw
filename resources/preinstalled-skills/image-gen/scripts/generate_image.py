@@ -159,7 +159,7 @@ def submit_tti_request(base_url: str, api_key: str, model: str, prompt: str, siz
 
 
 def submit_i2i_request(base_url: str, api_key: str, model: str, image_data_url: str, prompt: str) -> str:
-    """Submit image-to-image request via /images/generations (Doubao style)."""
+    """Submit image-to-image request via /v1/images/generations (Doubao I2I)."""
     url = f"{base_url}/images/generations"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -169,9 +169,8 @@ def submit_i2i_request(base_url: str, api_key: str, model: str, image_data_url: 
     payload = {
         "model": model,
         "prompt": prompt,
-        "image": image_data_url,
+        "image": [image_data_url],
         "response_format": "url",
-        "size": "adaptive",
     }
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=headers, method="POST")
