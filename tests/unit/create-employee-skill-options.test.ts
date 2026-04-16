@@ -3,6 +3,9 @@ import {
   buildInstalledSlugKeySet,
   filterLocalSkillsForPicker,
   mergeSkillhubRowsWithLocal,
+  toggleSelectedSkillRow,
+  truncateSkillDescription,
+  type CreateEmployeeSkillOptionRow,
 } from '@/lib/create-employee-skill-options';
 import type { Skill } from '@/types/skill';
 import type { SkillhubListItem } from '@/types/skillhub';
@@ -48,6 +51,53 @@ describe('create-employee-skill-options', () => {
     expect(rows[0]?.section).toBe('hub');
     expect(rows[0]?.installed).toBe(true);
     expect(rows[0]?.slug).toBe('pdf');
+    expect(rows[0]?.description).toBe('');
+  });
+
+  it('mergeSkillhubRowsWithLocal includes truncated description from local and hub', () => {
+    const hub: SkillhubListItem[] = [
+      {
+        id: 1,
+        slug: 'remote',
+        displayName: 'Remote',
+        summary: 'Hub summary text',
+        status: 'ACTIVE',
+        namespace: 'global',
+        updatedAt: '',
+        resolutionMode: 'PUBLISHED',
+      },
+    ];
+    const local: Skill[] = [
+      skill({
+        id: '1',
+        name: 'Local',
+        slug: 'local',
+        description: 'Local desc',
+      }),
+    ];
+    const keys = buildInstalledSlugKeySet([]);
+    const rows = mergeSkillhubRowsWithLocal(hub, filterLocalSkillsForPicker(local, ''), keys);
+    expect(rows.find((r) => r.slug === 'local')?.description).toBe('Local desc');
+    expect(rows.find((r) => r.slug === 'remote')?.description).toBe('Hub summary text');
+  });
+
+  it('toggleSelectedSkillRow adds and removes by slug', () => {
+    const row: CreateEmployeeSkillOptionRow = {
+      slug: 'a',
+      title: 'A',
+      description: 'd',
+      installed: true,
+      section: 'hub',
+    };
+    let sel = toggleSelectedSkillRow(row, []);
+    expect(sel).toHaveLength(1);
+    sel = toggleSelectedSkillRow(row, sel);
+    expect(sel).toHaveLength(0);
+  });
+
+  it('truncateSkillDescription trims and truncates', () => {
+    expect(truncateSkillDescription('  a  b  ', 3)).toBe('a b');
+    expect(truncateSkillDescription('x'.repeat(100), 10)).toHaveLength(11);
   });
 
   it('mergeSkillhubRowsWithLocal appends local-only row when slug not in hub', () => {

@@ -33,7 +33,11 @@
         "skillhubError": "Could not search the marketplace",
         "skillsLoading": "Loading skills…",
         "skillhubSearching": "Searching marketplace…",
-        "removeSkillChip": "Remove skill"
+        "removeSkillChip": "Remove skill",
+        "removeSkillRow": "Remove skill",
+        "selectSkillsButton": "Select skills",
+        "skillPickerTitle": "Select skills",
+        "skillPickerDone": "Done"
     },
     "allDepartments": "All Departments",
     "departments": {

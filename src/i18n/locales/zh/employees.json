@@ -33,7 +33,11 @@
         "skillhubError": "无法搜索技能商店",
         "skillsLoading": "正在加载技能…",
         "skillhubSearching": "正在搜索商店…",
-        "removeSkillChip": "移除技能"
+        "removeSkillChip": "移除技能",
+        "removeSkillRow": "移除技能",
+        "selectSkillsButton": "选择技能",
+        "skillPickerTitle": "选择技能",
+        "skillPickerDone": "完成"
     },
     "allDepartments": "全部",
     "departments": {

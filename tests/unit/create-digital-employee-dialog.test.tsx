@@ -27,15 +27,17 @@ vi.mock('@/pages/Agents/CreateEmployeeSkillField', () => {
   const R = require('react') as typeof import('react');
   return {
     CreateEmployeeSkillField: ({
-      onSelectedSlugsChange,
+      onSelectedSkillsChange,
     }: {
-      onSelectedSlugsChange: (slugs: string[]) => void;
+      onSelectedSkillsChange: (skills: { slug: string; title: string; description: string }[]) => void;
     }) => {
       R.useEffect(() => {
         if (skillFieldInject.slugs) {
-          onSelectedSlugsChange(skillFieldInject.slugs);
+          onSelectedSkillsChange(
+            skillFieldInject.slugs.map((slug) => ({ slug, title: slug, description: '' })),
+          );
         }
-      }, [onSelectedSlugsChange]);
+      }, [onSelectedSkillsChange]);
       return R.createElement('div', { 'data-testid': 'create-digital-employee-skills-section' });
     },
   };
