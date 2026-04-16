@@ -55,7 +55,8 @@ export function CreateDigitalEmployeeDialog({
   const isEdit = mode === 'edit';
 
   const [nameZh, setNameZh] = useState('');
-  const [vibe, setVibe] = useState('');
+  /** 一句话描述 ↔ `description` / `descriptionZh`；创建时会再同步到 vibe / identityContent。 */
+  const [oneLineDescription, setOneLineDescription] = useState('');
   const [soulContent, setSoulContent] = useState('');
   const [agentsContent, setAgentsContent] = useState('');
   const [emoji, setEmoji] = useState<string>(EMOJI_OPTIONS[0]);
@@ -65,9 +66,9 @@ export function CreateDigitalEmployeeDialog({
 
   useEffect(() => {
     if (!isEdit || !initialEmployee) return;
-    const v = (initialEmployee.vibeZh ?? initialEmployee.vibe ?? '').trim();
+    const desc = (initialEmployee.descriptionZh ?? initialEmployee.description ?? '').trim();
     setNameZh(initialEmployee.nameZh.trim());
-    setVibe(v);
+    setOneLineDescription(desc);
     setSoulContent((initialEmployee.soulContent ?? '').trim());
     setAgentsContent((initialEmployee.agentsContent ?? '').trim());
     setEmoji(initialEmojiFromEmployee(initialEmployee));
@@ -84,13 +85,13 @@ export function CreateDigitalEmployeeDialog({
   const isValid = useMemo(() => {
     return (
       nameZh.trim().length > 0 &&
-      vibe.trim().length > 0 &&
+      oneLineDescription.trim().length > 0 &&
       soulContent.trim().length > 0 &&
       agentsContent.trim().length > 0 &&
       color.trim().length > 0 &&
       Boolean(emoji)
     );
-  }, [nameZh, vibe, soulContent, agentsContent, color, emoji]);
+  }, [nameZh, oneLineDescription, soulContent, agentsContent, color, emoji]);
 
   const handleSubmit = async () => {
     if (saving) return;
@@ -101,7 +102,7 @@ export function CreateDigitalEmployeeDialog({
 
     setSaving(true);
     try {
-      const vibeTrimmed = vibe.trim();
+      const descTrimmed = oneLineDescription.trim();
       if (isEdit) {
         if (!initialEmployee?.linkedAgentId?.trim()) {
           toast.error(t('createDigitalEmployee.editMissingLink'));
@@ -114,13 +115,13 @@ export function CreateDigitalEmployeeDialog({
           name: nameZh.trim(),
           color,
           emoji,
-          vibe: vibeTrimmed,
-          vibeZh: vibeTrimmed,
+          vibe: base.vibe,
+          vibeZh: base.vibeZh ?? base.vibe,
           soulContent,
           agentsContent,
-          identityContent: vibeTrimmed,
-          description: vibeTrimmed,
-          descriptionZh: vibeTrimmed,
+          identityContent: base.identityContent ?? '',
+          description: descTrimmed,
+          descriptionZh: descTrimmed,
           skipCatalogDetailFetch: true,
           skills: skillSelections.map((s) => s.slug),
           linkedAgentId: base.linkedAgentId,
@@ -142,13 +143,13 @@ export function CreateDigitalEmployeeDialog({
         department: DEFAULT_DEPARTMENT,
         color,
         emoji,
-        vibe: vibeTrimmed,
-        vibeZh: vibeTrimmed,
+        description: descTrimmed,
+        descriptionZh: descTrimmed,
+        vibe: descTrimmed,
+        vibeZh: descTrimmed,
         soulContent,
         agentsContent,
-        identityContent: vibeTrimmed,
-        description: vibeTrimmed,
-        descriptionZh: vibeTrimmed,
+        identityContent: descTrimmed,
         skipCatalogDetailFetch: true,
         ...(skillSelections.length > 0 ? { skills: skillSelections.map((s) => s.slug) } : {}),
       };
@@ -297,8 +298,8 @@ export function CreateDigitalEmployeeDialog({
                   id="ded-vibe"
                   data-testid="create-digital-employee-vibe-textarea"
                   rows={3}
-                  value={vibe}
-                  onChange={(e) => setVibe(e.target.value)}
+                  value={oneLineDescription}
+                  onChange={(e) => setOneLineDescription(e.target.value)}
                   className="min-h-[72px] max-h-[72px] resize-none overflow-y-auto overflow-x-hidden rounded-xl font-mono text-[13px] leading-snug bg-white dark:bg-black border-black/15 dark:border-white/15 focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/30 shadow-sm transition-all text-black dark:text-white placeholder:text-black/40 dark:placeholder:text-white/40"
                   placeholder={t('createDigitalEmployee.vibePlaceholder')}
                 />

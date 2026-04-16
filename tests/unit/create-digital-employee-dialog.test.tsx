@@ -100,9 +100,10 @@ describe('CreateDigitalEmployeeDialog', () => {
     expect(employee.nameZh).toBe('人类学家');
     expect(employee.name).toBe('人类学家');
     expect(employee.department).toBe('custom');
+    expect(employee.description).toBe('一句话 vibe');
+    expect(employee.descriptionZh).toBe('一句话 vibe');
     expect(employee.vibe).toBe('一句话 vibe');
     expect(employee.identityContent).toBe('一句话 vibe');
-    expect(employee.description).toBe('一句话 vibe');
     expect(employee.soulContent).toBe('## soul');
     expect(employee.agentsContent).toBe('## agents');
     expect(employee.skipCatalogDetailFetch).toBe(true);
@@ -141,8 +142,8 @@ describe('CreateDigitalEmployeeDialog', () => {
           id: 'emp-row-1',
           nameZh: '原名',
           name: '原名',
-          description: 'd',
-          descriptionZh: 'd',
+          description: '卡片一句话',
+          descriptionZh: '卡片一句话',
           department: 'custom',
           color: '#111111',
           emoji: '🌍',
@@ -150,7 +151,7 @@ describe('CreateDigitalEmployeeDialog', () => {
           vibeZh: '旧 vibe',
           soulContent: '## old soul',
           agentsContent: '## old agents',
-          identityContent: '旧 vibe',
+          identityContent: 'IDENTITY 附录不变',
           linkedAgentId: 'agent-slug-1',
           skipCatalogDetailFetch: true,
         }}
@@ -161,11 +162,15 @@ describe('CreateDigitalEmployeeDialog', () => {
       expect(screen.getByTestId('create-digital-employee-name-input')).toHaveValue('原名');
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId('create-digital-employee-vibe-textarea')).toHaveValue('卡片一句话');
+    });
+
     fireEvent.change(screen.getByTestId('create-digital-employee-name-input'), {
       target: { value: '新名' },
     });
     fireEvent.change(screen.getByTestId('create-digital-employee-vibe-textarea'), {
-      target: { value: '一句话 vibe' },
+      target: { value: '新的一句话描述' },
     });
     fireEvent.change(screen.getByTestId('create-digital-employee-soul-textarea'), {
       target: { value: '## soul' },
@@ -186,6 +191,10 @@ describe('CreateDigitalEmployeeDialog', () => {
     expect(id).toBe('emp-row-1');
     expect(patch.linkedAgentId).toBe('agent-slug-1');
     expect(patch.nameZh).toBe('新名');
+    expect(patch.description).toBe('新的一句话描述');
+    expect(patch.descriptionZh).toBe('新的一句话描述');
+    expect(patch.vibe).toBe('旧 vibe');
+    expect(patch.identityContent).toBe('IDENTITY 附录不变');
     expect(patch.skills).toEqual([]);
   });
 });
