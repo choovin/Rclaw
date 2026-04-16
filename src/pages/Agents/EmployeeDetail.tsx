@@ -174,10 +174,16 @@ export function EmployeeDetail({
           if (target?.closest('[data-agent-settings-modal]')) {
             event.preventDefault();
           }
+          if (target?.closest('[data-digital-employee-modal]')) {
+            event.preventDefault();
+          }
         }}
         onInteractOutside={(event: any) => {
           const target = event?.target as HTMLElement | null | undefined;
           if (target?.closest('[data-agent-settings-modal]')) {
+            event.preventDefault();
+          }
+          if (target?.closest('[data-digital-employee-modal]')) {
             event.preventDefault();
           }
         }}

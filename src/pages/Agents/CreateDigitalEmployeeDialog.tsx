@@ -170,6 +170,7 @@ export function CreateDigitalEmployeeDialog({
     <div
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
       data-testid="create-digital-employee-dialog"
+      data-digital-employee-modal=""
     >
       <Card className="flex min-h-0 w-full max-w-3xl max-h-[min(90vh,820px)] flex-col overflow-hidden rounded-3xl border border-black/10 bg-white text-black shadow-2xl dark:border-white/10 dark:bg-black dark:text-white">
         <CardHeader className="pb-3 relative shrink-0">
