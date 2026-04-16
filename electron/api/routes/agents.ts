@@ -10,6 +10,7 @@ import {
   clearChannelBinding,
   deleteAgentConfig,
   listAgentsSnapshot,
+  listConfiguredAgentIds,
   provisionDigitalEmployeeAgent,
   removeAgentWorkspaceDirectory,
   resolveAccountIdForAgent,
@@ -20,6 +21,7 @@ import {
 } from '../../utils/agent-config';
 import { deleteChannelAccountConfig } from '../../utils/channel-config';
 import { syncAgentModelOverrideToRuntime, syncAllProviderAuthToRuntime } from '../../services/providers/provider-runtime-sync';
+import { readWorkspaceSoulAgentsMd } from '../../utils/digital-employee-workspace';
 import type { HostApiContext } from '../context';
 import { parseJsonBody, sendJson } from '../route-utils';
 
@@ -482,6 +484,33 @@ export async function handleAgentRoutes(
         error: msg,
         agentId: err.agentId,
       });
+    }
+    return true;
+  }
+
+  // GET /api/employees/workspace-md?linkedAgentId= — read SOUL.md / AGENTS.md (UTF-8)
+  if (url.pathname === '/api/employees/workspace-md' && req.method === 'GET') {
+    try {
+      const linkedAgentId = url.searchParams.get('linkedAgentId')?.trim() ?? '';
+      if (!linkedAgentId) {
+        sendJson(res, 400, { success: false, error: 'linkedAgentId is required' });
+        return true;
+      }
+
+      const configured = await listConfiguredAgentIds();
+      if (!configured.includes(linkedAgentId)) {
+        sendJson(res, 404, {
+          success: false,
+          error: `Agent "${linkedAgentId}" not found`,
+        });
+        return true;
+      }
+
+      const { soulContent, agentsContent } = await readWorkspaceSoulAgentsMd(linkedAgentId);
+      sendJson(res, 200, { success: true, soulContent, agentsContent });
+    } catch (error) {
+      console.error('[agents] GET /api/employees/workspace-md failed:', error);
+      sendJson(res, 500, { success: false, error: String(error) });
     }
     return true;
   }

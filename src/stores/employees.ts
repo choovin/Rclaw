@@ -34,6 +34,30 @@ interface EmployeesState {
   isEmployeeAdded: (employeeId: string) => boolean;
   /** Drop myEmployees rows whose linkedAgentId no longer exists in OpenClaw (e.g. user edited ~/.openclaw manually). */
   reconcileWithOpenClawAgentIds: (agentIds: string[]) => void;
+  /** After reading SOUL.md / AGENTS.md from disk, merge into store (does not call API). */
+  applyWorkspaceSoulAgentsFromDisk: (
+    employeeId: string,
+    payload: { soulContent: string; agentsContent: string },
+  ) => void;
+}
+
+/** Merge disk SOUL/AGENTS into one row and optional selectedEmployee. Exported for unit tests. */
+export function mergeWorkspaceSoulAgentsIntoEmployees(
+  employeeId: string,
+  payload: { soulContent: string; agentsContent: string },
+  myEmployees: Employee[],
+  selectedEmployee: Employee | null,
+): { myEmployees: Employee[]; selectedEmployee: Employee | null } {
+  const apply = (e: Employee): Employee => ({
+    ...e,
+    soulContent: payload.soulContent,
+    agentsContent: payload.agentsContent,
+  });
+  return {
+    myEmployees: myEmployees.map((e) => (e.id === employeeId ? apply(e) : e)),
+    selectedEmployee:
+      selectedEmployee?.id === employeeId && selectedEmployee ? apply(selectedEmployee) : selectedEmployee,
+  };
 }
 
 /** Exported for unit tests — trims myEmployees to valid OpenClaw agent ids. */
@@ -251,6 +275,17 @@ export const useEmployeesStore = create<EmployeesState>()(
           reconcileMyEmployeesWithOpenClawAgentIds(
             state.myEmployees,
             agentIds,
+            state.selectedEmployee,
+          ),
+        );
+      },
+
+      applyWorkspaceSoulAgentsFromDisk: (employeeId, payload) => {
+        set((state) =>
+          mergeWorkspaceSoulAgentsIntoEmployees(
+            employeeId,
+            payload,
+            state.myEmployees,
             state.selectedEmployee,
           ),
         );

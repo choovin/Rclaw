@@ -48,6 +48,7 @@
         "editMissingLink": "関連エージェントがないため保存できません"
     },
     "detailEditButton": "編集",
+    "workspaceMdReadFailed": "ワークスペースから SOUL/AGENTS を読めませんでした。キャッシュを表示します",
     "allDepartments": "全部門",
     "departments": {
         "engineering": "エンジニアリング",

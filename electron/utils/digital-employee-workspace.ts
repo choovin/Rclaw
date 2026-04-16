@@ -1,5 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
+import { expandPath } from './paths';
 
 /** OpenClaw workspace bootstrap: https://docs.openclaw.ai/concepts/agent-workspace */
 export const OPENCLAW_USER_FILENAME = 'USER.md';
@@ -89,4 +92,30 @@ export function writeDigitalEmployeeWorkspaceFiles(
 *由 RClaw 数字员工系统生成*
 `;
   writeFileSync(join(absWorkspaceDir, 'TODO.md'), todoContent, 'utf-8');
+}
+
+/** Read SOUL.md / AGENTS.md from a provisioned agent workspace. Missing files yield empty strings. */
+export async function readWorkspaceSoulAgentsMd(agentId: string): Promise<{
+  soulContent: string;
+  agentsContent: string;
+}> {
+  const id = agentId.trim();
+  if (!id) throw new Error('agentId must be non-empty');
+
+  const dir = expandPath(`~/.openclaw/workspace-${id}`);
+  const soulPath = join(dir, 'SOUL.md');
+  const agentsPath = join(dir, 'AGENTS.md');
+
+  const readUtf8 = async (filePath: string): Promise<string> => {
+    try {
+      return await readFile(filePath, 'utf8');
+    } catch (e: unknown) {
+      const code = (e as NodeJS.ErrnoException)?.code;
+      if (code === 'ENOENT') return '';
+      throw e;
+    }
+  };
+
+  const [soulContent, agentsContent] = await Promise.all([readUtf8(soulPath), readUtf8(agentsPath)]);
+  return { soulContent, agentsContent };
 }

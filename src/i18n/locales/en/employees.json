@@ -48,6 +48,7 @@
         "editMissingLink": "Missing linked agent; cannot save"
     },
     "detailEditButton": "Edit",
+    "workspaceMdReadFailed": "Could not read SOUL/AGENTS from workspace; showing cached content",
     "allDepartments": "All Departments",
     "departments": {
         "engineering": "Engineering",

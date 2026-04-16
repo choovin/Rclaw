@@ -48,6 +48,7 @@
         "editMissingLink": "缺少关联的智能体，无法保存"
     },
     "detailEditButton": "编辑内容",
+    "workspaceMdReadFailed": "无法从工作区读取 SOUL/AGENTS，已显示应用内缓存内容",
     "allDepartments": "全部",
     "departments": {
         "engineering": "研发",

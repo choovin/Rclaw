@@ -10,6 +10,7 @@ import type { GatewayStatus } from '@/types/gateway';
 import { useEmployeesStore } from '@/stores/employees';
 import { useSkillsStore } from '@/stores/skills';
 import { getEmployeeSkillAllowlistRows } from '@/lib/employee-skill-allowlist-rows';
+import { fetchEmployeeWorkspaceMd } from '@/lib/employee-workspace-md';
 import { provisionStageToIndex } from '@/lib/employee-provision-stages';
 import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
@@ -65,7 +66,7 @@ export function EmployeeDetail({
   const { t } = useTranslation('employees');
   const { t: tCommon } = useTranslation('common');
   const { t: tAgents } = useTranslation('agents');
-  const { addEmployee, removeEmployee, isEmployeeAdded } = useEmployeesStore();
+  const { addEmployee, removeEmployee, isEmployeeAdded, applyWorkspaceSoulAgentsFromDisk } = useEmployeesStore();
   const myEmployees = useEmployeesStore((s) => s.myEmployees);
   const linkedRow = myEmployees.find((e) => e.id === employee.id);
   const skillsWhitelist = linkedRow?.skills ?? employee.skills;
@@ -115,11 +116,33 @@ export function EmployeeDetail({
   const [missingLinkOpen, setMissingLinkOpen] = useState(false);
   const [runtimeSettingsOpen, setRuntimeSettingsOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editMdLoading, setEditMdLoading] = useState(false);
 
   const linkedAgentSummary = useMemo((): AgentSummary | null => {
     if (!linkedAgentId) return null;
     return agents.find((a) => a.id === linkedAgentId) ?? null;
   }, [agents, linkedAgentId]);
+
+  const handleOpenEdit = async () => {
+    if (!linkedAgentId || !editTarget) return;
+    setEditMdLoading(true);
+    try {
+      const res = await fetchEmployeeWorkspaceMd(linkedAgentId);
+      if (res.success) {
+        applyWorkspaceSoulAgentsFromDisk(editTarget.id, {
+          soulContent: res.soulContent,
+          agentsContent: res.agentsContent,
+        });
+      } else {
+        toast.error(res.error?.trim() || t('workspaceMdReadFailed'));
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('workspaceMdReadFailed'));
+    } finally {
+      setEditMdLoading(false);
+    }
+    setEditDialogOpen(true);
+  };
 
   const ADD_STEPS: StepConfig[] = [
     { label: '创建 员工', icon: '🤖' },
@@ -341,9 +364,14 @@ export function EmployeeDetail({
             variant="secondary"
             className="w-full rounded-full"
             data-testid="employee-detail-edit-button"
-            onClick={() => setEditDialogOpen(true)}
+            onClick={() => void handleOpenEdit()}
+            disabled={editMdLoading}
           >
-            <Pencil className="h-4 w-4 mr-2" />
+            {editMdLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Pencil className="h-4 w-4 mr-2" />
+            )}
             {t('detailEditButton')}
           </Button>
         )}
