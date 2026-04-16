@@ -23,6 +23,7 @@
         "creating": "Creating…",
         "fillRequired": "Fill all required fields (non-blank)",
         "skillsLabel": "Available skills (optional)",
+        "skillsCountSuffix": "({{count}})",
         "skillsHint": "Leave empty to allow all skills. If you pick skills below, only those will be available after provision.",
         "skillSearchPlaceholder": "Search the skill marketplace and installed skills…",
         "skillInstalled": "Installed",

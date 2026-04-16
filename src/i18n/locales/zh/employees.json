@@ -23,6 +23,7 @@
         "creating": "创建中...",
         "fillRequired": "请填写所有必填项（并确保非空白）",
         "skillsLabel": "可用技能（可选）",
+        "skillsCountSuffix": "（{{count}}）",
         "skillsHint": "不选则该员工可使用全部技能；选择后仅可使用所选技能（未安装的会在创建时自动安装）。",
         "skillSearchPlaceholder": "搜索技能商店与已安装技能…",
         "skillInstalled": "已安装",

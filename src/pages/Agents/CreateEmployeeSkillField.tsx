@@ -347,7 +347,14 @@ export function CreateEmployeeSkillField({ selectedSkills, onSelectedSkillsChang
   return (
     <div className="space-y-2.5" data-testid="create-digital-employee-skills-section">
       <div>
-        <Label className="text-[14px] text-black/80 dark:text-white/80 font-bold">{t('createDigitalEmployee.skillsLabel')}</Label>
+        <Label className="text-[14px] text-black/80 dark:text-white/80 font-bold inline-flex flex-wrap items-baseline gap-x-1 gap-y-0">
+          <span>{t('createDigitalEmployee.skillsLabel')}</span>
+          {selectedSkills.length > 0 ? (
+            <span className="font-semibold tabular-nums text-black/70 dark:text-white/70">
+              {t('createDigitalEmployee.skillsCountSuffix', { count: selectedSkills.length })}
+            </span>
+          ) : null}
+        </Label>
         <p className="text-[12px] text-black/55 dark:text-white/50 mt-1">{t('createDigitalEmployee.skillsHint')}</p>
       </div>
 

@@ -23,6 +23,7 @@
         "creating": "作成中…",
         "fillRequired": "必須項目をすべて入力してください（空白のみは不可）",
         "skillsLabel": "利用可能スキル（任意）",
+        "skillsCountSuffix": "（{{count}}）",
         "skillsHint": "未選択の場合はすべてのスキルを利用できます。選択したスキルのみに制限します（未インストールは作成時にインストールされます）。",
         "skillSearchPlaceholder": "マーケットプレイスとインストール済みスキルを検索…",
         "skillInstalled": "インストール済み",
