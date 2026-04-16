@@ -30,6 +30,7 @@ import {
   normalizeCommandName,
   parseSlashTokens,
 } from './chat-skill-command';
+import { getChatVisibleSkillsForAgent } from './chat-visible-skills';
 import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -159,14 +160,19 @@ export function ChatInput({
   );
   const showAgentPicker = mentionableAgents.length > 0;
 
+  const chatVisibleSkills = useMemo(
+    () => getChatVisibleSkillsForAgent(currentAgentId, skills, myEmployees),
+    [currentAgentId, skills, myEmployees],
+  );
+
   const slashChipCommandNames = useMemo(() => {
     const set = new Set<string>();
-    for (const s of skills ?? []) {
+    for (const s of chatVisibleSkills ?? []) {
       if (!s.enabled) continue;
       set.add(normalizeCommandName((s.slug ?? s.id) as string));
     }
     return set;
-  }, [skills]);
+  }, [chatVisibleSkills]);
 
   slashSessionRef.current = slashSession;
 
@@ -703,7 +709,7 @@ export function ChatInput({
               </Button>
               <SkillPickerPopover
                 open={skillPickerOpen}
-                skills={skills}
+                skills={chatVisibleSkills}
                 onPick={applySkillPick}
                 onOpenSkills={() => {
                   markSlashSkillDismissed();
