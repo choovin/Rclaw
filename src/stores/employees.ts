@@ -27,6 +27,8 @@ interface EmployeesState {
   isLoading: boolean;
 
   addEmployee: (employee: Employee, onProvisionStage?: (stage: string) => void) => Promise<boolean>;
+  /** Persist edits for an already provisioned row; requires `patch.linkedAgentId`. */
+  updateEmployee: (employeeId: string, patch: Employee) => Promise<boolean>;
   removeEmployee: (employeeId: string) => Promise<void>;
   setSelectedEmployee: (employee: Employee | null) => void;
   isEmployeeAdded: (employeeId: string) => boolean;
@@ -146,6 +148,76 @@ export const useEmployeesStore = create<EmployeesState>()(
           return false;
         } finally {
           unsubscribe?.();
+        }
+      },
+
+      updateEmployee: async (employeeId, patch) => {
+        const linked = patch.linkedAgentId?.trim();
+        if (!linked) {
+          console.error('[employees] updateEmployee: missing linkedAgentId');
+          return false;
+        }
+
+        const vibeRaw = patch.vibeZh ?? patch.vibe;
+        const vibePayload =
+          typeof vibeRaw === 'string' && vibeRaw.trim().length > 0 ? vibeRaw.trim() : undefined;
+
+        const skillsPayload = Array.isArray(patch.skills) ? patch.skills : [];
+
+        try {
+          set({ isLoading: true });
+          const res = (await hostApiFetch('/api/employees/update', {
+            method: 'POST',
+            body: JSON.stringify({
+              employeeId,
+              linkedAgentId: linked,
+              nameZh: patch.nameZh,
+              nameEn: patch.name,
+              soulContent: patch.soulContent ?? '',
+              agentsContent: patch.agentsContent ?? '',
+              identityContent: patch.identityContent ?? '',
+              emoji: patch.emoji,
+              ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
+              skills: skillsPayload,
+            }),
+          })) as {
+            success?: boolean;
+            error?: string;
+          };
+
+          if (!res.success) {
+            if (res.error) {
+              console.error('[employees] update failed:', res.error);
+            } else {
+              console.error('[employees] update failed (no error message):', res);
+            }
+            set({ isLoading: false });
+            return false;
+          }
+
+          useAgentsStore.getState().fetchAgents();
+
+          const { myEmployees, selectedEmployee } = get();
+          const merged: Employee = {
+            ...patch,
+            id: employeeId,
+            linkedAgentId: linked,
+          };
+          const newMyEmployees = myEmployees.map((e) => (e.id === employeeId ? merged : e));
+          const nextSelected =
+            selectedEmployee?.id === employeeId ? merged : selectedEmployee;
+
+          set({
+            myEmployees: newMyEmployees,
+            selectedEmployee: nextSelected,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error) {
+          console.error('Failed to update employee:', error);
+          set({ isLoading: false });
+          return false;
         }
       },
 

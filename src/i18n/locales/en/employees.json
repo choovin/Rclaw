@@ -39,8 +39,15 @@
         "removeSkillRow": "Remove skill",
         "selectSkillsButton": "Select skills",
         "skillPickerTitle": "Select skills",
-        "skillPickerDone": "Done"
+        "skillPickerDone": "Done",
+        "editTitle": "Edit digital employee",
+        "editSubmit": "Save",
+        "editSaving": "Saving…",
+        "editSuccess": "Saved",
+        "editFailed": "Save failed",
+        "editMissingLink": "Missing linked agent; cannot save"
     },
+    "detailEditButton": "Edit",
     "allDepartments": "All Departments",
     "departments": {
         "engineering": "Engineering",

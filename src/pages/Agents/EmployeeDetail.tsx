@@ -15,9 +15,10 @@ import { Button } from '@/components/ui/button';
 import { AddProgress, type StepConfig } from '@/components/ui/add-progress';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmployeeRemoveDialog } from '@/components/common/EmployeeRemoveDialog';
-import { AlertCircle, Loader2, Plus, Settings2, Trash2, X } from 'lucide-react';
+import { AlertCircle, Loader2, Pencil, Plus, Settings2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { AgentSettingsModal, type ChannelGroupItem } from './AgentSettingsModal';
+import { CreateDigitalEmployeeDialog } from './CreateDigitalEmployeeDialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 const DEPARTMENT_COLORS: Record<string, string> = {
@@ -103,10 +104,17 @@ export function EmployeeDetail({
 
   const linkedAgentId = linkedRow?.linkedAgentId?.trim();
   const isAdded = isEmployeeAdded(employee.id);
+  const displaySource = linkedRow ?? employee;
+  const editTarget = useMemo(() => {
+    if (linkedRow?.linkedAgentId?.trim()) return linkedRow;
+    if (employee.linkedAgentId?.trim()) return employee;
+    return null;
+  }, [linkedRow, employee]);
   const [addProgress, setAddProgress] = useState<number | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [missingLinkOpen, setMissingLinkOpen] = useState(false);
   const [runtimeSettingsOpen, setRuntimeSettingsOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const linkedAgentSummary = useMemo((): AgentSummary | null => {
     if (!linkedAgentId) return null;
@@ -176,7 +184,7 @@ export function EmployeeDetail({
         className="flex h-full min-h-0 w-[min(20rem,calc(100vw-1rem))] max-w-[20rem] flex-col gap-0 border-l p-0 sm:w-80"
       >
         <SheetTitle className="sr-only">
-          {employee.nameZh} ({employee.name})
+          {displaySource.nameZh} ({displaySource.name})
         </SheetTitle>
         <div className="flex min-h-0 flex-1 flex-col bg-card">
       {/* Header */}
@@ -189,11 +197,11 @@ export function EmployeeDetail({
               border: `2px solid ${getAvatarColor(employee.department)}40`
             }}
           >
-            {employee.emoji}
+            {displaySource.emoji}
           </div>
           <div>
-            <h3 className="text-[17px] font-semibold text-foreground">{employee.nameZh}</h3>
-            <p className="text-[13px] text-muted-foreground">{employee.name}</p>
+            <h3 className="text-[17px] font-semibold text-foreground">{displaySource.nameZh}</h3>
+            <p className="text-[13px] text-muted-foreground">{displaySource.name}</p>
           </div>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onClose}>
@@ -238,12 +246,12 @@ export function EmployeeDetail({
         </div>
 
         {/* Vibe */}
-        {employee.vibe && (
+        {displaySource.vibe && (
           <div>
             <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
               {t('vibe')}
             </h4>
-            <p className="text-[14px] text-foreground/80 italic">{employee.vibeZh || employee.vibe}</p>
+            <p className="text-[14px] text-foreground/80 italic">{displaySource.vibeZh || displaySource.vibe}</p>
           </div>
         )}
 
@@ -252,7 +260,7 @@ export function EmployeeDetail({
           <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             {t('description')}
           </h4>
-          <p className="text-[14px] text-foreground leading-relaxed">{employee.descriptionZh || employee.description}</p>
+          <p className="text-[14px] text-foreground leading-relaxed">{displaySource.descriptionZh || displaySource.description}</p>
         </div>
 
         {/* Skill allowlist / inherit */}
@@ -322,6 +330,18 @@ export function EmployeeDetail({
 
       {/* Footer Actions */}
       <div className="p-5 border-t space-y-2">
+        {isAdded && linkedAgentId && (
+          <Button
+            variant="secondary"
+            className="w-full rounded-full"
+            data-testid="employee-detail-edit-button"
+            onClick={() => setEditDialogOpen(true)}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            {t('detailEditButton')}
+          </Button>
+        )}
+
         {isAdded && linkedAgentSummary && (
           <Button
             variant="secondary"
@@ -393,6 +413,14 @@ export function EmployeeDetail({
           setRuntimeSettingsOpen(false);
           onRefreshAgents?.();
         }}
+      />
+    )}
+
+    {editDialogOpen && editTarget && (
+      <CreateDigitalEmployeeDialog
+        mode="edit"
+        initialEmployee={editTarget}
+        onClose={() => setEditDialogOpen(false)}
       />
     )}
     </>

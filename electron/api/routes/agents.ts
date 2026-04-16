@@ -15,6 +15,7 @@ import {
   resolveAccountIdForAgent,
   updateAgentModel,
   updateAgentName,
+  updateDigitalEmployeeAgentWorkspace,
   type ProvisionWorkspaceStage,
 } from '../../utils/agent-config';
 import { deleteChannelAccountConfig } from '../../utils/channel-config';
@@ -367,6 +368,112 @@ export async function handleAgentRoutes(
     } catch (error) {
       const err = error as Error & { agentId?: string };
       console.error('[agents] POST /api/employees/provision failed:', error);
+      const msg = String(error);
+      const isValidationError =
+        /must be a string|must be non-empty \(trimmed\)/i.test(msg) && !err.agentId;
+      sendJson(res, isValidationError ? 400 : 500, {
+        success: false,
+        error: msg,
+        agentId: err.agentId,
+      });
+    }
+    return true;
+  }
+
+  // POST /api/employees/update — rewrite workspace + display name + skill allowlist; fixed agent id
+  if (url.pathname === '/api/employees/update' && req.method === 'POST') {
+    try {
+      const body = await parseJsonBody<{
+        employeeId: string;
+        linkedAgentId: string;
+        nameZh: string;
+        nameEn: string;
+        soulContent: string;
+        agentsContent: string;
+        identityContent: string;
+        emoji?: string;
+        vibe?: string;
+        skills?: string[];
+      }>(req);
+
+      const mustTrimNonEmpty = (value: unknown, fieldName: string): string => {
+        if (typeof value !== 'string') throw new Error(`${fieldName} must be a string`);
+        const trimmed = value.trim();
+        if (!trimmed) throw new Error(`${fieldName} must be non-empty (trimmed)`);
+        return trimmed;
+      };
+
+      mustTrimNonEmpty(body.employeeId, 'employeeId');
+      const linkedAgentId = mustTrimNonEmpty(body.linkedAgentId, 'linkedAgentId');
+      const nameZh = mustTrimNonEmpty(body.nameZh, 'nameZh');
+      const nameEn = mustTrimNonEmpty(body.nameEn, 'nameEn');
+
+      if (typeof body.soulContent !== 'string') throw new Error('soulContent must be a string');
+      if (!body.soulContent.trim()) throw new Error('soulContent must be non-empty (trimmed)');
+      const soulContent = body.soulContent;
+
+      if (typeof body.agentsContent !== 'string') throw new Error('agentsContent must be a string');
+      if (!body.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
+      const agentsContent = body.agentsContent;
+
+      let vibe: string | undefined;
+      if (body.vibe !== undefined && body.vibe !== null) {
+        if (typeof body.vibe !== 'string') throw new Error('vibe must be a string');
+        const vibeTrimmed = body.vibe.trim();
+        vibe = vibeTrimmed.length > 0 ? vibeTrimmed : undefined;
+      }
+
+      const identityContent =
+        typeof body.identityContent === 'string' ? body.identityContent : '';
+
+      if (body.skills !== undefined && body.skills !== null && !Array.isArray(body.skills)) {
+        throw new Error('skills must be an array');
+      }
+
+      await updateDigitalEmployeeAgentWorkspace(linkedAgentId, {
+        nameZh,
+        nameEn,
+        soulContent,
+        agentsContent,
+        identityContent,
+        emoji: typeof body.emoji === 'string' ? body.emoji : undefined,
+        vibe,
+      });
+
+      if (Array.isArray(body.skills)) {
+        const requested = normalizeProvisionSkillSlugs(body.skills);
+        if (requested.length > 0) {
+          const resolved = await ensureSlugsViaClawHub(requested, ctx.clawHubService, {
+            employeeId: body.employeeId.trim(),
+            agentId: linkedAgentId,
+          });
+          if (resolved.length > 0) {
+            await applyAgentSkillAllowlist(linkedAgentId, resolved);
+          } else {
+            await applyAgentSkillAllowlist(linkedAgentId, null);
+            console.warn('[agents] All skill slugs failed on employee update; clearing per-agent allowlist', {
+              employeeId: body.employeeId.trim(),
+              agentId: linkedAgentId,
+            });
+          }
+        } else {
+          await applyAgentSkillAllowlist(linkedAgentId, null);
+        }
+      }
+
+      syncAllProviderAuthToRuntime().catch((err) => {
+        console.warn('[agents] Failed to sync provider auth after employee update:', err);
+      });
+      scheduleGatewayReload(ctx, 'update-employee');
+
+      sendJson(res, 200, {
+        success: true,
+        agentId: linkedAgentId,
+        employeeId: body.employeeId.trim(),
+      });
+    } catch (error) {
+      const err = error as Error & { agentId?: string };
+      console.error('[agents] POST /api/employees/update failed:', error);
       const msg = String(error);
       const isValidationError =
         /must be a string|must be non-empty \(trimmed\)/i.test(msg) && !err.agentId;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Palette, RefreshCw, Repeat2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,18 +29,57 @@ function RequiredStar() {
   );
 }
 
-export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }) {
+export type CreateDigitalEmployeeDialogProps = {
+  onClose: () => void;
+  mode?: 'create' | 'edit';
+  /** Required when `mode` is `edit`; must include `linkedAgentId`. */
+  initialEmployee?: Employee | null;
+};
+
+function initialEmojiFromEmployee(emp: Employee | null | undefined): string {
+  const raw = emp?.emoji?.trim();
+  if (raw && EMOJI_OPTIONS.includes(raw as (typeof EMOJI_OPTIONS)[number])) {
+    return raw;
+  }
+  if (raw) return raw;
+  return EMOJI_OPTIONS[0];
+}
+
+export function CreateDigitalEmployeeDialog({
+  onClose,
+  mode = 'create',
+  initialEmployee = null,
+}: CreateDigitalEmployeeDialogProps) {
   const { t } = useTranslation('employees');
-  const { addEmployee } = useEmployeesStore();
+  const { addEmployee, updateEmployee } = useEmployeesStore();
+  const isEdit = mode === 'edit';
 
   const [nameZh, setNameZh] = useState('');
   const [vibe, setVibe] = useState('');
   const [soulContent, setSoulContent] = useState('');
   const [agentsContent, setAgentsContent] = useState('');
-  const [emoji, setEmoji] = useState<(typeof EMOJI_OPTIONS)[number]>('🌍');
+  const [emoji, setEmoji] = useState<string>(EMOJI_OPTIONS[0]);
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [saving, setSaving] = useState(false);
   const [skillSelections, setSkillSelections] = useState<SelectedEmployeeSkill[]>([]);
+
+  useEffect(() => {
+    if (!isEdit || !initialEmployee) return;
+    const v = (initialEmployee.vibeZh ?? initialEmployee.vibe ?? '').trim();
+    setNameZh(initialEmployee.nameZh.trim());
+    setVibe(v);
+    setSoulContent((initialEmployee.soulContent ?? '').trim());
+    setAgentsContent((initialEmployee.agentsContent ?? '').trim());
+    setEmoji(initialEmojiFromEmployee(initialEmployee));
+    setColor(initialEmployee.color?.trim() || DEFAULT_COLOR);
+    setSkillSelections(
+      (initialEmployee.skills ?? []).map((slug) => ({
+        slug: slug.trim(),
+        title: slug.trim(),
+        description: '',
+      })),
+    );
+  }, [isEdit, initialEmployee]);
 
   const isValid = useMemo(() => {
     return (
@@ -63,6 +102,39 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
     setSaving(true);
     try {
       const vibeTrimmed = vibe.trim();
+      if (isEdit) {
+        if (!initialEmployee?.linkedAgentId?.trim()) {
+          toast.error(t('createDigitalEmployee.editMissingLink'));
+          return;
+        }
+        const base = initialEmployee;
+        const employee: Employee = {
+          ...base,
+          nameZh: nameZh.trim(),
+          name: nameZh.trim(),
+          color,
+          emoji,
+          vibe: vibeTrimmed,
+          vibeZh: vibeTrimmed,
+          soulContent,
+          agentsContent,
+          identityContent: vibeTrimmed,
+          description: vibeTrimmed,
+          descriptionZh: vibeTrimmed,
+          skipCatalogDetailFetch: true,
+          skills: skillSelections.map((s) => s.slug),
+          linkedAgentId: base.linkedAgentId,
+        };
+        const ok = await updateEmployee(base.id, employee);
+        if (!ok) {
+          toast.error(t('createDigitalEmployee.editFailed'));
+          return;
+        }
+        toast.success(t('createDigitalEmployee.editSuccess'));
+        onClose();
+        return;
+      }
+
       const employee: Employee = {
         id: makeUuid(),
         nameZh: nameZh.trim(),
@@ -104,7 +176,7 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
           <div className="flex items-start justify-between gap-3">
             <div>
               <CardTitle className="text-2xl font-serif font-normal tracking-tight">
-                {t('createDigitalEmployee.title')}
+                {isEdit ? t('createDigitalEmployee.editTitle') : t('createDigitalEmployee.title')}
               </CardTitle>
             </div>
             <Button
@@ -286,8 +358,10 @@ export function CreateDigitalEmployeeDialog({ onClose }: { onClose: () => void }
               {saving ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  {t('createDigitalEmployee.creating')}
+                  {isEdit ? t('createDigitalEmployee.editSaving') : t('createDigitalEmployee.creating')}
                 </>
+              ) : isEdit ? (
+                t('createDigitalEmployee.editSubmit')
               ) : (
                 t('createDigitalEmployee.submit')
               )}

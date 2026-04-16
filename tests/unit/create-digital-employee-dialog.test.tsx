@@ -3,12 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CreateDigitalEmployeeDialog } from '@/pages/Agents/CreateDigitalEmployeeDialog';
 
 const addEmployeeMock = vi.fn().mockResolvedValue(true);
+const updateEmployeeMock = vi.fn().mockResolvedValue(true);
 
 const skillFieldInject = vi.hoisted(() => ({ slugs: null as string[] | null }));
 
 vi.mock('@/stores/employees', () => ({
   useEmployeesStore: () => ({
     addEmployee: addEmployeeMock,
+    updateEmployee: updateEmployeeMock,
   }),
 }));
 
@@ -60,6 +62,7 @@ vi.mock('react-i18next', () => ({
 describe('CreateDigitalEmployeeDialog', () => {
   beforeEach(() => {
     addEmployeeMock.mockClear();
+    updateEmployeeMock.mockClear();
     fetchSkillsMock.mockClear();
     skillFieldInject.slugs = null;
     vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('uuid-test-123');
@@ -127,6 +130,63 @@ describe('CreateDigitalEmployeeDialog', () => {
     expect(submit).toBeDisabled();
     fireEvent.click(submit);
     expect(addEmployeeMock).not.toHaveBeenCalled();
+  });
+
+  it('edit mode calls updateEmployee with linked agent and merged fields', async () => {
+    render(
+      <CreateDigitalEmployeeDialog
+        onClose={() => {}}
+        mode="edit"
+        initialEmployee={{
+          id: 'emp-row-1',
+          nameZh: '原名',
+          name: '原名',
+          description: 'd',
+          descriptionZh: 'd',
+          department: 'custom',
+          color: '#111111',
+          emoji: '🌍',
+          vibe: '旧 vibe',
+          vibeZh: '旧 vibe',
+          soulContent: '## old soul',
+          agentsContent: '## old agents',
+          identityContent: '旧 vibe',
+          linkedAgentId: 'agent-slug-1',
+          skipCatalogDetailFetch: true,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('create-digital-employee-name-input')).toHaveValue('原名');
+    });
+
+    fireEvent.change(screen.getByTestId('create-digital-employee-name-input'), {
+      target: { value: '新名' },
+    });
+    fireEvent.change(screen.getByTestId('create-digital-employee-vibe-textarea'), {
+      target: { value: '一句话 vibe' },
+    });
+    fireEvent.change(screen.getByTestId('create-digital-employee-soul-textarea'), {
+      target: { value: '## soul' },
+    });
+    fireEvent.change(screen.getByTestId('create-digital-employee-agents-textarea'), {
+      target: { value: '## agents' },
+    });
+    fireEvent.click(screen.getByTestId('create-digital-employee-emoji-option-0'));
+    fireEvent.change(screen.getByTestId('create-digital-employee-color-input'), {
+      target: { value: '#D97706' },
+    });
+
+    fireEvent.click(screen.getByTestId('create-digital-employee-submit-button'));
+
+    await waitFor(() => expect(updateEmployeeMock).toHaveBeenCalledTimes(1));
+    expect(addEmployeeMock).not.toHaveBeenCalled();
+    const [id, patch] = updateEmployeeMock.mock.calls[0];
+    expect(id).toBe('emp-row-1');
+    expect(patch.linkedAgentId).toBe('agent-slug-1');
+    expect(patch.nameZh).toBe('新名');
+    expect(patch.skills).toEqual([]);
   });
 });
 

@@ -39,8 +39,15 @@
         "removeSkillRow": "移除技能",
         "selectSkillsButton": "选择技能",
         "skillPickerTitle": "选择技能",
-        "skillPickerDone": "完成"
+        "skillPickerDone": "完成",
+        "editTitle": "编辑数字员工",
+        "editSubmit": "保存",
+        "editSaving": "保存中…",
+        "editSuccess": "已保存",
+        "editFailed": "保存失败",
+        "editMissingLink": "缺少关联的智能体，无法保存"
     },
+    "detailEditButton": "编辑内容",
     "allDepartments": "全部",
     "departments": {
         "engineering": "研发",

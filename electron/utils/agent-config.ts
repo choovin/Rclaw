@@ -699,6 +699,70 @@ export async function provisionDigitalEmployeeAgent(
   return { agentId, workspacePath };
 }
 
+/**
+ * Rewrite SOUL/AGENTS/IDENTITY/USER/TODO for an existing provisioned digital employee and sync the
+ * OpenClaw display name. Does not create agents or change `agentId` / workspace directory name.
+ */
+export async function updateDigitalEmployeeAgentWorkspace(
+  agentId: string,
+  payload: ProvisionDigitalEmployeePayload,
+): Promise<{ workspacePath: string }> {
+  const trimmedId = agentId.trim();
+  if (!trimmedId) throw new Error('agentId must be non-empty (trimmed)');
+
+  const nameZhTrimmed = payload.nameZh.trim();
+  if (!nameZhTrimmed) throw new Error('nameZh must be non-empty (trimmed)');
+
+  const nameEnTrimmed = payload.nameEn.trim();
+  if (!nameEnTrimmed) throw new Error('nameEn must be non-empty (trimmed)');
+
+  if (typeof payload.soulContent !== 'string') throw new Error('soulContent must be a string');
+  if (!payload.soulContent.trim()) throw new Error('soulContent must be non-empty (trimmed)');
+
+  if (typeof payload.agentsContent !== 'string') throw new Error('agentsContent must be a string');
+  if (!payload.agentsContent.trim()) throw new Error('agentsContent must be non-empty (trimmed)');
+
+  if (payload.vibe != null && typeof payload.vibe !== 'string') {
+    throw new Error('vibe must be a string');
+  }
+
+  const configuredIds = await listConfiguredAgentIds();
+  if (!configuredIds.includes(trimmedId)) {
+    throw new Error(`Agent "${trimmedId}" not found`);
+  }
+
+  const workspacePath = expandPath(`~/.openclaw/workspace-${trimmedId}`);
+
+  try {
+    writeDigitalEmployeeWorkspaceFiles(workspacePath, {
+      nameZh: nameZhTrimmed,
+      roleTitle: nameEnTrimmed,
+      soulContent: payload.soulContent,
+      agentsContent: payload.agentsContent,
+      identityContent: typeof payload.identityContent === 'string' ? payload.identityContent : '',
+      emoji: payload.emoji,
+      vibe: payload.vibe?.trim() ? payload.vibe.trim() : undefined,
+    });
+  } catch (err) {
+    const e = new Error(String(err)) as Error & { agentId?: string };
+    e.agentId = trimmedId;
+    throw e;
+  }
+
+  await updateAgentName(trimmedId, nameZhTrimmed);
+
+  const existsSoul = await fileExists(join(workspacePath, 'SOUL.md'));
+  if (payload.soulContent && !existsSoul) {
+    const e = new Error('updateDigitalEmployeeAgentWorkspace: SOUL.md missing after write') as Error & {
+      agentId?: string;
+    };
+    e.agentId = trimmedId;
+    throw e;
+  }
+
+  return { workspacePath };
+}
+
 export async function updateAgentName(agentId: string, name: string): Promise<AgentsSnapshot> {
   return withConfigLock(async () => {
     const config = await readOpenClawConfig() as AgentConfigDocument;

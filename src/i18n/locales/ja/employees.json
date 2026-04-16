@@ -39,8 +39,15 @@
         "removeSkillRow": "スキルを削除",
         "selectSkillsButton": "スキルを選ぶ",
         "skillPickerTitle": "スキルを選ぶ",
-        "skillPickerDone": "完了"
+        "skillPickerDone": "完了",
+        "editTitle": "デジタル従業員を編集",
+        "editSubmit": "保存",
+        "editSaving": "保存中…",
+        "editSuccess": "保存しました",
+        "editFailed": "保存に失敗しました",
+        "editMissingLink": "関連エージェントがないため保存できません"
     },
+    "detailEditButton": "編集",
     "allDepartments": "全部門",
     "departments": {
         "engineering": "エンジニアリング",
