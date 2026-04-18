@@ -2,9 +2,34 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import type { AgentsSnapshot } from './agent-config';
+import { readWorkspaceSoulAgentsMd } from './digital-employee-workspace';
+import { expandPath } from './paths';
+
 export const RCLAW_DIGITAL_EMPLOYEE_SIDECAR_FILENAME = '.rclaw-digital-employee.json';
 export const RCLAW_TODO_MARKER = '由 RClaw 数字员工系统生成';
 export const HYDRATE_SYNTHETIC_ID_PREFIX = 'local-openclaw:';
+
+const HYDRATE_FALLBACK_COLOR = '#6366f1';
+
+export type HydratedEmployeePayload = {
+  linkedAgentId: string;
+  id: string;
+  name: string;
+  nameZh: string;
+  description: string;
+  descriptionZh?: string;
+  color: string;
+  emoji: string;
+  vibe: string;
+  vibeZh?: string;
+  department: string;
+  soulContent?: string;
+  agentsContent?: string;
+  identityContent?: string;
+  skills?: string[];
+  skipCatalogDetailFetch: boolean;
+};
 
 export type DigitalEmployeeSidecarV1 = {
   version: 1;
@@ -153,4 +178,106 @@ export async function classifyDigitalEmployeeWorkspace(
   if (sidecar) return 'strong';
   if (await workspaceLooksLikeDigitalEmployeeWeak(absWorkspaceDir)) return 'weak';
   return 'none';
+}
+
+export function buildMinimalEmployeeRow(
+  linkedAgentId: string,
+  snapshotDisplayName: string,
+): HydratedEmployeePayload {
+  return {
+    linkedAgentId,
+    id: `${HYDRATE_SYNTHETIC_ID_PREFIX}${linkedAgentId}`,
+    name: snapshotDisplayName,
+    nameZh: snapshotDisplayName,
+    description: '',
+    color: HYDRATE_FALLBACK_COLOR,
+    emoji: '—',
+    vibe: '（可随对话补充）',
+    department: 'custom',
+    skipCatalogDetailFetch: true,
+  };
+}
+
+async function readIdentityMdFull(absWorkspaceDir: string): Promise<string> {
+  const identityPath = join(absWorkspaceDir, 'IDENTITY.md');
+  try {
+    return await readFile(identityPath, 'utf8');
+  } catch (e: unknown) {
+    const code = (e as NodeJS.ErrnoException)?.code;
+    if (code === 'ENOENT') return '';
+    throw e;
+  }
+}
+
+export async function collectDigitalEmployeesForHydrate(
+  snapshot: AgentsSnapshot,
+): Promise<HydratedEmployeePayload[]> {
+  const consumedAgentIds = new Set<string>();
+  const rows: HydratedEmployeePayload[] = [];
+
+  for (const entry of snapshot.agents) {
+    if (consumedAgentIds.has(entry.id)) {
+      console.warn(`[digital-employee-hydration] duplicate agent id in snapshot, skipping: ${entry.id}`);
+      continue;
+    }
+    consumedAgentIds.add(entry.id);
+
+    const absWorkspaceDir = expandPath(`~/.openclaw/workspace-${entry.id}`);
+    const cls = await classifyDigitalEmployeeWorkspace(entry.id, absWorkspaceDir);
+    if (cls === 'none') continue;
+
+    const [{ soulContent, agentsContent }, identityContent, sidecar] = await Promise.all([
+      readWorkspaceSoulAgentsMd(entry.id),
+      readIdentityMdFull(absWorkspaceDir),
+      cls === 'strong' ? readDigitalEmployeeSidecar(absWorkspaceDir) : Promise.resolve(null),
+    ]);
+
+    const parsed = parseIdentityMdForHydrate(identityContent);
+    const minimal = buildMinimalEmployeeRow(entry.id, entry.name);
+
+    const nameZh = parsed?.nameZh ?? minimal.nameZh;
+    const name = parsed?.name ?? minimal.name;
+    const emoji = parsed?.emoji ?? minimal.emoji;
+    const vibe = parsed?.vibe ?? minimal.vibe;
+
+    const isStrong = cls === 'strong' && sidecar !== null;
+    const row: HydratedEmployeePayload = {
+      linkedAgentId: entry.id,
+      id: isStrong ? sidecar.catalogEmployeeId : `${HYDRATE_SYNTHETIC_ID_PREFIX}${entry.id}`,
+      name,
+      nameZh,
+      description: '',
+      color: HYDRATE_FALLBACK_COLOR,
+      emoji,
+      vibe,
+      department: 'custom',
+      soulContent: soulContent || undefined,
+      agentsContent: agentsContent || undefined,
+      identityContent: identityContent || undefined,
+      skills: isStrong ? sidecar.skills : undefined,
+      skipCatalogDetailFetch: !isStrong,
+    };
+
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+export async function findAgentIdForCatalogEmployeeId(
+  catalogEmployeeId: string,
+  snapshot: AgentsSnapshot,
+): Promise<string | null> {
+  const needle = catalogEmployeeId.trim();
+  if (!needle) return null;
+
+  for (const entry of snapshot.agents) {
+    const absWorkspaceDir = expandPath(`~/.openclaw/workspace-${entry.id}`);
+    const sidecar = await readDigitalEmployeeSidecar(absWorkspaceDir);
+    if (sidecar && sidecar.catalogEmployeeId === needle) {
+      return entry.id;
+    }
+  }
+
+  return null;
 }
