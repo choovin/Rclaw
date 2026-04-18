@@ -515,5 +515,18 @@ export async function handleAgentRoutes(
     return true;
   }
 
+  if (url.pathname === '/api/employees/hydrate' && req.method === 'GET') {
+    try {
+      const snapshot = await listAgentsSnapshot();
+      const { collectDigitalEmployeesForHydrate } = await import('../../utils/digital-employee-hydration');
+      const employees = await collectDigitalEmployeesForHydrate(snapshot);
+      sendJson(res, 200, { success: true, employees });
+    } catch (error) {
+      console.error('[agents] GET /api/employees/hydrate failed:', error);
+      sendJson(res, 500, { success: false, error: String(error) });
+    }
+    return true;
+  }
+
   return false;
 }
