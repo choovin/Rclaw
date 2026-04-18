@@ -22,6 +22,11 @@ import {
 import { deleteChannelAccountConfig } from '../../utils/channel-config';
 import { syncAgentModelOverrideToRuntime, syncAllProviderAuthToRuntime } from '../../services/providers/provider-runtime-sync';
 import { readWorkspaceSoulAgentsMd } from '../../utils/digital-employee-workspace';
+import {
+  findAgentIdForCatalogEmployeeId,
+  writeDigitalEmployeeSidecar,
+} from '../../utils/digital-employee-hydration';
+import { expandPath } from '../../utils/paths';
 import type { HostApiContext } from '../context';
 import { parseJsonBody, sendJson } from '../route-utils';
 
@@ -325,6 +330,19 @@ export async function handleAgentRoutes(
         }
       }
 
+      const requested = normalizeProvisionSkillSlugs(body.skills);
+
+      const snapshot = await listAgentsSnapshot();
+      const existing = await findAgentIdForCatalogEmployeeId(employeeId, snapshot);
+      if (existing) {
+        sendJson(res, 409, {
+          success: false,
+          error: 'catalog_employee_already_provisioned',
+          existingAgentId: existing,
+        });
+        return true;
+      }
+
       const result = await provisionDigitalEmployeeAgent(
         {
           nameZh,
@@ -338,7 +356,12 @@ export async function handleAgentRoutes(
         (stage) => emitProvisionStage(ctx, stage),
       );
 
-      const requested = normalizeProvisionSkillSlugs(body.skills);
+      writeDigitalEmployeeSidecar(result.workspacePath, {
+        version: 1,
+        catalogEmployeeId: employeeId,
+        skills: requested.length > 0 ? requested : undefined,
+      });
+
       if (requested.length > 0) {
         const resolved = await ensureSlugsViaClawHub(requested, ctx.clawHubService, {
           employeeId,
@@ -442,11 +465,25 @@ export async function handleAgentRoutes(
         vibe,
       });
 
-      if (Array.isArray(body.skills)) {
-        const requested = normalizeProvisionSkillSlugs(body.skills);
-        if (requested.length > 0) {
-          const resolved = await ensureSlugsViaClawHub(requested, ctx.clawHubService, {
-            employeeId: body.employeeId.trim(),
+      const catalogEmployeeId = body.employeeId.trim();
+      const updateSkillSlugs = Array.isArray(body.skills) ? normalizeProvisionSkillSlugs(body.skills) : null;
+
+      const sidecarPayload: Parameters<typeof writeDigitalEmployeeSidecar>[1] = {
+        version: 1,
+        catalogEmployeeId,
+      };
+      if (updateSkillSlugs && updateSkillSlugs.length > 0) {
+        sidecarPayload.skills = updateSkillSlugs;
+      }
+      writeDigitalEmployeeSidecar(
+        expandPath(`~/.openclaw/workspace-${linkedAgentId}`),
+        sidecarPayload,
+      );
+
+      if (updateSkillSlugs !== null) {
+        if (updateSkillSlugs.length > 0) {
+          const resolved = await ensureSlugsViaClawHub(updateSkillSlugs, ctx.clawHubService, {
+            employeeId: catalogEmployeeId,
             agentId: linkedAgentId,
           });
           if (resolved.length > 0) {
@@ -454,7 +491,7 @@ export async function handleAgentRoutes(
           } else {
             await applyAgentSkillAllowlist(linkedAgentId, null);
             console.warn('[agents] All skill slugs failed on employee update; clearing per-agent allowlist', {
-              employeeId: body.employeeId.trim(),
+              employeeId: catalogEmployeeId,
               agentId: linkedAgentId,
             });
           }
@@ -471,7 +508,7 @@ export async function handleAgentRoutes(
       sendJson(res, 200, {
         success: true,
         agentId: linkedAgentId,
-        employeeId: body.employeeId.trim(),
+        employeeId: catalogEmployeeId,
       });
     } catch (error) {
       const err = error as Error & { agentId?: string };

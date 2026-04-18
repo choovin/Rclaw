@@ -43,6 +43,8 @@ vi.mock('@electron/utils/digital-employee-workspace', () => ({
 
 vi.mock('@electron/utils/digital-employee-hydration', () => ({
   collectDigitalEmployeesForHydrate: (...args: unknown[]) => mocks.collectDigitalEmployeesForHydrate(...args),
+  findAgentIdForCatalogEmployeeId: vi.fn(),
+  writeDigitalEmployeeSidecar: vi.fn(),
 }));
 
 vi.mock('@electron/api/route-utils', () => ({
