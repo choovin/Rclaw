@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { hostApiFetch } from '@/lib/host-api';
 import type { ChannelType } from '@/types/channel';
 import type { AgentSummary, AgentsSnapshot } from '@/types/agent';
+import type { HostHydratedEmployee } from '@/types/employee';
 
 interface AgentsState {
   agents: AgentSummary[];
@@ -51,8 +52,18 @@ export const useAgentsStore = create<AgentsState>((set) => ({
         ...applySnapshot(snapshot),
         loading: false,
       });
-      const agentIds = (snapshot.agents ?? []).map((a) => a.id);
       const { useEmployeesStore } = await import('@/stores/employees');
+      try {
+        const hydrateRes = await hostApiFetch<{ success?: boolean; employees?: HostHydratedEmployee[] }>(
+          '/api/employees/hydrate',
+        );
+        if (hydrateRes.success && Array.isArray(hydrateRes.employees)) {
+          useEmployeesStore.getState().mergeHydratedEmployees(hydrateRes.employees);
+        }
+      } catch (e) {
+        console.warn('[agents] hydrate failed:', e);
+      }
+      const agentIds = (snapshot.agents ?? []).map((a) => a.id);
       useEmployeesStore.getState().reconcileWithOpenClawAgentIds(agentIds);
     } catch (error) {
       set({ loading: false, error: String(error) });

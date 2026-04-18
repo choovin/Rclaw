@@ -47,6 +47,26 @@ export interface Employee {
   linkedAgentId?: string;
 }
 
+/** Host `GET /api/employees/hydrate` row; mirrors `HydratedEmployeePayload` in electron (no cross-layer import). */
+export interface HostHydratedEmployee {
+  linkedAgentId: string;
+  id: string;
+  name: string;
+  nameZh: string;
+  description: string;
+  descriptionZh?: string;
+  color: string;
+  emoji: string;
+  vibe: string;
+  vibeZh?: string;
+  department: string;
+  soulContent?: string;
+  agentsContent?: string;
+  identityContent?: string;
+  skills?: string[];
+  skipCatalogDetailFetch: boolean;
+}
+
 export interface EmployeeWithStatus extends Employee {
   addedAt?: number;
   isAdded: boolean;

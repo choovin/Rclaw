@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
-import type { Employee } from '@/types/employee';
+import type { Employee, HostHydratedEmployee } from '@/types/employee';
 import { hostApiFetch } from '@/lib/host-api';
 import { useAgentsStore } from '@/stores/agents';
 import { useAuthStore } from '@/stores/auth';
@@ -40,6 +40,8 @@ interface EmployeesState {
     employeeId: string,
     payload: { soulContent: string; agentsContent: string },
   ) => void;
+  /** Merge rows from host hydrate API by `linkedAgentId` (trimmed). */
+  mergeHydratedEmployees: (hydrated: HostHydratedEmployee[]) => void;
 }
 
 /** Merge disk SOUL/AGENTS into one row and optional selectedEmployee. Exported for unit tests. */
@@ -59,6 +61,25 @@ export function mergeWorkspaceSoulAgentsIntoEmployees(
     selectedEmployee:
       selectedEmployee?.id === employeeId && selectedEmployee ? apply(selectedEmployee) : selectedEmployee,
   };
+}
+
+export function mergeHydratedEmployeesRows(
+  current: Employee[],
+  hydrated: HostHydratedEmployee[],
+): Employee[] {
+  const byLinked = new Map<string, Employee>();
+  for (const e of current) {
+    const lid = e.linkedAgentId?.trim();
+    if (lid) byLinked.set(lid, e);
+  }
+  for (const h of hydrated) {
+    const lid = h.linkedAgentId.trim();
+    if (!lid) continue;
+    const prev = byLinked.get(lid);
+    const merged = { ...(prev ?? {}), ...h, linkedAgentId: lid } as Employee;
+    byLinked.set(lid, merged);
+  }
+  return Array.from(byLinked.values());
 }
 
 /** Exported for unit tests — trims myEmployees to valid OpenClaw agent ids. */
@@ -130,24 +151,39 @@ export const useEmployeesStore = create<EmployeesState>()(
           const vibePayload =
             typeof vibeRaw === 'string' && vibeRaw.trim().length > 0 ? vibeRaw.trim() : undefined;
 
-          const res = (await hostApiFetch('/api/employees/provision', {
-            method: 'POST',
-            body: JSON.stringify({
-              employeeId: payload.id,
-              nameZh: payload.nameZh,
-              nameEn: payload.name,
-              soulContent: payload.soulContent ?? '',
-              agentsContent: payload.agentsContent ?? '',
-              identityContent: payload.identityContent ?? '',
-              emoji: payload.emoji,
-              ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
-              ...(Array.isArray(payload.skills) && payload.skills.length > 0 ? { skills: payload.skills } : {}),
-            }),
-          })) as {
+          let res: {
             success?: boolean;
             agentId?: string;
             error?: string;
           };
+          try {
+            res = (await hostApiFetch('/api/employees/provision', {
+              method: 'POST',
+              body: JSON.stringify({
+                employeeId: payload.id,
+                nameZh: payload.nameZh,
+                nameEn: payload.name,
+                soulContent: payload.soulContent ?? '',
+                agentsContent: payload.agentsContent ?? '',
+                identityContent: payload.identityContent ?? '',
+                emoji: payload.emoji,
+                ...(vibePayload !== undefined ? { vibe: vibePayload } : {}),
+                ...(Array.isArray(payload.skills) && payload.skills.length > 0 ? { skills: payload.skills } : {}),
+              }),
+            })) as {
+              success?: boolean;
+              agentId?: string;
+              error?: string;
+            };
+          } catch (e) {
+            if (e instanceof Error && e.message.includes('catalog_employee_already_provisioned')) {
+              toast.message('该员工已在 OpenClaw 中配置，正在同步列表');
+              set({ isLoading: false });
+              void useAgentsStore.getState().fetchAgents();
+              return false;
+            }
+            throw e;
+          }
 
           if (!res.success || !res.agentId) {
             if (res.error) {
@@ -296,6 +332,10 @@ export const useEmployeesStore = create<EmployeesState>()(
             state.selectedEmployee,
           ),
         );
+      },
+
+      mergeHydratedEmployees: (hydrated) => {
+        set((s) => ({ myEmployees: mergeHydratedEmployeesRows(s.myEmployees, hydrated) }));
       },
     }),
     {
