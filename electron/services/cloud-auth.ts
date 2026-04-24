@@ -184,6 +184,14 @@ export class CloudAuthService {
         expiresAt: Date.now() + expiresIn * 1000
       });
 
+      void import('./cloud-user-device-service')
+        .then(({ cloudUserDeviceService }) => {
+          cloudUserDeviceService.afterMemberLogin();
+        })
+        .catch((err) => {
+          logger.warn('[CloudAuth] cloud user device register after login:', err);
+        });
+
       const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };
     } catch (error) {
@@ -215,6 +223,14 @@ export class CloudAuthService {
         refreshToken,
         expiresAt: Date.now() + expiresIn * 1000
       });
+
+      void import('./cloud-user-device-service')
+        .then(({ cloudUserDeviceService }) => {
+          cloudUserDeviceService.afterMemberLogin();
+        })
+        .catch((err) => {
+          logger.warn('[CloudAuth] cloud user device register after login:', err);
+        });
 
       const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };
@@ -271,6 +287,14 @@ export class CloudAuthService {
         refreshToken,
         expiresAt: Date.now() + expiresIn * 1000
       });
+
+      void import('./cloud-user-device-service')
+        .then(({ cloudUserDeviceService }) => {
+          cloudUserDeviceService.afterMemberLogin();
+        })
+        .catch((err) => {
+          logger.warn('[CloudAuth] cloud user device register after login:', err);
+        });
 
       const userInfo = await this.resolveUserProfileAfterLogin(parsed.value.userInfo);
       return { success: true, userInfo };

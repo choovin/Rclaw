@@ -43,6 +43,7 @@ import { deviceOAuthManager } from '../utils/device-oauth';
 import { browserOAuthManager } from '../utils/browser-oauth';
 import { whatsAppLoginManager } from '../utils/whatsapp-login';
 import { syncAllProviderAuthToRuntime } from '../services/providers/provider-runtime-sync';
+import { cloudUserDeviceService } from '../services/cloud-user-device-service';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.clawx.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -289,6 +290,10 @@ async function initialize(): Promise<void> {
     // Initialize Telemetry early
     await initTelemetry();
 
+    void cloudUserDeviceService.start().catch((err) => {
+      logger.warn('Cloud user device service start failed:', err);
+    });
+
     // Apply persisted proxy settings before creating windows or network requests.
     await applyProxySettings();
     await syncLaunchAtStartupSettingFromStore();
@@ -518,6 +523,7 @@ if (gotTheLock) {
   process.once('SIGTERM', () => requestQuitOnSignal('SIGTERM'));
 
   app.on('will-quit', () => {
+    cloudUserDeviceService.stop();
     releaseProcessInstanceFileLock();
   });
 
