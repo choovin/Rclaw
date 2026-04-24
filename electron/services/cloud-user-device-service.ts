@@ -109,8 +109,12 @@ class CloudUserDeviceService {
       const tokenData = await cloudAuthService.getValidToken();
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (persisted.deviceToken) {
-        headers['X-Device-Token'] = persisted.deviceToken;
+      // 首次注册无 token 时不应带 X-Device-Token（与 08 文档一致）；trim 避免仅空白字符
+      const trimmedDeviceToken = persisted.deviceToken?.trim() ?? '';
+      const hasPersistedDevicePair =
+        trimmedDeviceToken.length > 0 && persisted.serverDeviceId != null;
+      if (hasPersistedDevicePair) {
+        headers['X-Device-Token'] = trimmedDeviceToken;
       }
       if (tokenData) {
         headers.Authorization = `Bearer ${tokenData.accessToken}`;
@@ -155,7 +159,8 @@ class CloudUserDeviceService {
 
   private async tickHeartbeat(): Promise<void> {
     const persisted = await getCloudUserDevicePersisted();
-    if (persisted.serverDeviceId == null || !persisted.deviceToken) {
+    const heartbeatToken = persisted.deviceToken?.trim() ?? '';
+    if (persisted.serverDeviceId == null || !heartbeatToken) {
       await this.registerWithRetries();
       return;
     }
@@ -165,7 +170,7 @@ class CloudUserDeviceService {
     const tokenData = await cloudAuthService.getValidToken();
 
     const headers: Record<string, string> = {
-      'X-Device-Token': persisted.deviceToken,
+      'X-Device-Token': heartbeatToken,
     };
     if (tokenData) {
       headers.Authorization = `Bearer ${tokenData.accessToken}`;
