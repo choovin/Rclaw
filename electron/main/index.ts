@@ -290,9 +290,8 @@ async function initialize(): Promise<void> {
     // Initialize Telemetry early
     await initTelemetry();
 
-    void cloudUserDeviceService.start().catch((err) => {
-      logger.warn('Cloud user device service start failed:', err);
-    });
+    // 设备登记失败不得阻塞或破坏启动；错误仅在服务内记录
+    cloudUserDeviceService.start();
 
     // Apply persisted proxy settings before creating windows or network requests.
     await applyProxySettings();

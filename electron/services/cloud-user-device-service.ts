@@ -61,12 +61,18 @@ class CloudUserDeviceService {
   }
 
   private async runStartup(): Promise<void> {
-    await this.registerWithRetries();
+    // 先挂心跳，避免注册重试（最多约 2×45s+）拖后才创建定时器；登记失败不影响此调度
     this.heartbeatTimer = setInterval(() => {
       void this.tickHeartbeat().catch((err) => {
         logger.warn('[CloudUserDevice] heartbeat tick failed:', err);
       });
     }, HEARTBEAT_INTERVAL_MS);
+
+    try {
+      await this.registerWithRetries();
+    } catch (err) {
+      logger.warn('[CloudUserDevice] initial register failed:', err);
+    }
   }
 
   private async ensureMachineId(): Promise<void> {
