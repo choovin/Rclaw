@@ -92,7 +92,9 @@ class CloudUserDeviceService {
         await delay(REGISTER_RETRY_DELAY_MS);
       }
     }
-    logger.warn('[CloudUserDevice] register exhausted retries');
+    logger.warn('[CloudUserDevice] register exhausted retries; clearing persisted device id / token');
+    await clearCloudUserDevicePersisted();
+    this.consecutiveHeartbeatFailures = 0;
   }
 
   private async tryRegisterOnce(): Promise<boolean> {
