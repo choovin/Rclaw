@@ -6,3 +6,4 @@
 |------|------|
 | [06_Skillhub_API.md](./06_Skillhub_API.md) | `/app-api/skillhub/*`：Skillhub 技能商店列表等 |
 | [07_Claw_Catalog_API.md](./07_Claw_Catalog_API.md) | `/app-api/claw/catalog/*`：数字员工市场部门、分页列表、详情 |
+| [08_Claw_User_Device_API.md](./08_Claw_User_Device_API.md) | `/app-api/claw/user/device/*`：设备注册、心跳上报（可选 `Authorization`） |
