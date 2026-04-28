@@ -1,6 +1,5 @@
 export interface CloudUserDevicePersisted {
   serverDeviceId: number | null;
-  deviceToken: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,7 +10,7 @@ async function getStore() {
     const Store = (await import('electron-store')).default;
     storeInstance = new Store<CloudUserDevicePersisted>({
       name: 'cloud-user-device',
-      defaults: { serverDeviceId: null, deviceToken: null },
+      defaults: { serverDeviceId: null },
     });
   }
   return storeInstance;
@@ -21,18 +20,16 @@ export async function getCloudUserDevicePersisted(): Promise<CloudUserDevicePers
   const s = await getStore();
   return {
     serverDeviceId: s.get('serverDeviceId') ?? null,
-    deviceToken: s.get('deviceToken') ?? null,
   };
 }
 
 export async function setCloudUserDevicePersisted(p: CloudUserDevicePersisted): Promise<void> {
   const s = await getStore();
   s.set('serverDeviceId', p.serverDeviceId);
-  s.set('deviceToken', p.deviceToken);
 }
 
 export async function clearCloudUserDevicePersisted(): Promise<void> {
-  await setCloudUserDevicePersisted({ serverDeviceId: null, deviceToken: null });
+  await setCloudUserDevicePersisted({ serverDeviceId: null });
 }
 
 /** 供单测重置 store 单例 */

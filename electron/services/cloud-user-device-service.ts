@@ -17,7 +17,7 @@ import {
   parseClawUserDeviceRegisterJson,
 } from '../utils/cloud-user-device-helpers';
 
-const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 30 * 1000;
 const REGISTER_RETRY_MAX_ATTEMPTS = 3;
 const REGISTER_RETRY_DELAY_MS = 45_000;
 const FINGERPRINT_SALT = 'rclaw-claw-user-device-v1';
@@ -92,7 +92,7 @@ class CloudUserDeviceService {
         await delay(REGISTER_RETRY_DELAY_MS);
       }
     }
-    logger.warn('[CloudUserDevice] register exhausted retries; clearing persisted device id / token');
+    logger.warn('[CloudUserDevice] register exhausted retries; clearing persisted server device id');
     await clearCloudUserDevicePersisted();
     this.consecutiveHeartbeatFailures = 0;
   }
@@ -105,17 +105,9 @@ class CloudUserDeviceService {
 
       const base = getCloudApiBaseUrl();
       const url = `${base}${DEVICE_REGISTER_PATH}`;
-      const persisted = await getCloudUserDevicePersisted();
       const tokenData = await cloudAuthService.getValidToken();
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      // 首次注册无 token 时不应带 X-Device-Token（与 08 文档一致）；trim 避免仅空白字符
-      const trimmedDeviceToken = persisted.deviceToken?.trim() ?? '';
-      const hasPersistedDevicePair =
-        trimmedDeviceToken.length > 0 && persisted.serverDeviceId != null;
-      if (hasPersistedDevicePair) {
-        headers['X-Device-Token'] = trimmedDeviceToken;
-      }
       if (tokenData) {
         headers.Authorization = `Bearer ${tokenData.accessToken}`;
       }
@@ -146,10 +138,7 @@ class CloudUserDeviceService {
       const parsed = parseClawUserDeviceRegisterJson(raw);
       if (!parsed.ok) return false;
 
-      await setCloudUserDevicePersisted({
-        serverDeviceId: parsed.id,
-        deviceToken: parsed.deviceToken,
-      });
+      await setCloudUserDevicePersisted({ serverDeviceId: parsed.id });
       return true;
     } catch (error) {
       logger.warn('[CloudUserDevice] register attempt error:', error);
@@ -159,8 +148,7 @@ class CloudUserDeviceService {
 
   private async tickHeartbeat(): Promise<void> {
     const persisted = await getCloudUserDevicePersisted();
-    const heartbeatToken = persisted.deviceToken?.trim() ?? '';
-    if (persisted.serverDeviceId == null || !heartbeatToken) {
+    if (persisted.serverDeviceId == null) {
       await this.registerWithRetries();
       return;
     }
@@ -169,9 +157,7 @@ class CloudUserDeviceService {
     const url = `${base}/app-api/claw/user/device/${persisted.serverDeviceId}/heartbeat`;
     const tokenData = await cloudAuthService.getValidToken();
 
-    const headers: Record<string, string> = {
-      'X-Device-Token': heartbeatToken,
-    };
+    const headers: Record<string, string> = {};
     if (tokenData) {
       headers.Authorization = `Bearer ${tokenData.accessToken}`;
     }

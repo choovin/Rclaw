@@ -8,9 +8,7 @@ export function computeDeviceFingerprint(machineId: string, salt: string): strin
   return createHash('sha256').update(`${machineId}\0${salt}`, 'utf8').digest('hex');
 }
 
-export type RegisterParseResult =
-  | { ok: true; id: number; deviceToken: string }
-  | { ok: false };
+export type RegisterParseResult = { ok: true; id: number } | { ok: false };
 
 export function parseClawUserDeviceRegisterJson(raw: unknown): RegisterParseResult {
   if (raw === null || typeof raw !== 'object') return { ok: false };
@@ -20,9 +18,8 @@ export function parseClawUserDeviceRegisterJson(raw: unknown): RegisterParseResu
   if (data === null || typeof data !== 'object') return { ok: false };
   const d = data as Record<string, unknown>;
   const id = d.id;
-  const deviceToken = d.deviceToken;
-  if (typeof id !== 'number' || typeof deviceToken !== 'string' || !deviceToken) return { ok: false };
-  return { ok: true, id, deviceToken };
+  if (typeof id !== 'number') return { ok: false };
+  return { ok: true, id };
 }
 
 export type HeartbeatFailureInput = {

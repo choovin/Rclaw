@@ -14,15 +14,14 @@ describe('cloud-user-device-helpers', () => {
     expect(isRunNodeSuccessCode('0')).toBe(false);
   });
 
-  it('parseClawUserDeviceRegisterJson extracts id and deviceToken', () => {
+  it('parseClawUserDeviceRegisterJson extracts id', () => {
     const r = parseClawUserDeviceRegisterJson({
       code: 0,
-      data: { id: 7, deviceToken: 'abc', newlyCreated: true },
+      data: { id: 7, newlyCreated: true },
     });
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.id).toBe(7);
-      expect(r.deviceToken).toBe('abc');
     }
   });
 

@@ -31,8 +31,7 @@ function sanitizeForLog(obj: unknown, depth = 0): unknown {
       kl === 'access_token' ||
       kl === 'refresh_token' ||
       kl === 'platformaccesstoken' ||
-      kl === 'apikey' ||
-      kl === 'devicetoken'
+      kl === 'apikey'
     ) {
       out[k] = '[redacted]';
       continue;
@@ -86,11 +85,6 @@ function headersForLog(init?: RequestInit): Record<string, string> {
   if (auth) {
     out.Authorization = '[redacted]';
     delete out.authorization;
-  }
-  for (const key of Object.keys(out)) {
-    if (key.toLowerCase() === 'x-device-token') {
-      out[key] = '[redacted]';
-    }
   }
   return out;
 }
