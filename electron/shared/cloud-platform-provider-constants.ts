@@ -3,9 +3,10 @@ export const CLOUD_PLATFORM_CUSTOM_ACCOUNT_ID = 'runnode-cloud-custom';
 
 export const CLOUD_PLATFORM_CUSTOM_LABEL = 'RunNode';
 
-export const CLOUD_PLATFORM_PRIMARY_MODEL = 'MiniMax-M2.7-highspeed';
+export const CLOUD_PLATFORM_PRIMARY_MODEL = 'runnode/Qwen3.6-27B';
 
 export const CLOUD_PLATFORM_FALLBACK_MODELS: readonly string[] = [
+  'MiniMax-M2.7-highspeed',
   'MiniMax-M2.5-highspeed',
   'MiniMax-M2.7',
   'minimax-m2.5',
